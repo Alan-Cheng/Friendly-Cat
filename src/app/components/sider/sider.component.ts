@@ -107,7 +107,7 @@ export class SiderComponent {
 
   // 點擊搜尋按鈕
   onSearchClick() {
-    if (this.foodSearchTerm && this.foodSearchTerm.length >= 2) {
+    if (this.foodSearchTerm && this.foodSearchTerm.length >= 0) {
       this.isSearching = true;
       this.searchFoodInStores(this.foodSearchTerm);
     }
@@ -140,49 +140,18 @@ export class SiderComponent {
       return;
     }
 
-    // 搜尋每個商店的商品
+    // 搜尋全家商品（直接搜尋）
     stores.forEach((store: any, storeIndex: number) => {
-      console.log(`商店 ${storeIndex}:`, store.label, store);
-      
-        if (store.label === '7-11' && store.CategoryStockItems) {
-          console.log('7-11 商店商品分類:', store.CategoryStockItems);
-          // 搜尋 7-11 商品
-          store.CategoryStockItems.forEach((category: any, catIndex: number) => {
-            console.log(`分類 ${catIndex}:`, category);
-            if (category.ItemList) {
-              category.ItemList.forEach((item: any, itemIndex: number) => {
-                if (item.ItemName) {
-                  const matchScore = this.calculateMatchScore(item.ItemName, searchTerm);
-                  console.log(`商品 ${itemIndex}: ${item.ItemName}, 匹配分數: ${matchScore}`);
-                  if (matchScore > 0) {
-                    results.push({
-                      foodName: item.ItemName,
-                      storeName: `7-11${store.StoreName}門市`,
-                      storeType: '7-11',
-                      store: store,
-                      distance: store.Distance,
-                      remainingQty: item.RemainingQty,
-                      matchScore: matchScore
-                    });
-                  }
-                }
-              });
-            }
-          });
-        } else if (store.label === '全家' && store.info) {
-          console.log('全家商店商品分類:', store.info);
+        if (store.label === '全家' && store.info) {
           // 搜尋全家商品
           store.info.forEach((category: any, catIndex: number) => {
-            console.log(`全家分類 ${catIndex}:`, category);
             if (category.categories) {
               category.categories.forEach((subCategory: any, subCatIndex: number) => {
-                console.log(`全家子分類 ${subCatIndex}:`, subCategory);
                 if (subCategory.products) {
                   subCategory.products.forEach((product: any, productIndex: number) => {
                     if (product.name) {
                       const matchScore = this.calculateMatchScore(product.name, searchTerm);
-                      console.log(`全家商品 ${productIndex}: ${product.name}, 匹配分數: ${matchScore}`);
-                      if (matchScore > 0) {
+                      if (searchTerm.length === 0 || matchScore > 0) {
                         results.push({
                           foodName: product.name,
                           storeName: store.name,
@@ -202,6 +171,61 @@ export class SiderComponent {
         }
     });
 
+    // 搜尋 7-11 商品（需要額外 API 呼叫）
+    const sevenElevenStores = stores.filter(store => store.label === '7-11');
+    if (sevenElevenStores.length > 0) {
+      this.searchSevenElevenProducts(sevenElevenStores, searchTerm, results);
+    } else {
+      this.finalizeSearchResults(results);
+    }
+  }
+
+  // 搜尋 7-11 商品（透過額外 API）
+  searchSevenElevenProducts(sevenElevenStores: any[], searchTerm: string, results: any[]) {
+    const apiCalls = sevenElevenStores.map(store => 
+      this.sevenElevenService.getItemsByStoreNo(store.StoreNo).pipe(
+        catchError(error => {
+          console.error(`取得 7-11 商店 ${store.StoreName} 商品失敗:`, error);
+          return of(null);
+        })
+      )
+    );
+
+    forkJoin(apiCalls).subscribe(storeProductsList => {
+      storeProductsList.forEach((storeProducts, index) => {
+        if (storeProducts && storeProducts.isSuccess && storeProducts.element.StoreStockItem) {
+          const store = sevenElevenStores[index];
+          const categoryStockItems = storeProducts.element.StoreStockItem.CategoryStockItems;
+          
+          categoryStockItems.forEach((category: any) => {
+            if (category.ItemList && category.ItemList.length > 0) {
+              category.ItemList.forEach((item: any) => {
+                if (item.ItemName) {
+                  const matchScore = this.calculateMatchScore(item.ItemName, searchTerm);
+                  if (searchTerm.length === 0 || matchScore > 0) {
+                    results.push({
+                      foodName: item.ItemName,
+                      storeName: `7-11${store.StoreName}門市`,
+                      storeType: '7-11',
+                      store: store,
+                      distance: store.Distance,
+                      remainingQty: item.RemainingQty,
+                      matchScore: matchScore
+                    });
+                  }
+                }
+              });
+            }
+          });
+        }
+      });
+      
+      this.finalizeSearchResults(results);
+    });
+  }
+
+  // 完成搜尋結果處理
+  finalizeSearchResults(results: any[]) {
     // 按精確度排序，然後按距離排序
     results.sort((a, b) => {
       if (b.matchScore !== a.matchScore) {
@@ -346,6 +370,11 @@ export class SiderComponent {
 
   // 計算模糊搜尋匹配分數
   calculateMatchScore(text: string, searchTerm: string): number {
+    // 如果搜尋詞為空，返回預設分數
+    if (searchTerm.length === 0) {
+      return 50; // 給所有商品一個中等分數
+    }
+    
     const textLower = text.toLowerCase();
     const searchLower = searchTerm.toLowerCase();
     

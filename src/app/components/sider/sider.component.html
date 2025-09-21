@@ -43,7 +43,7 @@
         <button 
           class="search-button" 
           (click)="onSearchClick()"
-          [disabled]="!hasStoreData || !foodSearchTerm || foodSearchTerm.length < 2"
+          [disabled]="!hasStoreData"
         >
           <mat-icon>search</mat-icon>
         </button>
@@ -65,7 +65,7 @@
             <span class="food-name">{{ result.foodName }}</span>
             <div class="store-details">
               <span class="store-name">{{ result.storeName }}</span>
-              <span class="store-type">{{ result.storeType }}</span>
+              <!-- <span class="store-type">{{ result.storeType }}</span> -->
               <!-- <span class="store-distance" *ngIf="result.distance">
                 <mat-icon class="distance-icon">location_on</mat-icon>
                 {{ result.distance | number:'1.1-1' }} 公里
