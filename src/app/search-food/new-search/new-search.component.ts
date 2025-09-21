@@ -909,4 +909,22 @@ export class NewSearchComponent implements OnInit {
         );
     }
   }
+
+  // 處理食物搜尋結果
+  onFoodSearchResult(result: any) {
+    console.log("食物搜尋結果", result);
+    this.loadingService.show("正在跳轉到商店...");
+    
+    // 根據商店類型處理跳轉
+    if (result.storeType === '7-11') {
+      // 7-11 商店跳轉
+      this.onOptionSelect(null, result.store.Latitude, result.store.Longitude);
+    } else if (result.storeType === '全家') {
+      // 全家商店跳轉
+      this.onOptionSelect(null, result.store.latitude, result.store.longitude);
+    }
+    
+    this.searchTerm = '';
+    this.loadingService.hide();
+  }
 }
