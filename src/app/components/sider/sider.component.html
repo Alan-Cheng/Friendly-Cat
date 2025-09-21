@@ -36,6 +36,7 @@
           type="text" 
           [(ngModel)]="foodSearchTerm" 
           (keyup.enter)="onSearchClick()"
+          (input)="onSearchInputChange()"
           [placeholder]="getSearchPlaceholder()"
           [disabled]="!hasStoreData"
           class="search-input"
@@ -82,9 +83,9 @@
     </div>
 
     <!-- 無搜尋結果 -->
-    <div class="no-results" *ngIf="foodSearchTerm && foodSearchResults.length === 0 && !isSearching">
+    <div class="no-results" *ngIf="hasSearched && foodSearchResults.length === 0 && !isSearching">
       <mat-icon class="no-results-icon">search_off</mat-icon>
-      <span>找不到相關食物</span>
+      <span>找不到相關商品</span>
     </div>
 
     <!-- 搜尋中 -->
