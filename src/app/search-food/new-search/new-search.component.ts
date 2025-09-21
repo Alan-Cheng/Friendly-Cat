@@ -514,7 +514,10 @@ export class NewSearchComponent implements OnInit {
     // 從選中的選項中獲取值
     this.searchSelectedStore = event?.option.value.name;
 
-    this.searchTerm =  event?.option.value.label + event?.option.value.name.replace('店', '') + '門市'
+    // 只有在 event 不為 null 時才設定 searchTerm
+    if (event?.option.value) {
+      this.searchTerm = event.option.value.label + event.option.value.name.replace('店', '') + '門市';
+    }
 
     const label = event?.option.value.label;
     const storeName = event?.option.value.name;
@@ -916,16 +919,22 @@ export class NewSearchComponent implements OnInit {
     console.log("食物搜尋結果", result);
     this.loadingService.show("正在跳轉到商店...");
     
-    // 根據商店類型處理跳轉
-    if (result.storeType === '7-11') {
-      // 7-11 商店跳轉
-      this.onOptionSelect(null, result.store.Latitude, result.store.Longitude);
-    } else if (result.storeType === '全家') {
-      // 全家商店跳轉
-      this.onOptionSelect(null, result.store.latitude, result.store.longitude);
-    }
+    // 設定搜尋詞
+    this.searchTerm = result.storeName;
     
-    this.searchTerm = '';
+    // 變更搜尋模式
+    this.isLocationSearchMode = false;
+    
+    // 清除商店列表
+    this.totalStoresShowList = [];
+    
+    // 直接設定商店資料
+    this.totalStoresShowList = [result.store];
+    
+    // 更新 StoreDataService
+    this.storeDataService.setStores(this.totalStoresShowList);
+    this.storeDataService.setIsUserLocationSearch(false);
+    
     this.loadingService.hide();
   }
 }
