@@ -645,7 +645,8 @@ export class NewSearchComponent implements OnInit {
         label: '7-11',
         distance: store.Distance, // 統一使用 `distance` 字段
         remainingQty: store.RemainingQty,
-        showDistance: true
+        showDistance: true,
+        CategoryStockItems: store.CategoryStockItems // 確保保留 CategoryStockItems
       };
       this.totalStoresShowList.push(transformedStore); // 推入統一列表
     });
