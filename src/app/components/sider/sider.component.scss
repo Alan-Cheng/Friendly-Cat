@@ -60,7 +60,7 @@
     margin: 0;
     font-size: 16px;
     font-weight: bold;
-    color: theme('colors.primary.default');
+    color: theme('colors.success');
   }
   
   .close-btn {
@@ -250,18 +250,55 @@
         font-weight: bold;
         color: theme('colors.primary.default');
         font-size: 14px;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
       }
       
-      .store-name {
-        color: #666;
-        font-size: 12px;
-        margin-bottom: 2px;
+      .store-details {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 4px;
+        
+        .store-name {
+          color: #666;
+          font-size: 12px;
+          margin-bottom: 2px;
+        }
+        
+        .store-type {
+          color: #999;
+          font-size: 11px;
+          margin-bottom: 2px;
+        }
+        
+        .store-distance {
+          display: flex;
+          align-items: center;
+          color: theme('colors.primary.default');
+          font-size: 11px;
+          font-weight: 500;
+          
+          .distance-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+            margin-right: 4px;
+          }
+        }
       }
       
-      .store-type {
+      .click-hint {
+        display: flex;
+        align-items: center;
         color: #999;
-        font-size: 11px;
+        font-size: 10px;
+        font-style: italic;
+        
+        .hint-icon {
+          font-size: 12px;
+          width: 12px;
+          height: 12px;
+          margin-right: 4px;
+        }
       }
     }
     

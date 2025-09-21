@@ -63,8 +63,18 @@
         >
           <div class="result-info">
             <span class="food-name">{{ result.foodName }}</span>
-            <span class="store-name">{{ result.storeName }}</span>
-            <span class="store-type">{{ result.storeType }}</span>
+            <div class="store-details">
+              <span class="store-name">{{ result.storeName }}</span>
+              <span class="store-type">{{ result.storeType }}</span>
+              <!-- <span class="store-distance" *ngIf="result.distance">
+                <mat-icon class="distance-icon">location_on</mat-icon>
+                {{ result.distance | number:'1.1-1' }} 公里
+              </span> -->
+            </div>
+            <div class="click-hint">
+              <mat-icon class="hint-icon">touch_app</mat-icon>
+              <span>點擊前往該商店</span>
+            </div>
           </div>
           <mat-icon class="arrow-icon">arrow_forward_ios</mat-icon>
         </div>
