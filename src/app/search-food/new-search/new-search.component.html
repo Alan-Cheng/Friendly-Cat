@@ -265,7 +265,7 @@
   <ng-container *ngIf="totalStoresShowList[0]?.distance > 1 || totalStoresShowList[0]?.remainingQty === 0">
     <div class="flex justify-center">
       <div class="w-full lg:w-4/5 max-w-screen-lg">
-        <div class="text-center text-primary-default text-lg font-bold mt-4">
+        <div class="text-center text-primary-default text-lg font-bold mt-4" *ngIf="isLocationSearchMode">
           您搜尋的商店目前無折扣商品，以下為附近店家：
         </div>
       </div>

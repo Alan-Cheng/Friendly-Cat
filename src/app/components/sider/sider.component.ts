@@ -156,7 +156,11 @@ export class SiderComponent {
                           foodName: product.name,
                           storeName: store.name,
                           storeType: '全家',
-                          store: store,
+                          store: {
+                            ...store,
+                            latitude: store.latitude,
+                            longitude: store.longitude
+                          },
                           distance: store.distance,
                           remainingQty: product.qty,
                           matchScore: matchScore
@@ -207,7 +211,11 @@ export class SiderComponent {
                       foodName: item.ItemName,
                       storeName: `7-11${store.StoreName}門市`,
                       storeType: '7-11',
-                      store: store,
+                      store: {
+                        ...store,
+                        Latitude: store.Latitude,
+                        Longitude: store.Longitude
+                      },
                       distance: store.Distance,
                       remainingQty: item.RemainingQty,
                       matchScore: matchScore
