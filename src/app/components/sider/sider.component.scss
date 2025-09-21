@@ -2,7 +2,10 @@
     background-color: theme('colors.primary.light');
     color: theme('colors.success');
     box-shadow: 4px 0 6px rgba(0, 0, 0, 0.1);
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
 }
 

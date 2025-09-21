@@ -253,7 +253,7 @@ export class NewSearchComponent implements OnInit {
 
   // 這寫的真他媽醜到爆
   handleSearch(input: string): void {
-    if (input.length >= 2) {
+    if (input.length >= 0) {
       this.loadingService.show("正在為您搜尋店家");
 
       this.unifiedDropDownList = [];
@@ -296,17 +296,17 @@ export class NewSearchComponent implements OnInit {
                 Name: item.Name.replace('全家', '')  // 去除 "全家" 字串
               }))
               .filter(item =>
-                item.Name.includes(input) || item.addr.includes(input)
+                input.length === 0 || item.Name.includes(input) || item.addr.includes(input)
               );
 
               // 刪掉711兩個字以免使用者誤搜，篩選 unifiedDropDownList，篩選條件是 Name 和 addr 都包含 input
               const filteredDropDown711List = this.dropDown711List
               .map(item => ({
                 ...item,
-                Name: item.StoreName.replace('711', '')  // 去除 "全家" 字串
+                Name: item.StoreName.replace('711', '')  // 去除 "711" 字串
               }))
               .filter(item =>
-                item.Name.includes(input) || item.Address.includes(input)
+                input.length === 0 || item.Name.includes(input) || item.Address.includes(input)
               );
 
               // 統一兩個列表的名稱欄位
@@ -340,7 +340,7 @@ export class NewSearchComponent implements OnInit {
 
               // 按照經緯度算出距離排序unifiedDropDownList
               const nameGroup = this.unifiedDropDownList
-                .filter(item => item.name.includes(input)) // 篩選 name 包含 input 的元素
+                .filter(item => input.length === 0 || item.name.includes(input)) // 篩選 name 包含 input 的元素
                 .sort((a, b) => {
                   const distanceA = getDistance(
                     { latitude: this.latitude, longitude: this.longitude },
@@ -354,7 +354,7 @@ export class NewSearchComponent implements OnInit {
                 });
 
               const addrGroup = this.unifiedDropDownList
-                .filter(item => item.addr.includes(input) && !nameGroup.includes(item)) // 篩選 addr 包含 input 的元素，排除已在 nameGroup 的元素
+                .filter(item => (input.length === 0 || item.addr.includes(input)) && !nameGroup.includes(item)) // 篩選 addr 包含 input 的元素，排除已在 nameGroup 的元素
                 .sort((a, b) => {
                   const distanceA = getDistance(
                     { latitude: this.latitude, longitude: this.longitude },
@@ -411,17 +411,17 @@ export class NewSearchComponent implements OnInit {
                 Name: item.Name.replace('全家', '')  // 去除 "全家" 字串
               }))
               .filter(item =>
-                item.Name.includes(input) || item.addr.includes(input)
+                input.length === 0 || item.Name.includes(input) || item.addr.includes(input)
               );
 
             // 刪掉711兩個字以免使用者誤搜，篩選 unifiedDropDownList，篩選條件是 Name 和 addr 都包含 input
             const filteredDropDown711List = this.dropDown711List
             .map(item => ({
               ...item,
-              Name: item.StoreName.replace('711', '')  // 去除 "全家" 字串
+              Name: item.StoreName.replace('711', '')  // 去除 "711" 字串
             }))
             .filter(item =>
-              item.Name.includes(input) || item.Address.includes(input)
+              input.length === 0 || item.Name.includes(input) || item.Address.includes(input)
             );
 
             // 統一兩個列表的名稱欄位
@@ -454,7 +454,7 @@ export class NewSearchComponent implements OnInit {
             });
 
             const nameGroup = this.unifiedDropDownList
-              .filter(item => item.name.includes(input)) // 篩選 name 包含 input 的元素
+              .filter(item => input.length === 0 || item.name.includes(input)) // 篩選 name 包含 input 的元素
               .sort((a, b) => {
                 const distanceA = getDistance(
                   { latitude: this.latitude, longitude: this.longitude },
@@ -468,7 +468,7 @@ export class NewSearchComponent implements OnInit {
               });
 
             const addrGroup = this.unifiedDropDownList
-              .filter(item => item.addr.includes(input) && !nameGroup.includes(item)) // 篩選 addr 包含 input 的元素，排除已在 nameGroup 的元素
+              .filter(item => (input.length === 0 || item.addr.includes(input)) && !nameGroup.includes(item)) // 篩選 addr 包含 input 的元素，排除已在 nameGroup 的元素
               .sort((a, b) => {
                 const distanceA = getDistance(
                   { latitude: this.latitude, longitude: this.longitude },

@@ -107,7 +107,7 @@ export class SiderComponent {
 
   // 點擊搜尋按鈕
   onSearchClick() {
-    if (this.foodSearchTerm && this.foodSearchTerm.length >= 2) {
+    if (this.foodSearchTerm && this.foodSearchTerm.length >= 0) {
       this.isSearching = true;
       this.searchFoodInStores(this.foodSearchTerm);
     }
@@ -154,7 +154,7 @@ export class SiderComponent {
                 if (item.ItemName) {
                   const matchScore = this.calculateMatchScore(item.ItemName, searchTerm);
                   console.log(`商品 ${itemIndex}: ${item.ItemName}, 匹配分數: ${matchScore}`);
-                  if (matchScore > 0) {
+                  if (searchTerm.length === 0 || matchScore > 0) {
                     results.push({
                       foodName: item.ItemName,
                       storeName: `7-11${store.StoreName}門市`,
@@ -182,7 +182,7 @@ export class SiderComponent {
                     if (product.name) {
                       const matchScore = this.calculateMatchScore(product.name, searchTerm);
                       console.log(`全家商品 ${productIndex}: ${product.name}, 匹配分數: ${matchScore}`);
-                      if (matchScore > 0) {
+                      if (searchTerm.length === 0 || matchScore > 0) {
                         results.push({
                           foodName: product.name,
                           storeName: store.name,
@@ -346,6 +346,11 @@ export class SiderComponent {
 
   // 計算模糊搜尋匹配分數
   calculateMatchScore(text: string, searchTerm: string): number {
+    // 如果搜尋詞為空，返回預設分數
+    if (searchTerm.length === 0) {
+      return 50; // 給所有商品一個中等分數
+    }
+    
     const textLower = text.toLowerCase();
     const searchLower = searchTerm.toLowerCase();
     
