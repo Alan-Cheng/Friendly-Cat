@@ -35,6 +35,7 @@ export class SiderComponent {
   foodSearchTerm = '';
   foodSearchResults: any[] = [];
   isSearching = false;
+  hasSearched = false; // 追蹤是否已執行過搜尋
   latitude!: number;
   longitude!: number;
   
@@ -107,9 +108,19 @@ export class SiderComponent {
 
   // 點擊搜尋按鈕
   onSearchClick() {
-    if (this.foodSearchTerm && this.foodSearchTerm.length >= 0) {
+    if (this.foodSearchTerm && this.foodSearchTerm.trim().length > 0) {
       this.isSearching = true;
+      this.hasSearched = true; // 標記已執行搜尋
       this.searchFoodInStores(this.foodSearchTerm);
+    }
+  }
+
+  // 搜尋框輸入變化
+  onSearchInputChange() {
+    // 如果搜尋框被清空，重置搜尋狀態
+    if (!this.foodSearchTerm || this.foodSearchTerm.trim().length === 0) {
+      this.hasSearched = false;
+      this.foodSearchResults = [];
     }
   }
 
