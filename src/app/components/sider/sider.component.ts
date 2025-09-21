@@ -20,11 +20,24 @@ export class SiderComponent {
 
   sevenElevenIconUrl = environment.sevenElevenUrl.icon;
   familyMartIconUrl = environment.familyMartUrl.icon;
+  
+  // 側邊欄狀態
+  sidebarOpen = false;
 
   constructor(
     private authService: AuthService,
     public dialog: MatDialog,
   ) { }
+
+  // 切換側邊欄
+  toggleSidebar() {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  // 關閉側邊欄
+  closeSidebar() {
+    this.sidebarOpen = false;
+  }
 
   loginOrlogout() {
     if (this.user) {

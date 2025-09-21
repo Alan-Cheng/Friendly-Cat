@@ -1,34 +1,140 @@
 .toolbar {
     background-color: theme('colors.primary.light');
     color: theme('colors.success');
-    box-shadow: 4px 0 6px rgba(0, 0, 0, 0.1); /* 添加阴影 */
-}
-
-.mat-menu-item button {
-    width: 100%;
-}
-
-.menu-header {
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: bold;
-    color: theme('colors.primary.default');
-}
-
-.store-icon {
-    width: 20px;
-    /* 圖片寬度 */
-    height: 20px;
-    /* 圖片高度 */
-    margin-right: 8px;
-    /* 圖片與文字的間距 */
-    display: inline-block;
-    /* 將圖片設為行內塊元素 */
-    vertical-align: middle;
-    /* 圖片與文字垂直居中對齊 */
+    box-shadow: 4px 0 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1000;
 }
 
 .text-with-shadow {
-  font-weight: bold; /* 設定粗體 */
-  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* 加入陰影，2px 2px 是陰影偏移，5px 是模糊半徑，rgba 定義顏色 */
+  font-weight: bold;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* 側邊欄遮罩 */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  
+  &.active {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* 側邊欄 */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px;
+  width: 300px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  transition: left 0.3s ease;
+  overflow-y: auto;
+  
+  &.open {
+    left: 0;
+  }
+}
+
+/* 側邊欄標題 */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: theme('colors.primary.light');
+  
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: bold;
+    color: theme('colors.primary.default');
+  }
+  
+  .close-btn {
+    color: theme('colors.primary.default');
+  }
+}
+
+/* 側邊欄內容 */
+.sidebar-content {
+  padding: 16px 0;
+}
+
+/* 店家項目 */
+.store-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: theme('colors.primary.light');
+  }
+  
+  .store-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  
+  .store-name {
+    color: theme('colors.primary.default');
+    font-size: 14px;
+    flex: 1;
+  }
+}
+
+/* 登入區域 */
+.login-section {
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 16px;
+  
+  .login-btn {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: theme('colors.primary.default');
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    
+    &:hover {
+      background-color: theme('colors.primary.dark');
+    }
+  }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+    left: -280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100%;
+    left: -100%;
+  }
 }

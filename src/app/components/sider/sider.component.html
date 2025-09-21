@@ -1,32 +1,44 @@
+<!-- 頂部工具欄 -->
 <mat-toolbar class="toolbar">
   <!-- 菜單按鈕 -->
-  <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Menu">
+  <button mat-icon-button (click)="toggleSidebar()" aria-label="Menu">
     <mat-icon>menu</mat-icon>
   </button>
 
   <span class="text-with-shadow">友善黑貓 Friendly Cat</span>
+</mat-toolbar>
 
-  <mat-menu #menu="matMenu">
-    <!-- 標題 -->
-    <div class="menu-header">
-      {{user ? "您收藏的店家" : "登入後可收藏店家"}}
-    </div>
-    <mat-divider></mat-divider>
+<!-- 側邊欄遮罩 -->
+<div class="sidebar-overlay" [class.active]="sidebarOpen" (click)="closeSidebar()"></div>
 
-    <!-- 喜愛店家清單 -->
+<!-- 側邊欄 -->
+<div class="sidebar" [class.open]="sidebarOpen">
+  <!-- 側邊欄標題 -->
+  <div class="sidebar-header">
+    <h3>{{user ? "您收藏的店家" : "登入後可收藏店家"}}</h3>
+    <button mat-icon-button (click)="closeSidebar()" class="close-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <!-- 喜愛店家清單 -->
+  <div class="sidebar-content">
     <ng-container *ngFor="let store of favoriteStores">
-      <button *ngIf="user" mat-menu-item class="custom-menu-item" (click)="onSearchStore(store)">
+      <div *ngIf="user" class="store-item" (click)="onSearchStore(store); closeSidebar()">
         <!-- 根據店名判斷顯示圖標 -->
         <img *ngIf="store.storeName.includes('7-11')" [src]="sevenElevenIconUrl" alt="7-11" class="store-icon" />
         <img *ngIf="store.storeName.includes('全家')" [src]="familyMartIconUrl" alt="FamilyMart" class="store-icon" />
-        <span class="text-gray-600">{{ store.storeName }}</span>
-      </button>
+        <span class="store-name">{{ store.storeName }}</span>
+      </div>
     </ng-container>
 
-    <button mat-menu-item>
-      <div class="px-3 py-1 text-white text-center bg-primary-default rounded-full shadow-sm" (click)="loginOrlogout()">
+    <!-- 登入/登出按鈕 -->
+    <div class="login-section">
+      <button class="login-btn" (click)="loginOrlogout(); closeSidebar()">
         {{ user ? user.displayName + ' 登出' : ' 登入' }}
-      </div>
-    </button>
-  </mat-menu>
-</mat-toolbar>
+      </button>
+    </div>
+  </div>
+</div>
