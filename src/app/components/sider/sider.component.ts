@@ -142,8 +142,6 @@ export class SiderComponent {
 
     // 從 StoreDataService 獲取已載入的商店資料
     const stores = this.storeDataService.getStores();
-    console.log('搜尋食物 - 商店資料:', stores);
-    console.log('搜尋關鍵字:', searchTerm);
     
     if (!stores || stores.length === 0) {
       this.foodSearchResults = [];
@@ -253,7 +251,6 @@ export class SiderComponent {
       return a.distance - b.distance; // 精確度相同時按距離排序
     });
 
-    console.log('搜尋結果:', results);
     this.foodSearchResults = results;
     this.isSearching = false;
   }

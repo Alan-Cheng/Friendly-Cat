@@ -124,7 +124,6 @@ export class LoginPageComponent {
       .then(userCredential => {
         const user = userCredential.user;
 
-        console.log(user);
 
         // 檢查信箱是否已驗證
         if (user && !user.emailVerified) {
@@ -132,7 +131,6 @@ export class LoginPageComponent {
           return;
         }
 
-        console.log('一般登入成功');
         const dialogRef = this.dialog.open(MessageDialogComponent, {
           width: '300px', // 設定對話框的寬度
           data: {
@@ -190,7 +188,6 @@ export class LoginPageComponent {
       .then(userCredential => {
         const user = userCredential.user;
 
-        console.log("驗證信重發給", user);
 
         if (user) {
           this.authService.sendVerificationEmail(user);
@@ -211,7 +208,6 @@ export class LoginPageComponent {
       .loginWithGoogle()
       .then((userCredential) => {
         const user = userCredential.user;
-        console.log('Google登入成功');
         const dialogRef = this.dialog.open(MessageDialogComponent, {
           width: '300px', // 設定對話框的寬度
           data: {

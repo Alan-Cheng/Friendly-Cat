@@ -92,7 +92,6 @@ export class ChatbotComponent {
         .filter(store => !(store.label === '7-11' && store.remainingQty === 0))
         .slice(0, 10);
 
-      console.log('Filtered storesInfo:', this.storesInfo);
 
       const input = this.userInput;
       this.userInput = ''; // 清空輸入
