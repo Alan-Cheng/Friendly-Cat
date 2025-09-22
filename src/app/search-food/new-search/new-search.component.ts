@@ -928,8 +928,15 @@ export class NewSearchComponent implements OnInit {
     // 清除商店列表
     this.totalStoresShowList = [];
     
+    // 確保商店資料有正確的屬性，避免觸發「無折扣商品」訊息
+    const storeData = {
+      ...result.store,
+      distance: 0, // 設為 0 表示這是目標商店
+      remainingQty: result.remainingQty || 1 // 確保有庫存
+    };
+    
     // 直接設定商店資料
-    this.totalStoresShowList = [result.store];
+    this.totalStoresShowList = [storeData];
     
     // 更新 StoreDataService
     this.storeDataService.setStores(this.totalStoresShowList);
