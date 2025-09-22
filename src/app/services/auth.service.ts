@@ -34,12 +34,10 @@ export class AuthService {
       if (user) {
         // 設定顯示名稱
         updateProfile(user, { displayName }).then(() => {
-          console.log('使用者名稱已更新:', displayName);
         });
   
         // 發送驗證信件
         sendEmailVerification(user).then(() => {
-          console.log('驗證信已發送至:', email);
         });
   
         return user;
@@ -110,7 +108,6 @@ export class AuthService {
     return this.afAuth.sendPasswordResetEmail(email)
       .then(() => {
         // 成功後的操作
-        console.log('重設密碼的郵件已發送');
       })
       .catch(error => {
         // 失敗後的錯誤處理

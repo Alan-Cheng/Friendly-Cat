@@ -177,7 +177,6 @@ export class NewSearchComponent implements OnInit {
       switchMap((token: any) => {
         if (token && token.element) {
           sessionStorage.setItem('711Token', token.element);
-          console.log('Stored 711Token');
           // 如果 token 儲存成功，發送 getFoodCategory 請求
           return this.sevenElevenService.getFoodCategory();
         } else {
@@ -269,7 +268,6 @@ export class NewSearchComponent implements OnInit {
               this.latitude = lat;
               this.longitude = lng;
 
-              console.log('已取得位置');
 
               return of([]);
             }),
@@ -523,11 +521,6 @@ export class NewSearchComponent implements OnInit {
     const storeName = event?.option.value.name;
     const storeLongitude = lng !== undefined ? lng : Number(event?.option.value.longitude);
     const storeLatitude = lat !== undefined ? lat : Number(event?.option.value.latitude);
-    // console.log('Store Type:', label);
-    // console.log('Store Name:', storeName);
-    // console.log('Store Longitude:', storeLongitude);
-    // console.log('Store Latitude:', storeLatitude);
-    // console.log('Selected Option:', event.option.value);
 
     this.loadingService.show("正在搜尋店家喵")
     from(this.geolocationService.getCurrentPosition())
@@ -554,7 +547,6 @@ export class NewSearchComponent implements OnInit {
         switchMap((token: any) => {
           if (token && token.element) {
             sessionStorage.setItem('711Token', token.element);
-            console.log('Stored 711Token');
             // 如果 token 儲存成功，發送 getFoodCategory 請求
             return this.sevenElevenService.getFoodCategory();
           } else {
@@ -576,7 +568,6 @@ export class NewSearchComponent implements OnInit {
   }
 
   onSubmit(): void {
-    console.log('輸入的搜尋關鍵字:', this.searchSelectedStore);
   }
 
   onUseCurrentLocation(): void {
@@ -615,7 +606,6 @@ export class NewSearchComponent implements OnInit {
         switchMap((token: any) => {
           if (token && token.element) {
             sessionStorage.setItem('711Token', token.element);
-            console.log('Stored 711Token');
             // 如果 token 儲存成功，發送 getFoodCategory 請求
             return this.sevenElevenService.getFoodCategory();
           } else {
@@ -668,7 +658,6 @@ export class NewSearchComponent implements OnInit {
 
     if (storeLatitude && storeLongitude) {
       this.totalStoresShowList.sort((a, b) => a.distance - b.distance);
-      console.log('使用者搜尋店家附近的商店:', this.totalStoresShowList);
       // if(this.totalStoresShowList[0].distance > 1 || this.totalStoresShowList[0].remainingQty === 0){
       //   const dialogRef = this.dialog.open(MessageDialogComponent, {
       //     data: {
@@ -693,7 +682,6 @@ export class NewSearchComponent implements OnInit {
     else{
       // 根據距離排序
       this.totalStoresShowList.sort((a, b) => a.distance - b.distance);
-      console.log('使用者附近的商店:', this.totalStoresShowList);
     }
   }
 
@@ -787,7 +775,6 @@ export class NewSearchComponent implements OnInit {
       const userRef = this.firestore.collection('users').doc(this.user.uid);
       userRef.collection('favorites').valueChanges().subscribe(favorites => {
         this.favoriteStores = favorites;
-        console.log('favoriteStores', this.favoriteStores)
       });
     }
   }
@@ -837,7 +824,6 @@ export class NewSearchComponent implements OnInit {
         });
       }
     } else {
-      console.log('用戶尚未登入或信箱未驗證');
     }
   }
 
@@ -857,7 +843,6 @@ export class NewSearchComponent implements OnInit {
   }
 
   onFavoriteStoreSearch(store: any) {
-    console.log("搜尋收藏店家", store);
     this.loadingService.show("幫你找看看唷");
     // 用最白癡的方法，把店家的經緯度找出來，直接用onOptionSelect()搞一波
     var lat = 0;
@@ -902,7 +887,6 @@ export class NewSearchComponent implements OnInit {
             if (res) {
               lat = res.element[0].Latitude;
               lng = res.element[0].Longitude;
-              console.log(lat, lng);
               this.onOptionSelect(null, lat, lng);
               this.searchTerm = '';
             } else {
@@ -916,7 +900,6 @@ export class NewSearchComponent implements OnInit {
 
   // 處理食物搜尋結果
   onFoodSearchResult(result: any) {
-    console.log("食物搜尋結果", result);
     this.loadingService.show("正在跳轉到商店...");
     
     // 設定搜尋詞
