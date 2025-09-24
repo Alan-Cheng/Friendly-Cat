@@ -8,7 +8,7 @@ import { Observable, switchMap } from 'rxjs';
 export class LlmRequestService {
 
   url = "https://openrouter.ai/api/v1/chat/completions";
-  model = "deepseek/deepseek-chat-v3-0324:free";
+  model = "x-ai/grok-4-fast:free";
   
   constructor(
     private requestService: RequestService
