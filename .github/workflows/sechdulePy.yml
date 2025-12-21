@@ -48,11 +48,12 @@ jobs:
           
           # 移動 JSON 檔案到根目錄的 assets 資料夾
           cp docs/assets/seven_eleven_products.json assets/
+          cp docs/assets/seven_eleven_stores.json assets/
           cp docs/assets/family_mart_stores.json assets/
           cp docs/assets/family_mart_products.json assets/
         
           # 加入欲提交檔案
-          git add assets/seven_eleven_products.json assets/family_mart_stores.json assets/family_mart_products.json
+          git add assets/seven_eleven_products.json assets/seven_eleven_stores.json assets/family_mart_stores.json assets/family_mart_products.json
       
           # 如果有變更就提交
           git diff --cached --exit-code || git commit -m "CI: 爬蟲靜態資源更新 - $(date '+%Y-%m-%d %H:%M:%S')"
