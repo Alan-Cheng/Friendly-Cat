@@ -4,6 +4,7 @@ import json
 import os
 import pandas as pd
 import re
+from pypinyin import lazy_pinyin, Style
 
 # 目標 API 基本 URL
 base_url = "https://www.7-11.com.tw/freshfoods/Read_Food_xml_hot.aspx"
@@ -59,6 +60,18 @@ with open(output_file, "w", encoding="utf-8") as json_file:
 print(f"資料已成功儲存至 JSON 檔案：{output_file}")
 
 
+# 拼音轉換函數
+def get_pinyin(text):
+    """
+    將中文文字轉換為拼音（不帶聲調）
+    例如：'全家田中金斗店' -> 'quan jia tian zhong jin dou dian'
+    """
+    if not text:
+        return ""
+    # 使用 lazy_pinyin 轉換，不帶聲調，保留非中文字符
+    pinyin_list = lazy_pinyin(text, style=Style.NORMAL)
+    return " ".join(pinyin_list)
+
 
 # API URL
 url = 'https://family.map.com.tw/famiport/api/dropdownlist/Select_StoreName'
@@ -75,6 +88,14 @@ response = requests.post(url, json=post_data)
 if response.status_code == 200:
     data = response.json()  # 取得 JSON 格式的資料
 
+    # 為每個店家添加拼音欄位
+    if isinstance(data, list):
+        for store in data:
+            if 'Name' in store:
+                store['Name_pinyin'] = get_pinyin(store['Name'])
+            if 'addr' in store:
+                store['addr_pinyin'] = get_pinyin(store['addr'])
+
     # 設定儲存的路徑，修改為 docs/assets/
     file_path = os.path.join(os.getcwd(), 'docs', 'assets', 'family_mart_stores.json')
 
@@ -85,7 +106,7 @@ if response.status_code == 200:
     with open(file_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-    print(f"資料已儲存到 {file_path}")
+    print(f"資料已儲存到 {file_path}（已添加拼音欄位）")
 else:
     print("請求失敗，無法取得資料")
 
