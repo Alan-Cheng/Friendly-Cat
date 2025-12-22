@@ -51,6 +51,8 @@ export interface fStore {
   px_wgs84: string;       // 經度
   py_wgs84: string;       // 緯度
   serid: string;
+  Name_pinyin?: string;  // 店名拼音
+  addr_pinyin?: string;  // 地址拼音
 }
 
 export interface FoodDetailFamilyMart {

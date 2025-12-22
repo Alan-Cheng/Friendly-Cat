@@ -23,6 +23,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { getDistance } from 'geolib';
 
 import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { pinyin } from 'pinyin-pro';
 
 @Component({
   selector: 'app-new-search',
@@ -46,6 +47,7 @@ export class NewSearchComponent implements OnInit {
 
   dropDown711List: Store[] = [];
   dropDownFamilyMartList: fStore[] = [];
+  all711Stores: any[] = []; // 儲存所有 7-11 商店資料（包含拼音）
   unifiedDropDownList: any[] = [];
 
 
@@ -169,6 +171,8 @@ export class NewSearchComponent implements OnInit {
 
     //取得所有全家商店名稱資訊
     this.getFamilyMartAllStore();
+    //取得所有 7-11 商店名稱資訊
+    this.getSevenElevenAllStore();
 
     of(true).pipe(
       switchMap(() => {
@@ -206,6 +210,14 @@ export class NewSearchComponent implements OnInit {
     this.familyMartService.getStores().subscribe((data) => {
       if(data.length > 0) {
         this.dropDownFamilyMartList = data;
+      }
+    })
+  }
+
+  getSevenElevenAllStore() {
+    this.sevenElevenService.getStores().subscribe((data) => {
+      if(data && data.length > 0) {
+        this.all711Stores = data;
       }
     })
   }
@@ -250,253 +262,204 @@ export class NewSearchComponent implements OnInit {
     this.searchInput$.next(input); // 將輸入值推到 Subject
   }
 
-  // 這寫的真他媽醜到爆
+  // 將中文轉換為拼音（不帶聲調，空格分隔）
+  convertToPinyin(text: string): string {
+    if (!text) return '';
+    try {
+      // pinyin-pro 預設返回字串，使用 toneType: 'none' 來移除聲調
+      const result = pinyin(text, { toneType: 'none' }) as string;
+      return result.replace(/\s+/g, ' ').trim();
+    } catch (error) {
+      console.error('拼音轉換錯誤:', error);
+      return text;
+    }
+  }
+
+  // 檢查文字是否匹配（支援中文、拼音和模糊比對）
+  matchesSearchTerm(text: string, pinyinText: string, searchTerm: string): boolean {
+    if (!searchTerm) return true;
+    
+    const lowerSearchTerm = searchTerm.toLowerCase().trim();
+    const lowerText = text.toLowerCase();
+    const lowerPinyin = pinyinText.toLowerCase();
+    
+    // 1. 直接文字比對（包含）
+    if (lowerText.includes(lowerSearchTerm)) {
+      return true;
+    }
+    
+    // 2. 拼音比對（包含）
+    if (lowerPinyin.includes(lowerSearchTerm)) {
+      return true;
+    }
+    
+    // 3. 如果搜尋詞是中文，轉換為拼音後比對
+    const searchTermPinyin = this.convertToPinyin(searchTerm).toLowerCase();
+    if (searchTermPinyin && lowerPinyin.includes(searchTermPinyin)) {
+      return true;
+    }
+    
+    // 4. 移除空格後比對（處理拼音中的空格）
+    const pinyinNoSpace = lowerPinyin.replace(/\s+/g, '');
+    const searchNoSpace = lowerSearchTerm.replace(/\s+/g, '');
+    if (pinyinNoSpace.includes(searchNoSpace)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  // 使用本地 JSON 資料和拼音比對進行搜尋
   handleSearch(input: string): void {
     if (input.length >= 0) {
       this.loadingService.show("正在為您搜尋店家");
-
       this.unifiedDropDownList = [];
 
-      // 要先取得所在位置用於後續下拉選單搜尋排序
-      if (!this.latitude && !this.longitude) {
-        from(this.geolocationService.getCurrentPosition())
-          .pipe(
+      // 取得位置資訊（用於排序）
+      const getLocationAndSearch = () => {
+        if (!this.latitude || !this.longitude) {
+          return from(this.geolocationService.getCurrentPosition()).pipe(
             switchMap((position) => {
-              const lat = position.coords.latitude;
-              const lng = position.coords.longitude;
-
-              this.latitude = lat;
-              this.longitude = lng;
-
-
-              return of([]);
-            }),
-            switchMap(() => {
-              return this.sevenElevenService.getAccessToken();
-            }),
-            switchMap((token) => {
-              if (token && token.element) {
-                sessionStorage.setItem('711Token', token.element);
-                return  this.sevenElevenService.getStoreByAddress(input);
-              }
-              else{
-                return [];
-              }
+              this.latitude = position.coords.latitude;
+              this.longitude = position.coords.longitude;
+              return of(null);
             })
-          ).subscribe((data) => {
-            if(data && data.isSuccess){
-              this.dropDown711List = data.element;
+          );
+        }
+        return of(null);
+      };
 
-              // 刪掉全家兩個字以免使用者誤搜，篩選 unifiedDropDownList，篩選條件是 Name 和 addr 都包含 input
-              const filteredDropDownFamilyMartList = this.dropDownFamilyMartList
-              .map(item => ({
-                ...item,
-                Name: item.Name.replace('全家', '')  // 去除 "全家" 字串
-              }))
-              .filter(item =>
-                input.length === 0 || item.Name.includes(input) || item.addr.includes(input)
-              );
+      getLocationAndSearch().subscribe(() => {
+        // 篩選全家商店（使用拼音比對）
+        const filteredDropDownFamilyMartList = this.dropDownFamilyMartList
+          .map(item => ({
+            ...item,
+            Name: item.Name.replace('全家', '')  // 去除 "全家" 字串
+          }))
+          .filter(item => {
+            if (input.length === 0) return true;
+            return this.matchesSearchTerm(item.Name, item.Name_pinyin || '', input) ||
+                   this.matchesSearchTerm(item.addr, item.addr_pinyin || '', input);
+          });
 
-              // 刪掉711兩個字以免使用者誤搜，篩選 unifiedDropDownList，篩選條件是 Name 和 addr 都包含 input
-              const filteredDropDown711List = this.dropDown711List
-              .map(item => ({
-                ...item,
-                Name: item.StoreName.replace('711', '')  // 去除 "711" 字串
-              }))
-              .filter(item =>
-                input.length === 0 || item.Name.includes(input) || item.Address.includes(input)
-              );
+        // 篩選 7-11 商店（使用拼音比對）
+        const filteredDropDown711List = this.all711Stores
+          .map(item => ({
+            ...item,
+            name: item.name || '',
+            addr: item.addr || ''
+          }))
+          .filter(item => {
+            if (input.length === 0) return true;
+            return this.matchesSearchTerm(item.name, item.name_pinyin || '', input) ||
+                   this.matchesSearchTerm(item.addr, item.addr_pinyin || '', input);
+          });
 
-              // 統一兩個列表的名稱欄位
-              const normalizedFamilyMartList = filteredDropDownFamilyMartList.map(item => ({
-                name: item.Name,  // 統一名稱欄位
-                addr: item.addr,
-                label: '全家',
-                longitude: item.px_wgs84,
-                latitude: item.py_wgs84
-              }));
+        // 統一兩個列表的名稱欄位
+        const normalizedFamilyMartList = filteredDropDownFamilyMartList.map(item => ({
+          name: item.Name,
+          addr: item.addr,
+          label: '全家',
+          longitude: parseFloat(item.px_wgs84),
+          latitude: parseFloat(item.py_wgs84)
+        }));
 
-              const normalized711List = filteredDropDown711List.map(item => ({
-                name: item.StoreName,  // 統一名稱欄位
-                addr: item.Address,
-                label: '7-11',
-                longitude: item.Longitude,
-                latitude: item.Latitude
-              }));
+        const normalized711List = filteredDropDown711List.map(item => ({
+          name: item.name,
+          addr: item.addr,
+          label: '7-11',
+          longitude: parseFloat(item.lng),
+          latitude: parseFloat(item.lat)
+        }));
 
-              normalized711List.forEach(item => {
-                if (!this.unifiedDropDownList.some(existingItem => existingItem.name === item.name && existingItem.addr === item.addr)) {
-                  this.unifiedDropDownList.push(item);  // 只有當 unifedDropDownList 中沒有該元素時才添加
-                }
-              });
-
-              normalizedFamilyMartList.forEach(item => {
-                if (!this.unifiedDropDownList.some(existingItem => existingItem.name === item.name && existingItem.addr === item.addr)) {
-                  this.unifiedDropDownList.push(item);  // 只有當 unifedDropDownList 中沒有該元素時才添加
-                }
-              });
-
-              // 按照經緯度算出距離排序unifiedDropDownList
-              const nameGroup = this.unifiedDropDownList
-                .filter(item => input.length === 0 || item.name.includes(input)) // 篩選 name 包含 input 的元素
-                .sort((a, b) => {
-                  const distanceA = getDistance(
-                    { latitude: this.latitude, longitude: this.longitude },
-                    { latitude: a.latitude, longitude: a.longitude }
-                  );
-                  const distanceB = getDistance(
-                    { latitude: this.latitude, longitude: this.longitude },
-                    { latitude: b.latitude, longitude: b.longitude }
-                  );
-                  return distanceA - distanceB; // 按距離升序排序
-                });
-
-              const addrGroup = this.unifiedDropDownList
-                .filter(item => (input.length === 0 || item.addr.includes(input)) && !nameGroup.includes(item)) // 篩選 addr 包含 input 的元素，排除已在 nameGroup 的元素
-                .sort((a, b) => {
-                  const distanceA = getDistance(
-                    { latitude: this.latitude, longitude: this.longitude },
-                    { latitude: a.latitude, longitude: a.longitude }
-                  );
-                  const distanceB = getDistance(
-                    { latitude: this.latitude, longitude: this.longitude },
-                    { latitude: b.latitude, longitude: b.longitude }
-                  );
-                  return distanceA - distanceB; // 按距離升序排序
-                });
-
-              this.unifiedDropDownList = [...nameGroup, ...addrGroup];
-
-              if (this.unifiedDropDownList.length === 0) {
-                this.loadingService.show("好像找不到店家耶～請重新搜尋");
-                setTimeout(() => {
-                  this.loadingService.hide();
-                }, 2000);
-              }
-              else{
-                this.loadingService.hide();
-              }
-            }
-          },
-          (error) => {
-            console.error('API 請求錯誤:', error);
-            this.loadingService.hide();
+        // 合併列表並去重
+        this.unifiedDropDownList = [];
+        normalized711List.forEach(item => {
+          if (!this.unifiedDropDownList.some(existingItem => existingItem.name === item.name && existingItem.addr === item.addr)) {
+            this.unifiedDropDownList.push(item);
           }
-        );
-      }
-      else {
-        of(true).pipe(
-          switchMap(() => {
-            return this.sevenElevenService.getAccessToken();
-          }),
-          switchMap((token) => {
-            if (token && token.element) {
-              sessionStorage.setItem('711Token', token.element);
-              return this.sevenElevenService.getStoreByAddress(input)
-            }
-            else {
-              return of([])
-            }
-          })
-        ).subscribe((data) => {
-          if (data && data.isSuccess) {
-            this.dropDown711List = data.element;
-
-            // 刪掉全家兩個字以免使用者誤搜，篩選 unifiedDropDownList，篩選條件是 Name 和 addr 都包含 input
-            const filteredDropDownFamilyMartList = this.dropDownFamilyMartList
-              .map(item => ({
-                ...item,
-                Name: item.Name.replace('全家', '')  // 去除 "全家" 字串
-              }))
-              .filter(item =>
-                input.length === 0 || item.Name.includes(input) || item.addr.includes(input)
-              );
-
-            // 刪掉711兩個字以免使用者誤搜，篩選 unifiedDropDownList，篩選條件是 Name 和 addr 都包含 input
-            const filteredDropDown711List = this.dropDown711List
-            .map(item => ({
-              ...item,
-              Name: item.StoreName.replace('711', '')  // 去除 "711" 字串
-            }))
-            .filter(item =>
-              input.length === 0 || item.Name.includes(input) || item.Address.includes(input)
-            );
-
-            // 統一兩個列表的名稱欄位
-            const normalizedFamilyMartList = filteredDropDownFamilyMartList.map(item => ({
-              name: item.Name,  // 統一名稱欄位
-              addr: item.addr,
-              label: '全家',
-              longitude: item.px_wgs84,
-              latitude: item.py_wgs84
-            }));
-
-            const normalized711List = filteredDropDown711List.map(item => ({
-              name: item.StoreName,  // 統一名稱欄位
-              addr: item.Address,
-              label: '7-11',
-              longitude: item.Longitude,
-              latitude: item.Latitude
-            }));
-
-            normalized711List.forEach(item => {
-              if (!this.unifiedDropDownList.some(existingItem => existingItem.name === item.name && existingItem.addr === item.addr)) {
-                this.unifiedDropDownList.push(item);  // 只有當 unifedDropDownList 中沒有該元素時才添加
-              }
-            });
-
-            normalizedFamilyMartList.forEach(item => {
-              if (!this.unifiedDropDownList.some(existingItem => existingItem.name === item.name && existingItem.addr === item.addr)) {
-                this.unifiedDropDownList.push(item);  // 只有當 unifedDropDownList 中沒有該元素時才添加
-              }
-            });
-
-            const nameGroup = this.unifiedDropDownList
-              .filter(item => input.length === 0 || item.name.includes(input)) // 篩選 name 包含 input 的元素
-              .sort((a, b) => {
-                const distanceA = getDistance(
-                  { latitude: this.latitude, longitude: this.longitude },
-                  { latitude: a.latitude, longitude: a.longitude }
-                );
-                const distanceB = getDistance(
-                  { latitude: this.latitude, longitude: this.longitude },
-                  { latitude: b.latitude, longitude: b.longitude }
-                );
-                return distanceA - distanceB; // 按距離升序排序
-              });
-
-            const addrGroup = this.unifiedDropDownList
-              .filter(item => (input.length === 0 || item.addr.includes(input)) && !nameGroup.includes(item)) // 篩選 addr 包含 input 的元素，排除已在 nameGroup 的元素
-              .sort((a, b) => {
-                const distanceA = getDistance(
-                  { latitude: this.latitude, longitude: this.longitude },
-                  { latitude: a.latitude, longitude: a.longitude }
-                );
-                const distanceB = getDistance(
-                  { latitude: this.latitude, longitude: this.longitude },
-                  { latitude: b.latitude, longitude: b.longitude }
-                );
-                return distanceA - distanceB; // 按距離升序排序
-              });
-
-            this.unifiedDropDownList = [...nameGroup, ...addrGroup];
-
-            if (this.unifiedDropDownList.length === 0) {
-              this.loadingService.show("好像找不到店家耶～請重新搜尋");
-              setTimeout(() => {
-                this.loadingService.hide();
-              }, 2000);
-            }
-            else {
-              this.loadingService.hide();
-            }
-          }
-        },
-        (error) => {
-          console.error('API 請求錯誤:', error);
-          this.loadingService.hide();
         });
-      }
+
+        normalizedFamilyMartList.forEach(item => {
+          if (!this.unifiedDropDownList.some(existingItem => existingItem.name === item.name && existingItem.addr === item.addr)) {
+            this.unifiedDropDownList.push(item);
+          }
+        });
+
+        // 如果有位置資訊，按距離排序，並優先顯示名稱匹配的結果
+        if (this.latitude && this.longitude && input.length > 0) {
+          // 建立映射以便快速查找
+          const familyMartMap = new Map(filteredDropDownFamilyMartList.map(fm => [`${fm.Name}|${fm.addr}`, fm]));
+          const sevenElevenMap = new Map(filteredDropDown711List.map(se => [`${se.name}|${se.addr}`, se]));
+
+          const nameGroup = this.unifiedDropDownList
+            .filter(item => {
+              const key = `${item.name}|${item.addr}`;
+              const familyMartItem = familyMartMap.get(key);
+              const sevenElevenItem = sevenElevenMap.get(key);
+              
+              if (familyMartItem) {
+                return this.matchesSearchTerm(familyMartItem.Name, familyMartItem.Name_pinyin || '', input);
+              }
+              if (sevenElevenItem) {
+                return this.matchesSearchTerm(sevenElevenItem.name, sevenElevenItem.name_pinyin || '', input);
+              }
+              return false;
+            })
+            .sort((a, b) => {
+              const distanceA = getDistance(
+                { latitude: this.latitude, longitude: this.longitude },
+                { latitude: a.latitude, longitude: a.longitude }
+              );
+              const distanceB = getDistance(
+                { latitude: this.latitude, longitude: this.longitude },
+                { latitude: b.latitude, longitude: b.longitude }
+              );
+              return distanceA - distanceB;
+            });
+
+          const addrGroup = this.unifiedDropDownList
+            .filter(item => !nameGroup.includes(item))
+            .sort((a, b) => {
+              const distanceA = getDistance(
+                { latitude: this.latitude, longitude: this.longitude },
+                { latitude: a.latitude, longitude: a.longitude }
+              );
+              const distanceB = getDistance(
+                { latitude: this.latitude, longitude: this.longitude },
+                { latitude: b.latitude, longitude: b.longitude }
+              );
+              return distanceA - distanceB;
+            });
+
+          this.unifiedDropDownList = [...nameGroup, ...addrGroup];
+        } else if (this.latitude && this.longitude) {
+          // 如果沒有搜尋詞，直接按距離排序
+          this.unifiedDropDownList.sort((a, b) => {
+            const distanceA = getDistance(
+              { latitude: this.latitude, longitude: this.longitude },
+              { latitude: a.latitude, longitude: a.longitude }
+            );
+            const distanceB = getDistance(
+              { latitude: this.latitude, longitude: this.longitude },
+              { latitude: b.latitude, longitude: b.longitude }
+            );
+            return distanceA - distanceB;
+          });
+        }
+
+        if (this.unifiedDropDownList.length === 0) {
+          this.loadingService.show("好像找不到店家耶～請重新搜尋");
+          setTimeout(() => {
+            this.loadingService.hide();
+          }, 2000);
+        } else {
+          this.loadingService.hide();
+        }
+      }, (error) => {
+        console.error('取得位置錯誤:', error);
+        this.loadingService.hide();
+      });
     } else {
       this.unifiedDropDownList = [];
     }
@@ -844,7 +807,7 @@ export class NewSearchComponent implements OnInit {
 
   onFavoriteStoreSearch(store: any) {
     this.loadingService.show("幫你找看看唷");
-    // 用最白癡的方法，把店家的經緯度找出來，直接用onOptionSelect()搞一波
+    // 從本地 JSON 資料找出店家的經緯度
     var lat = 0;
     var lng = 0;
     if (store.label === "全家") {
@@ -854,47 +817,44 @@ export class NewSearchComponent implements OnInit {
       this.searchTerm = '';
     }
     else {
-      from(this.geolocationService.getCurrentPosition())
-        .pipe(
-          switchMap((position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-
-            this.latitude = lat;
-            this.longitude = lng;
-
-            return of([]);
-          }),
-          switchMap((res) => {
-            if(res) {
-              return this.sevenElevenService.getAccessToken();
-            }
-            else{
-              return [];
-            }
-          }),
-          switchMap((token: any) => {
-            if (token && token.element) {
-              sessionStorage.setItem('711Token', token.element);
-              return this.sevenElevenService.getStoreByAddress(store.store711Name);
-            } else {
-              // 如果 token 沒有成功返回，返回空陣列
-              return of([]);
-            }
-          })
-        ).subscribe(
-          (res) => {
-            if (res) {
-              lat = res.element[0].Latitude;
-              lng = res.element[0].Longitude;
+      // 從本地 7-11 商店資料中尋找
+      const foundStore = this.all711Stores.find(s => 
+        s.name === store.store711Name || 
+        (store.store711Name && s.name.includes(store.store711Name.replace('711', '').trim()))
+      );
+      
+      if (foundStore) {
+        lat = parseFloat(foundStore.lat);
+        lng = parseFloat(foundStore.lng);
+        this.onOptionSelect(null, lat, lng);
+        this.searchTerm = '';
+      } else {
+        // 如果找不到，嘗試取得位置後再搜尋
+        from(this.geolocationService.getCurrentPosition())
+          .pipe(
+            switchMap((position) => {
+              this.latitude = position.coords.latitude;
+              this.longitude = position.coords.longitude;
+              return of(null);
+            })
+          ).subscribe(() => {
+            // 使用拼音比對再次搜尋
+            const searchTerm = store.store711Name?.replace('711', '').trim() || '';
+            const matchedStore = this.all711Stores.find(s => 
+              this.matchesSearchTerm(s.name, s.name_pinyin || '', searchTerm)
+            );
+            
+            if (matchedStore) {
+              lat = parseFloat(matchedStore.lat);
+              lng = parseFloat(matchedStore.lng);
               this.onOptionSelect(null, lat, lng);
               this.searchTerm = '';
             } else {
-              console.error('Failed to fetch food categories');
+              console.error('找不到 7-11 商店:', store.store711Name);
               this.loadingService.hide();
             }
-          }
-        );
+          });
+      }
     }
   }
 

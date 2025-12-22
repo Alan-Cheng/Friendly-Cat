@@ -68,4 +68,9 @@ export class SevenElevenRequestService {
     const url = 'https://alan-cheng.github.io/Friendly-Cat/assets/seven_eleven_products.json'
     return this.requestService.get(url)
   }
+
+  getStores(): Observable<any> {
+    const url = 'https://alan-cheng.github.io/Friendly-Cat/assets/seven_eleven_stores.json'
+    return this.requestService.get(url)
+  }
 }
