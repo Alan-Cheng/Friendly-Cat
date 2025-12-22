@@ -5,6 +5,10 @@ on:
     branches:
       - main
       - cloudflare-page
+    paths-ignore:
+      - 'README.md'
+      - '**.md'
+      - 'demo/**'
 
 permissions:
   contents: write
