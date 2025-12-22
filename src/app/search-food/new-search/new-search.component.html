@@ -49,8 +49,8 @@
               <!-- input框 -->
               <input mat-input
                 class="flex w-full flex-1 resize-none overflow-hidden rounded-lg text-primary-default focus:outline-none focus:ring-0 border-none bg-primary-light focus:border-transparent focus:bg-inherit h-full placeholder:text-primary-default px-4 rounded-l-none border-l-3 pl-2 text-base font-normal leading-normal"
-                [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onInput($event)"
-                placeholder="輸入兩個字以上的店名或地址搜尋" name="first" />
+                [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onInput($event)" (keydown)="onKeyDown($event)"
+                placeholder="輸入店名或地址後按 Enter 或點擊查詢按鈕搜尋" name="first" />
             </div>
           </label>
         </div>
@@ -76,10 +76,24 @@
         </mat-option>
       </mat-autocomplete>
 
-      <!-- 使用目前位置按鈕開始 -->
-      <div class="flex px-4 py-3 justify-center items-center">
+      <!-- 按鈕區域開始 -->
+      <div class="flex px-4 py-3 justify-center items-center gap-3">
+        <!-- 查詢按鈕 -->
+        <button type="submit"
+          class="flex min-w-[84px] max-w-[240px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary-default text-white gap-2 pl-4 text-sm font-bold leading-normal tracking-[0.015em] text-xs sm:text-sm md:text-base">
+          <div class="text-white" data-icon="MagnifyingGlass" data-size="20px" data-weight="regular">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor"
+              viewBox="0 0 256 256">
+              <path
+                d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z">
+              </path>
+            </svg>
+          </div>
+          <span class="truncate">查詢</span>
+        </button>
+        <!-- 使用目前位置按鈕 -->
         <button type="button" (click)="onUseCurrentLocation()"
-          class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-success text-white gap-2 pl-4 text-sm font-bold leading-normal tracking-[0.015em] text-xs sm:text-sm md:text-base">
+          class="flex min-w-[84px] max-w-[240px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-success text-white gap-2 pl-4 text-sm font-bold leading-normal tracking-[0.015em] text-xs sm:text-sm md:text-base">
           <div class="text-white" data-icon="MapPin" data-size="20px" data-weight="regular">
             <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor"
               viewBox="0 0 256 256">
@@ -91,7 +105,7 @@
           <span class="truncate">使用目前位置</span>
         </button>
       </div>
-      <!-- 使用目前位置按鈕結束 -->
+      <!-- 按鈕區域結束 -->
     </form>
   </ng-container>
 </div>

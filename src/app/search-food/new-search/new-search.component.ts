@@ -50,6 +50,9 @@ export class NewSearchComponent implements OnInit {
   all711Stores: any[] = []; // 儲存所有 7-11 商店資料（包含拼音）
   unifiedDropDownList: any[] = [];
 
+  // 拼音轉換快取：避免重複轉換相同的文字
+  private pinyinCache = new Map<string, string>();
+
 
   sevenElevenIconUrl = environment.sevenElevenUrl.icon;
   familyMartIconUrl = environment.familyMartUrl.icon;
@@ -97,14 +100,8 @@ export class NewSearchComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.searchInput$
-    .pipe(
-      debounceTime(300), // 等待使用者停止輸入 300ms
-      distinctUntilChanged() // 避免重複的相同輸入
-    )
-    .subscribe((input) => {
-      this.handleSearch(input);
-    });
+    // 移除自動搜尋，改為手動觸發（Enter 或按鈕）
+    // this.searchInput$ 不再自動訂閱
     this.init();
   }
 
@@ -258,17 +255,40 @@ export class NewSearchComponent implements OnInit {
   }
 
   onInput(event: Event): void {
+    // 只更新 searchTerm，不觸發搜尋
     const input = (event.target as HTMLInputElement).value;
-    this.searchInput$.next(input); // 將輸入值推到 Subject
+    this.searchTerm = input;
+    // 清空下拉選單，等待使用者按下 Enter 或查詢按鈕
+    this.unifiedDropDownList = [];
+  }
+
+  onKeyDown(event: KeyboardEvent): void {
+    // 按下 Enter 鍵時觸發搜尋
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.performSearch();
+    }
   }
 
   // 將中文轉換為拼音（不帶聲調，空格分隔）
+  // 使用快取避免重複轉換相同的文字
   convertToPinyin(text: string): string {
     if (!text) return '';
+    
+    // 檢查快取
+    if (this.pinyinCache.has(text)) {
+      return this.pinyinCache.get(text)!;
+    }
+    
     try {
       // pinyin-pro 預設返回字串，使用 toneType: 'none' 來移除聲調
       const result = pinyin(text, { toneType: 'none' }) as string;
-      return result.replace(/\s+/g, ' ').trim();
+      const pinyinResult = result.replace(/\s+/g, ' ').trim();
+      
+      // 存入快取
+      this.pinyinCache.set(text, pinyinResult);
+      
+      return pinyinResult;
     } catch (error) {
       console.error('拼音轉換錯誤:', error);
       return text;
@@ -372,19 +392,22 @@ export class NewSearchComponent implements OnInit {
           latitude: parseFloat(item.lat)
         }));
 
-        // 合併列表並去重
+        // 合併列表並去重（使用 Set 優化，從 O(n²) 降到 O(n)）
+        const storeKeySet = new Set<string>();
         this.unifiedDropDownList = [];
-        normalized711List.forEach(item => {
-          if (!this.unifiedDropDownList.some(existingItem => existingItem.name === item.name && existingItem.addr === item.addr)) {
+        
+        // 使用 Set 來追蹤已加入的商店（key = name + addr）
+        const addToUnifiedList = (item: any) => {
+          const key = `${item.name}|${item.addr}`;
+          if (!storeKeySet.has(key)) {
+            storeKeySet.add(key);
             this.unifiedDropDownList.push(item);
           }
-        });
-
-        normalizedFamilyMartList.forEach(item => {
-          if (!this.unifiedDropDownList.some(existingItem => existingItem.name === item.name && existingItem.addr === item.addr)) {
-            this.unifiedDropDownList.push(item);
-          }
-        });
+        };
+        
+        // 先加入 7-11，再加入全家
+        normalized711List.forEach(addToUnifiedList);
+        normalizedFamilyMartList.forEach(addToUnifiedList);
 
         // 如果有位置資訊，按距離排序，並優先顯示名稱匹配的結果
         if (this.latitude && this.longitude && input.length > 0) {
@@ -531,6 +554,18 @@ export class NewSearchComponent implements OnInit {
   }
 
   onSubmit(): void {
+    // 表單提交時觸發搜尋
+    this.performSearch();
+  }
+
+  // 執行搜尋（統一入口）
+  performSearch(): void {
+    if (this.searchTerm && this.searchTerm.trim().length > 0) {
+      this.handleSearch(this.searchTerm.trim());
+    } else {
+      // 如果搜尋詞為空，清空結果
+      this.unifiedDropDownList = [];
+    }
   }
 
   onUseCurrentLocation(): void {
