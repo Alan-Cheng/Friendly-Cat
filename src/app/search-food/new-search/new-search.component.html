@@ -104,7 +104,7 @@
 <!-- 使用者位置搜尋模式 -->
 <ng-template #locationSearchMode>
   <!-- 711與全家店家頁面 -->
-  <ng-container *ngFor="let store of totalStoresShowList">
+  <ng-container *ngFor="let store of totalStoresShowList; trackBy: trackByStore">
     <div *ngIf="totalStoresShowList.length > 0" class="flex justify-center">
       <div class="w-full lg:w-4/5 max-w-screen-lg">
         <!-- 711區塊 -->
@@ -156,9 +156,9 @@
             <!-- 食物分類區塊 -->
             <div class="food-categories mt-4">
               <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-0">
-                <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index">
+                <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index; trackBy: trackByCategory">
                   <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
-                      {{ selectedCategory === category && selectedStore === store ? 'bg-primary-light' : '' }}"
+                      {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
                     (click)="toggleSubCategoryDetails(store, category)"
                     [class.pointer-events-none]="getSubCategoryTotalQty(store, category) === 0">
                     <img [src]="category.ImageUrl" alt="{{ category.Name }}"
@@ -177,8 +177,8 @@
               <!-- 食物分類區塊結束 -->
 
               <!-- 食品分類與子商品區塊 -->
-              <div *ngIf="selectedCategory && selectedStore === store" class="sub-category-details mt-4">
-                <app-display [store]="selectedStore" [category]="selectedCategory" [foodDetails]="foodDetails711">
+              <div *ngIf="store.selectedCategory" class="sub-category-details mt-4">
+                <app-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetails711">
                 </app-display>
               </div>
             </div>
@@ -232,8 +232,8 @@
           <!-- 商店資訊結束 -->
 
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-0">
-            <div *ngFor="let category of store.info | slice:0:10; let i = index" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
-            {{ selectedCategory === category && selectedStore === store ? 'bg-primary-light' : '' }}"
+            <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
+            {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
               (click)="toggleSubCategoryDetails(store, category)"
               [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0">
               <img [src]="getFUrl(category)" alt="{{ getFCatName(category) }}"
@@ -248,8 +248,8 @@
               </div>
             </div>
           </div>
-          <div *ngIf="selectedCategory && selectedStore === store" class="sub-category-details mt-4 border-gray-700">
-            <app-display [store]="selectedStore" [category]="selectedCategory" [foodDetails]="foodDetailsFamilyMart"
+          <div *ngIf="store.selectedCategory" class="sub-category-details mt-4 border-gray-700">
+            <app-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetailsFamilyMart"
               class="border-gray-700">
             </app-display>
           </div>
@@ -275,7 +275,7 @@
   </ng-container>
 
   <!-- 711與全家店家頁面 -->
-  <ng-container *ngFor="let store of totalStoresShowList">
+  <ng-container *ngFor="let store of totalStoresShowList; trackBy: trackByStore">
     <div *ngIf="totalStoresShowList.length > 0" class="flex justify-center">
       <div class="w-full lg:w-4/5 max-w-screen-lg">
         <!-- 711區塊 -->
@@ -330,9 +330,9 @@
             <!-- 食物分類區塊 -->
             <div class="food-categories mt-4">
               <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-0">
-                <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index">
+                <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index; trackBy: trackByCategory">
                   <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
-                      {{ selectedCategory === category && selectedStore === store ? 'bg-primary-light' : '' }}"
+                      {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
                     (click)="toggleSubCategoryDetails(store, category)"
                     [class.pointer-events-none]="getSubCategoryTotalQty(store, category) === 0">
                     <img [src]="category.ImageUrl" alt="{{ category.Name }}"
@@ -351,8 +351,8 @@
               <!-- 食物分類區塊結束 -->
 
               <!-- 食品分類與子商品區塊 -->
-              <div *ngIf="selectedCategory && selectedStore === store" class="sub-category-details mt-4">
-                <app-display [store]="selectedStore" [category]="selectedCategory" [foodDetails]="foodDetails711">
+              <div *ngIf="store.selectedCategory" class="sub-category-details mt-4">
+                <app-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetails711">
                 </app-display>
               </div>
             </div>
@@ -409,8 +409,8 @@
           <!-- 商店資訊結束 -->
 
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-0">
-            <div *ngFor="let category of store.info | slice:0:10; let i = index" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
-            {{ selectedCategory === category && selectedStore === store ? 'bg-primary-light' : '' }}"
+            <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
+            {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
               (click)="toggleSubCategoryDetails(store, category)"
               [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0">
               <img [src]="getFUrl(category)" alt="{{ getFCatName(category) }}"
@@ -425,8 +425,8 @@
               </div>
             </div>
           </div>
-          <div *ngIf="selectedCategory && selectedStore === store" class="sub-category-details mt-4 border-gray-700">
-            <app-display [store]="selectedStore" [category]="selectedCategory" [foodDetails]="foodDetailsFamilyMart"
+          <div *ngIf="store.selectedCategory" class="sub-category-details mt-4 border-gray-700">
+            <app-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetailsFamilyMart"
               class="border-gray-700">
             </app-display>
           </div>

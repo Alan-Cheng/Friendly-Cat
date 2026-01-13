@@ -250,8 +250,20 @@ export class NewSearchComponent implements OnInit {
 
   // 當用戶點擊某個分類時，切換選中的分類與店鋪
   toggleSubCategoryDetails(store: any, category: any): void {
-    this.selectedCategory = category;
-    this.selectedStore = store;
+    if (store.selectedCategory === category) {
+      store.selectedCategory = undefined;
+    } else {
+      store.selectedCategory = category;
+    }
+  }
+
+  trackByStore(index: number, store: any): string {
+    return store.storeName || store.StoreName || index.toString();
+  }
+
+  trackByCategory(index: number, category: any): string {
+    // 7-11 使用 ID，全家使用 name
+    return category.ID || category.name || index.toString();
   }
 
   onInput(event: Event): void {

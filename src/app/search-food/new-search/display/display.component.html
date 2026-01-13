@@ -1,74 +1,81 @@
-<div *ngIf="subCategories.length > 0">
+<div *ngIf="subCategories.length > 0" class="transition-all duration-300 ease-in-out min-h-[200px]">
   <!-- 7-11顯示區塊 -->
   <ng-container *ngIf="category.Name">
-    <h2 class="text-2xl font-bold mb-4 text-primary-default">{{ category.Name }}</h2>
-    <ng-container *ngFor="let subCategory of subCategories">
-      <div *ngIf="itemsBySubCategory[subCategory.Name] && itemsBySubCategory[subCategory.Name].length > 0"
-           class="sub-category-item bg-white border border-gray-100 p-6 mb-8 rounded-lg shadow-lg"
-      >
-        <div class="mb-4">
-          <h3 class="text-2xl font-bold text-primary-default text-primary-light">
-            {{ subCategory.Name }}
-          </h3>
-        </div>
+    <div *ngIf="isLoading" class="flex flex-col items-center justify-center p-12">
+      <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
+      <p class="mt-4 text-primary-default animate-pulse">載入商品資訊中...</p>
+    </div>
+    
+    <div [hidden]="isLoading">
+      <h2 class="text-2xl font-bold mb-4 text-primary-default">{{ category.Name }}</h2>
+      <ng-container *ngFor="let subCategory of subCategories">
+        <div *ngIf="itemsBySubCategory[subCategory.Name] && itemsBySubCategory[subCategory.Name].length > 0"
+             class="sub-category-item bg-white border border-gray-100 p-6 mb-8 rounded-lg shadow-lg"
+        >
+          <div class="mb-4">
+            <h3 class="text-2xl font-bold text-primary-default text-primary-light">
+              {{ subCategory.Name }}
+            </h3>
+          </div>
 
-        <!-- 7-11顯示的子分類商品內容區塊 -->
-        <ul class="space-y-6 sm:space-y-4">
-          <li *ngFor="let item of itemsBySubCategory[subCategory.Name]">
-            <div class="border border-gray-300 flex flex-col sm:flex-row items-start p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-              <img [src]="getFoodDetail711(item).image"
-                [alt]="getFoodDetail711(item).name"
-                class="object-contain rounded-lg mb-4 sm:mb-0 sm:mr-6 shadow-md w-24 h-24 sm:w-32 sm:h-32 cursor-pointer"
-                (click)="openImageDialog(getFoodDetail711(item).image)">
+          <!-- 7-11顯示的子分類商品內容區塊 -->
+          <ul class="space-y-6 sm:space-y-4">
+            <li *ngFor="let item of itemsBySubCategory[subCategory.Name]">
+              <div class="border border-gray-300 flex flex-col sm:flex-row items-start p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <img [src]="getFoodDetail711(item).image"
+                  [alt]="getFoodDetail711(item).name"
+                  class="object-contain rounded-lg mb-4 sm:mb-0 sm:mr-6 shadow-md w-24 h-24 sm:w-32 sm:h-32 cursor-pointer"
+                  (click)="openImageDialog(getFoodDetail711(item).image)">
 
-              <div class="flex-1">
-                <!-- 商品名稱與標籤 -->
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-                  <h3 class="text-sm sm:text-lg font-semibold text-gray-600">
-                    {{ item.ItemName }}
-                  </h3>
-                  <div class="text-center inline-block bg-green-100 text-green-800 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full">
-                    剩餘數量: {{ item.RemainingQty }}
+                <div class="flex-1">
+                  <!-- 商品名稱與標籤 -->
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                    <h3 class="text-sm sm:text-lg font-semibold text-gray-600">
+                      {{ item.ItemName }}
+                    </h3>
+                    <div class="text-center inline-block bg-green-100 text-green-800 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full">
+                      剩餘數量: {{ item.RemainingQty }}
+                    </div>
                   </div>
-                </div>
 
-                <!-- 商品標籤 -->
-                <div class="flex space-x-2 mb-2">
-                  <div *ngIf="getFoodDetail711(item).new === 'True'"
-                       class="inline-block bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full">
-                    新品
+                  <!-- 商品標籤 -->
+                  <div class="flex space-x-2 mb-2">
+                    <div *ngIf="getFoodDetail711(item).new === 'True'"
+                         class="inline-block bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full">
+                      新品
+                    </div>
+                    <div *ngIf="getFoodDetail711(item).special_sale === 'True'"
+                         class="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
+                      特價中
+                    </div>
                   </div>
-                  <div *ngIf="getFoodDetail711(item).special_sale === 'True'"
-                       class="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
-                    特價中
-                  </div>
-                </div>
 
-                <!-- 商品描述 -->
-                <div *ngIf="getFoodDetail711(item).image !== 'assets/此商品暫無圖片.png'">
-                  <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
-                    <span class="text-gray-800">價格(NT$): </span>
-                    <span class="line-through text-gray-500">{{ getFoodDetail711(item).originalPrice }}</span>
-                    <span class="text-red-600 mx-2">→</span>
-                    <span class="text-red-600">
-                      {{ getFoodDetail711(item).discountedPrice | round:-1 }}
-                    </span>
+                  <!-- 商品描述 -->
+                  <div *ngIf="getFoodDetail711(item).image !== 'assets/此商品暫無圖片.png'">
+                    <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
+                      <span class="text-gray-800">價格(NT$): </span>
+                      <span class="line-through text-gray-500">{{ getFoodDetail711(item).originalPrice }}</span>
+                      <span class="text-red-600 mx-2">→</span>
+                      <span class="text-red-600">
+                        {{ getFoodDetail711(item).discountedPrice | round:-1 }}
+                      </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ getFoodDetail711(item).content | emptyInfo}}</p>
+                    <p class="text-xs sm:text-sm text-gray-500 mb-1">卡路里(kcal): {{ getFoodDetail711(item).kcal | emptyInfo}}</p>
                   </div>
-                  <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ getFoodDetail711(item).content | emptyInfo}}</p>
-                  <p class="text-xs sm:text-sm text-gray-500 mb-1">卡路里(kcal): {{ getFoodDetail711(item).kcal | emptyInfo}}</p>
-                </div>
-                <!-- 商品沒資訊的話 -->
-                <div *ngIf="getFoodDetail711(item).image === 'assets/此商品暫無圖片.png'">
-                  <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
-                    <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: 暫無此商品資訊</p>
+                  <!-- 商品沒資訊的話 -->
+                  <div *ngIf="getFoodDetail711(item).image === 'assets/此商品暫無圖片.png'">
+                    <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
+                      <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: 暫無此商品資訊</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </ng-container>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+    </div>
   </ng-container>
 
   <!-- 全家顯示區塊 -->

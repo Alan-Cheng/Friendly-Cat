@@ -23,6 +23,7 @@ export class DisplayComponent implements OnChanges, OnInit {
   subCategories: any[] = [];
   subCategoriesName: string = '';
   itemsBySubCategory: { [key: string]: Item[] } = {};  // 儲存每個子分類的商品列表
+  isLoading: boolean = false;
 
   constructor(
     private sevenElevenRequestService: SevenElevenRequestService,
@@ -65,6 +66,7 @@ export class DisplayComponent implements OnChanges, OnInit {
 
   loadItemsBySubCategory() {
     if (this.store) {
+      this.isLoading = true;
       this.sevenElevenRequestService.getItemsByStoreNo(this.store.StoreNo).subscribe(response => {
         if (response.isSuccess && response.element.StoreStockItem) {
           let categoryStockItems: CategoryStockItem[] = response.element.StoreStockItem.CategoryStockItems;
@@ -119,6 +121,10 @@ export class DisplayComponent implements OnChanges, OnInit {
             this.itemsBySubCategory[subCategory.Name] = items || [];
           });
         }
+        this.isLoading = false;
+      }, error => {
+        console.error('Error loading items:', error);
+        this.isLoading = false;
       });
     }
   }
