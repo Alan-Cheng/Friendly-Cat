@@ -155,19 +155,19 @@
 
             <!-- 食物分類區塊 -->
             <div class="food-categories mt-4">
-              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-0">
+              <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
                 <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index; trackBy: trackByCategory">
-                  <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
+                  <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
                       {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
                     (click)="toggleSubCategoryDetails(store, category)"
                     [class.pointer-events-none]="getSubCategoryTotalQty(store, category) === 0">
                     <img [src]="category.ImageUrl" alt="{{ category.Name }}"
-                      class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-2 object-cover"
+                      class="w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-1 sm:mb-2 object-cover"
                       [ngStyle]="{'opacity': getSubCategoryTotalQty(store, category) === 0 ? 0.3 : 1}" />
                     <div>
-                      <span class="block text-sm sm:text-base font-semibold">{{ category.Name }}</span>
+                      <span class="block text-sm sm:text-base font-semibold leading-tight mb-1">{{ category.Name }}</span>
                       <div
-                        class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-4 py-2 rounded-full">
+                        class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-2 py-0.5 sm:px-4 sm:py-2 rounded-full">
                         {{ getSubCategoryTotalQty(store, category) }}
                       </div>
                     </div>
@@ -231,18 +231,18 @@
           </div>
           <!-- 商店資訊結束 -->
 
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-0">
-            <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
+          <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
+            <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
             {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
               (click)="toggleSubCategoryDetails(store, category)"
               [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0">
               <img [src]="getFUrl(category)" alt="{{ getFCatName(category) }}"
-                class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-2 object-cover"
+                class="w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-1 sm:mb-2 object-cover"
                 [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
               <div>
-                <span class="block text-sm sm:text-base font-semibold">{{ getFCatName(category) }}</span>
+                <span class="block text-sm sm:text-base font-semibold leading-tight mb-1">{{ getFCatName(category) }}</span>
                 <div
-                  class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-4 py-2 rounded-full">
+                  class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-2 py-0.5 sm:px-4 sm:py-2 rounded-full">
                   {{ getFSubCategoryQty(store, category) }}
                 </div>
               </div>
@@ -329,19 +329,19 @@
 
             <!-- 食物分類區塊 -->
             <div class="food-categories mt-4">
-              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-0">
+              <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
                 <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index; trackBy: trackByCategory">
-                  <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
+                  <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
                       {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
                     (click)="toggleSubCategoryDetails(store, category)"
                     [class.pointer-events-none]="getSubCategoryTotalQty(store, category) === 0">
                     <img [src]="category.ImageUrl" alt="{{ category.Name }}"
-                      class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-2 object-cover"
+                      class="w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-1 sm:mb-2 object-cover"
                       [ngStyle]="{'opacity': getSubCategoryTotalQty(store, category) === 0 ? 0.3 : 1}" />
                     <div>
-                      <span class="block text-sm sm:text-base font-semibold">{{ category.Name }}</span>
+                      <span class="block text-sm sm:text-base font-semibold leading-tight mb-1">{{ category.Name }}</span>
                       <div
-                        class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-4 py-2 rounded-full">
+                        class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-2 py-0.5 sm:px-4 sm:py-2 rounded-full">
                         {{ getSubCategoryTotalQty(store, category) }}
                       </div>
                     </div>
@@ -408,18 +408,18 @@
           </div>
           <!-- 商店資訊結束 -->
 
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-0">
-            <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-2 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full sm:w-full md:w-full
+          <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
+            <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
             {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
               (click)="toggleSubCategoryDetails(store, category)"
               [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0">
               <img [src]="getFUrl(category)" alt="{{ getFCatName(category) }}"
-                class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-2 object-cover"
+                class="w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-1 sm:mb-2 object-cover"
                 [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
               <div>
-                <span class="block text-sm sm:text-base font-semibold">{{ getFCatName(category) }}</span>
+                <span class="block text-sm sm:text-base font-semibold leading-tight mb-1">{{ getFCatName(category) }}</span>
                 <div
-                  class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-4 py-2 rounded-full">
+                  class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-2 py-0.5 sm:px-4 sm:py-2 rounded-full">
                   {{ getFSubCategoryQty(store, category) }}
                 </div>
               </div>
