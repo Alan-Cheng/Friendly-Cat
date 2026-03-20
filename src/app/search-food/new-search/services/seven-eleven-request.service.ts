@@ -16,11 +16,16 @@ export class SevenElevenRequestService {
 
   baseUrl = environment.sevenElevenUrl.base;
 
-  getAccessToken(): Observable<any> {
-    const url = this.baseUrl + environment.sevenElevenUrl.endpoint.accessToken;
-    const params = environment.sevenElevenUrl.params;
+  // 711 AccessToken：使用硬編的 GET URL（含 mid_v）
+  // 注意：這裡的 mid_v 必須和你實際要用的值一致。
+  private readonly accessTokenUrl =
+    'https://lovefood.openpoint.com.tw/iMap/api/Auth/FrontendAuth/AccessToken?mid_v=W0_DiF4DlgU5OeQoRswrRcaaNHMWOL7K3ra3381ocZUv-rZOWy2ZuIctH6X-7pjiccl0C5h51bVSb-Vc7VdFc8eiLEWettduAYML-s4z4Tx0vcl7gJla5iV0H3-8dZfAScnAjUK64qr9LIO_hBZ_Sam6D0LAnYK9Lb0DZuU6zny78mxnpW__-6Ifuiw';
 
-    return this.requestService.post(url, params);
+  /**
+   * 使用硬編 URL 取回 AccessToken 的 element 裡 JWT。
+   */
+  getAccessToken(): Observable<any> {
+    return this.requestService.post(this.accessTokenUrl);
   }
 
   getStoreByAddress(keyword: string): Observable<any> {
