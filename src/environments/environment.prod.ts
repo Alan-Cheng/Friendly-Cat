@@ -20,7 +20,7 @@ export const environment = {
       getStoreDetail: 'Search/FrontendStoreItemStock/GetStoreDetail'
     },
     params: {
-      mid_v: 'W0_DiF4DlgU5OeQoRswrRcaaNHMWOL7K3ra3381ocZUv-rdOWS-ZuoItGav-7pjiccl0C5h51bVSb-Vc7VdFc8eiLEWettduAYML-s4z4Tx0vcl7gJla5iV0H3-8dZfAScnAjUK64qr9LIO_hBZ_Sam6D0LAnYK9Lb0DZnIcR0vlmKZpf7fpnj-qk9w'
+      mid_v: 'W0_DiF4DlgU5OeQoRswrRcaaNHMWOL7K3ra3381ocZUv-rdOWS6ZuIUtHqv-7pjiccl0C5h51bVSb-Vc7VdFc8eiLEWettduAYML-s4z4Tx0vcl7gJla5iV0H3-8dZfAScnAjUK64qr9LIO_hBZ_Sam6D0LAnYK9Lb0DZm8JatIb-ogpZxJeWboeOWQ'
     }
   },
   firebaseConfig: {
