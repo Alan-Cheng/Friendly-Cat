@@ -1,14 +1,12 @@
 <h1 mat-dialog-title class="text-xl font-semibold text-primary-default mb-4">
   {{ title }}
 </h1>
-<div class="flex items-center bg-primary-white justify-center mb-6 h-24">
-  <div class="flex w-4/5 items-center justify-start">
-    <img *ngIf="imgPath" [src]="imgPath" alt="無搜尋結果" class="w-24 h-24 sm:w-16 sm:h-16 md:w-24 md:h-24">
-    <h5 class="text-primary-default sm:text-xl font-bold ml-2 py-1 px-3 border-2 border-primary-default rounded-full bg-primary-light inline-block">
-      <div class="text-primary-default lg:text-md sm:text-xl">
-        {{ message }}
-      </div>
-    </h5>
+<div class="flex items-center bg-primary-white justify-center mb-6 min-h-24">
+  <div class="flex w-4/5 items-center justify-start gap-3">
+    <img *ngIf="imgPath" [src]="imgPath" alt="無搜尋結果" class="w-24 h-24 sm:w-16 sm:h-16 md:w-24 md:h-24 shrink-0">
+    <p class="text-primary-default sm:text-xl font-bold m-0 leading-relaxed">
+      {{ message }}
+    </p>
   </div>
 </div>
 <div class="flex items-center bg-primary-white justify-center py-3">
