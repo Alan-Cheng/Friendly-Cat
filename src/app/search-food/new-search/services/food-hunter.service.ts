@@ -38,8 +38,9 @@ export interface FoodHunterNearbyResponse {
   stores: FoodHunterStore[];
 }
 
-// 分類名稱 → 圖示路徑映射
+// 分類名稱 → 圖示路徑映射（全家 + 7-11）
 const CATEGORY_ICON_MAP: Record<string, string> = {
+  // 全家分類
   '飯糰手卷': 'assets/category-icons/riceball.svg',
   '飯類主食': 'assets/category-icons/rice.svg',
   '麵類主食': 'assets/category-icons/noodle.svg',
@@ -48,6 +49,44 @@ const CATEGORY_ICON_MAP: Record<string, string> = {
   '蔬果': 'assets/category-icons/vegetable.svg',
   '麵包甜點': 'assets/category-icons/bread.svg',
   '蛋糕吐司': 'assets/category-icons/cake.svg',
+  '即食食品': 'assets/category-icons/rice.svg',
+  // 7-11 分類
+  '炒麵': 'assets/category-icons/noodle.svg',
+  '4℃加熱飯糰': 'assets/category-icons/riceball.svg',
+  '三角飯糰': 'assets/category-icons/riceball.svg',
+  '壽司手捲類': 'assets/category-icons/sushi.svg',
+  '義大利麵': 'assets/category-icons/pasta.svg',
+  '燴飯': 'assets/category-icons/friedrice.svg',
+  '異國料理/焗烤': 'assets/category-icons/international.svg',
+  '湯麵': 'assets/category-icons/soup.svg',
+  '中式': 'assets/category-icons/chinese.svg',
+  '涼麵': 'assets/category-icons/coldnoodle.svg',
+  '麵包': 'assets/category-icons/bread.svg',
+  '配菜': 'assets/category-icons/vegetable.svg',
+  '點心': 'assets/category-icons/cake.svg',
+  '熱壓土司': 'assets/category-icons/sandwich.svg',
+  '粥品': 'assets/category-icons/soup.svg',
+  '蛋糕': 'assets/category-icons/cake.svg',
+  '切片水果': 'assets/category-icons/vegetable.svg',
+  '泡芙': 'assets/category-icons/cake.svg',
+  '袋裝三明治': 'assets/category-icons/sandwich.svg',
+  '湯類甜點': 'assets/category-icons/soup.svg',
+  '小吃': 'assets/category-icons/chinese.svg',
+  '吐司': 'assets/category-icons/bread.svg',
+  '主食型沙拉': 'assets/category-icons/vegetable.svg',
+  '蔬食飯糰': 'assets/category-icons/riceball.svg',
+  '炒飯': 'assets/category-icons/friedrice.svg',
+  '圓形飯糰': 'assets/category-icons/riceball.svg',
+  '長堡': 'assets/category-icons/sandwich.svg',
+  '蔬食麵': 'assets/category-icons/noodle.svg',
+  '輕食便當': 'assets/category-icons/rice.svg',
+  '漢堡': 'assets/category-icons/sandwich.svg',
+  '蔬食三明治': 'assets/category-icons/sandwich.svg',
+  '盒裝三明治': 'assets/category-icons/sandwich.svg',
+  '瑪芬堡': 'assets/category-icons/sandwich.svg',
+  '蔬食米食': 'assets/category-icons/riceball.svg',
+  '配菜型沙拉': 'assets/category-icons/vegetable.svg',
+  '其他': 'assets/category-icons/chinese.svg',
 };
 
 @Injectable({

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ViewChildren, QueryList } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormGroup, FormControl } from '@angular/forms';
 
@@ -18,7 +18,7 @@ import { environment } from 'src/environments/environment';
 
 import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
-import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatAutocompleteSelectedEvent, MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
 
 import { getDistance } from 'geolib';
@@ -83,6 +83,14 @@ export class NewSearchComponent implements OnInit {
   favoriteStores: any[] = [];
 
   searchInput$ = new Subject<string>();
+
+  private readonly LOCATION_STORAGE_KEY = 'lastSearchLocation';
+  private readonly SEARCH_HISTORY_KEY = 'searchHistory';
+  isUsingHistoryLocation = false; // 是否使用歷史位置載入
+  searchHistory: { name: string; label: string; addr: string; latitude: number; longitude: number }[] = [];
+  showSearchHistory = false; // 是否顯示歷史搜尋清單
+
+  @ViewChild(MatAutocompleteTrigger) autocompleteTrigger!: MatAutocompleteTrigger;
 
   constructor(
     private http: HttpClient,
@@ -154,10 +162,9 @@ export class NewSearchComponent implements OnInit {
       }
     });
 
-    // // 使用 from 將 Promise 轉換為 Observable
-    // this.getCityName();
+    this.loadSearchHistory();
 
-    this.loadingService.show("載入商店資訊中，請稍後喵");  // 显示加载动画
+    this.loadingService.show("載入商店資訊中，請稍後喵");
 
     // 取得711跟全家的商品詳細資訊
     this.sevenElevenService.getFoodDetails().subscribe((data) => {
@@ -173,8 +180,51 @@ export class NewSearchComponent implements OnInit {
     //取得所有 7-11 商店名稱資訊
     this.getSevenElevenAllStore();
 
-    // foodCategories 會在搜尋附近門市時由 Food Hunter API 動態建立
-    this.loadingService.hide();
+    // 自動以 GPS 定位搜尋附近門市；若 GPS 失敗則使用上次的位置
+    this.autoSearchByLocation();
+  }
+
+  /** 自動以 GPS 搜尋，失敗時 fallback 到 localStorage 上次位置 */
+  private autoSearchByLocation(): void {
+    this.isUsingHistoryLocation = false;
+    from(this.geolocationService.getCurrentPosition())
+      .pipe(
+        switchMap((position) => {
+          this.latitude = position.coords.latitude;
+          this.longitude = position.coords.longitude;
+          this.saveLocationToStorage(this.latitude, this.longitude);
+          this.loadingService.show('GPS 定位成功，搜尋附近門市中喵');
+          console.log('GPS 定位成功，自動搜尋附近門市');
+          return of(true);
+        }),
+        catchError((error) => {
+          console.warn('GPS 定位失敗，嘗試使用上次搜尋位置:', this.handleError(error as GeolocationPositionError));
+          const lastLocation = this.getLastLocationFromStorage();
+          if (lastLocation) {
+            this.latitude = lastLocation.latitude;
+            this.longitude = lastLocation.longitude;
+            this.isUsingHistoryLocation = true;
+            this.loadingService.show('使用上次搜尋位置載入中喵');
+            console.log('使用上次搜尋位置:', lastLocation);
+            return of(true);
+          }
+          // 完全沒有位置資訊
+          console.error('無法取得位置，也沒有歷史位置紀錄');
+          this.loadingService.hide();
+          this.dialog.open(MessageDialogComponent, {
+            data: {
+              message: '無法取得您的位置，請手動搜尋店家名稱',
+              imgPath: 'assets/NoResult.jpg',
+            }
+          });
+          return of(false);
+        })
+      )
+      .subscribe((shouldSearch) => {
+        if (shouldSearch) {
+          this.searchCombineAndTransformStores();
+        }
+      });
   }
 
   getFamilyMartAllStore() {
@@ -241,15 +291,34 @@ export class NewSearchComponent implements OnInit {
   }
 
   onInput(event: Event): void {
-    // 只更新 searchTerm，不觸發搜尋
     const input = (event.target as HTMLInputElement).value;
     this.searchTerm = input;
-    // 清空下拉選單，等待使用者按下 Enter 或查詢按鈕
-    this.unifiedDropDownList = [];
+    // 即時更新下拉選單
+    if (input.trim().length > 0) {
+      this.showSearchHistory = false;
+      this.handleSearch(input.trim());
+    } else {
+      this.unifiedDropDownList = [];
+      this.showSearchHistory = true;
+      // 開啟面板顯示歷史
+      if (this.searchHistory.length > 0 && this.autocompleteTrigger) {
+        this.autocompleteTrigger.openPanel();
+      }
+    }
+  }
+
+  onSearchFocus(): void {
+    if (!this.searchTerm || this.searchTerm.trim().length === 0) {
+      this.showSearchHistory = true;
+      // 開啟 autocomplete 面板顯示歷史
+      if (this.searchHistory.length > 0 && this.autocompleteTrigger) {
+        setTimeout(() => this.autocompleteTrigger.openPanel(), 0);
+      }
+    }
   }
 
   onKeyDown(event: KeyboardEvent): void {
-    // 按下 Enter 鍵時觸發搜尋
+    // 按下 Enter 鍵時也觸發搜尋
     if (event.key === 'Enter') {
       event.preventDefault();
       this.performSearch();
@@ -315,162 +384,125 @@ export class NewSearchComponent implements OnInit {
     return false;
   }
 
-  // 使用本地 JSON 資料和拼音比對進行搜尋
+  // 使用本地 JSON 資料和拼音比對進行搜尋（同步，即時更新下拉選單）
   handleSearch(input: string): void {
-    if (input.length >= 0) {
-      this.loadingService.show("正在為您搜尋店家");
+    if (input.length === 0) {
       this.unifiedDropDownList = [];
+      return;
+    }
 
-      // 取得位置資訊（用於排序）
-      const getLocationAndSearch = () => {
-        if (!this.latitude || !this.longitude) {
-          return from(this.geolocationService.getCurrentPosition()).pipe(
-            switchMap((position) => {
-              this.latitude = position.coords.latitude;
-              this.longitude = position.coords.longitude;
-              return of(null);
-            })
-          );
-        }
-        return of(null);
-      };
+    // 確保有位置資訊（不呼叫 GPS）
+    if (!this.latitude || !this.longitude) {
+      const lastLocation = this.getLastLocationFromStorage();
+      if (lastLocation) {
+        this.latitude = lastLocation.latitude;
+        this.longitude = lastLocation.longitude;
+      }
+    }
 
-      getLocationAndSearch().subscribe(() => {
-        // 篩選全家商店（使用拼音比對）
-        const filteredDropDownFamilyMartList = this.dropDownFamilyMartList
-          .map(item => ({
-            ...item,
-            Name: item.Name.replace('全家', '')  // 去除 "全家" 字串
-          }))
-          .filter(item => {
-            if (input.length === 0) return true;
-            return this.matchesSearchTerm(item.Name, item.Name_pinyin || '', input) ||
-                   this.matchesSearchTerm(item.addr, item.addr_pinyin || '', input);
-          });
-
-        // 篩選 7-11 商店（使用拼音比對）
-        const filteredDropDown711List = this.all711Stores
-          .map(item => ({
-            ...item,
-            name: item.name || '',
-            addr: item.addr || ''
-          }))
-          .filter(item => {
-            if (input.length === 0) return true;
-            return this.matchesSearchTerm(item.name, item.name_pinyin || '', input) ||
-                   this.matchesSearchTerm(item.addr, item.addr_pinyin || '', input);
-          });
-
-        // 統一兩個列表的名稱欄位
-        const normalizedFamilyMartList = filteredDropDownFamilyMartList.map(item => ({
-          name: item.Name,
-          addr: item.addr,
-          label: '全家',
-          longitude: parseFloat(item.px_wgs84),
-          latitude: parseFloat(item.py_wgs84)
-        }));
-
-        const normalized711List = filteredDropDown711List.map(item => ({
-          name: item.name,
-          addr: item.addr,
-          label: '7-11',
-          longitude: parseFloat(item.lng),
-          latitude: parseFloat(item.lat)
-        }));
-
-        // 合併列表並去重（使用 Set 優化，從 O(n²) 降到 O(n)）
-        const storeKeySet = new Set<string>();
-        this.unifiedDropDownList = [];
-        
-        // 使用 Set 來追蹤已加入的商店（key = name + addr）
-        const addToUnifiedList = (item: any) => {
-          const key = `${item.name}|${item.addr}`;
-          if (!storeKeySet.has(key)) {
-            storeKeySet.add(key);
-            this.unifiedDropDownList.push(item);
-          }
-        };
-        
-        // 先加入 7-11，再加入全家
-        normalized711List.forEach(addToUnifiedList);
-        normalizedFamilyMartList.forEach(addToUnifiedList);
-
-        // 如果有位置資訊，按距離排序，並優先顯示名稱匹配的結果
-        if (this.latitude && this.longitude && input.length > 0) {
-          // 建立映射以便快速查找
-          const familyMartMap = new Map(filteredDropDownFamilyMartList.map(fm => [`${fm.Name}|${fm.addr}`, fm]));
-          const sevenElevenMap = new Map(filteredDropDown711List.map(se => [`${se.name}|${se.addr}`, se]));
-
-          const nameGroup = this.unifiedDropDownList
-            .filter(item => {
-              const key = `${item.name}|${item.addr}`;
-              const familyMartItem = familyMartMap.get(key);
-              const sevenElevenItem = sevenElevenMap.get(key);
-              
-              if (familyMartItem) {
-                return this.matchesSearchTerm(familyMartItem.Name, familyMartItem.Name_pinyin || '', input);
-              }
-              if (sevenElevenItem) {
-                return this.matchesSearchTerm(sevenElevenItem.name, sevenElevenItem.name_pinyin || '', input);
-              }
-              return false;
-            })
-            .sort((a, b) => {
-              const distanceA = getDistance(
-                { latitude: this.latitude, longitude: this.longitude },
-                { latitude: a.latitude, longitude: a.longitude }
-              );
-              const distanceB = getDistance(
-                { latitude: this.latitude, longitude: this.longitude },
-                { latitude: b.latitude, longitude: b.longitude }
-              );
-              return distanceA - distanceB;
-            });
-
-          const addrGroup = this.unifiedDropDownList
-            .filter(item => !nameGroup.includes(item))
-            .sort((a, b) => {
-              const distanceA = getDistance(
-                { latitude: this.latitude, longitude: this.longitude },
-                { latitude: a.latitude, longitude: a.longitude }
-              );
-              const distanceB = getDistance(
-                { latitude: this.latitude, longitude: this.longitude },
-                { latitude: b.latitude, longitude: b.longitude }
-              );
-              return distanceA - distanceB;
-            });
-
-          this.unifiedDropDownList = [...nameGroup, ...addrGroup];
-        } else if (this.latitude && this.longitude) {
-          // 如果沒有搜尋詞，直接按距離排序
-          this.unifiedDropDownList.sort((a, b) => {
-            const distanceA = getDistance(
-              { latitude: this.latitude, longitude: this.longitude },
-              { latitude: a.latitude, longitude: a.longitude }
-            );
-            const distanceB = getDistance(
-              { latitude: this.latitude, longitude: this.longitude },
-              { latitude: b.latitude, longitude: b.longitude }
-            );
-            return distanceA - distanceB;
-          });
-        }
-
-        if (this.unifiedDropDownList.length === 0) {
-          this.loadingService.show("好像找不到店家耶～請重新搜尋");
-          setTimeout(() => {
-            this.loadingService.hide();
-          }, 2000);
-        } else {
-          this.loadingService.hide();
-        }
-      }, (error) => {
-        console.error('取得位置錯誤:', error);
-        this.loadingService.hide();
+    // 篩選全家商店（使用拼音比對）
+    const filteredDropDownFamilyMartList = this.dropDownFamilyMartList
+      .map(item => ({
+        ...item,
+        Name: item.Name.replace('全家', '')  // 去除 "全家" 字串
+      }))
+      .filter(item => {
+        return this.matchesSearchTerm(item.Name, item.Name_pinyin || '', input) ||
+               this.matchesSearchTerm(item.addr, item.addr_pinyin || '', input);
       });
-    } else {
-      this.unifiedDropDownList = [];
+
+    // 篩選 7-11 商店（使用拼音比對）
+    const filteredDropDown711List = this.all711Stores
+      .map(item => ({
+        ...item,
+        name: item.name || '',
+        addr: item.addr || ''
+      }))
+      .filter(item => {
+        return this.matchesSearchTerm(item.name, item.name_pinyin || '', input) ||
+               this.matchesSearchTerm(item.addr, item.addr_pinyin || '', input);
+      });
+
+    // 統一兩個列表的名稱欄位
+    const normalizedFamilyMartList = filteredDropDownFamilyMartList.map(item => ({
+      name: item.Name,
+      addr: item.addr,
+      label: '全家',
+      longitude: parseFloat(item.px_wgs84),
+      latitude: parseFloat(item.py_wgs84)
+    }));
+
+    const normalized711List = filteredDropDown711List.map(item => ({
+      name: item.name,
+      addr: item.addr,
+      label: '7-11',
+      longitude: parseFloat(item.lng),
+      latitude: parseFloat(item.lat)
+    }));
+
+    // 合併列表並去重（使用 Set 優化）
+    const storeKeySet = new Set<string>();
+    this.unifiedDropDownList = [];
+
+    const addToUnifiedList = (item: any) => {
+      const key = `${item.name}|${item.addr}`;
+      if (!storeKeySet.has(key)) {
+        storeKeySet.add(key);
+        this.unifiedDropDownList.push(item);
+      }
+    };
+
+    // 先加入 7-11，再加入全家
+    normalized711List.forEach(addToUnifiedList);
+    normalizedFamilyMartList.forEach(addToUnifiedList);
+
+    // 如果有位置資訊，按距離排序，並優先顯示名稱匹配的結果
+    if (this.latitude && this.longitude) {
+      // 建立映射以便快速查找
+      const familyMartMap = new Map(filteredDropDownFamilyMartList.map(fm => [`${fm.Name}|${fm.addr}`, fm]));
+      const sevenElevenMap = new Map(filteredDropDown711List.map(se => [`${se.name}|${se.addr}`, se]));
+
+      const nameGroup = this.unifiedDropDownList
+        .filter(item => {
+          const key = `${item.name}|${item.addr}`;
+          const familyMartItem = familyMartMap.get(key);
+          const sevenElevenItem = sevenElevenMap.get(key);
+
+          if (familyMartItem) {
+            return this.matchesSearchTerm(familyMartItem.Name, familyMartItem.Name_pinyin || '', input);
+          }
+          if (sevenElevenItem) {
+            return this.matchesSearchTerm(sevenElevenItem.name, sevenElevenItem.name_pinyin || '', input);
+          }
+          return false;
+        })
+        .sort((a, b) => {
+          const distanceA = getDistance(
+            { latitude: this.latitude, longitude: this.longitude },
+            { latitude: a.latitude, longitude: a.longitude }
+          );
+          const distanceB = getDistance(
+            { latitude: this.latitude, longitude: this.longitude },
+            { latitude: b.latitude, longitude: b.longitude }
+          );
+          return distanceA - distanceB;
+        });
+
+      const addrGroup = this.unifiedDropDownList
+        .filter(item => !nameGroup.includes(item))
+        .sort((a, b) => {
+          const distanceA = getDistance(
+            { latitude: this.latitude, longitude: this.longitude },
+            { latitude: a.latitude, longitude: a.longitude }
+          );
+          const distanceB = getDistance(
+            { latitude: this.latitude, longitude: this.longitude },
+            { latitude: b.latitude, longitude: b.longitude }
+          );
+          return distanceA - distanceB;
+        });
+
+      this.unifiedDropDownList = [...nameGroup, ...addrGroup];
     }
   }
 
@@ -494,22 +526,18 @@ export class NewSearchComponent implements OnInit {
     const storeLongitude = lng !== undefined ? lng : Number(event?.option.value.longitude);
     const storeLatitude = lat !== undefined ? lat : Number(event?.option.value.latitude);
 
+    // 儲存搜尋歷史
+    this.addSearchHistory({
+      name: storeName,
+      label: label,
+      addr: event?.option.value.addr || '',
+      latitude: storeLatitude,
+      longitude: storeLongitude
+    });
+
     this.loadingService.show("正在搜尋店家喵")
-    from(this.geolocationService.getCurrentPosition())
-      .pipe(
-        switchMap((position) => {
-          this.latitude = position.coords.latitude;
-          this.longitude = position.coords.longitude;
-          console.log('已取得位置');
-          return of(true);
-        }),
-        catchError((error) => {
-          console.error('取得位置錯誤:', error);
-          return of(true);
-        })
-      ).subscribe(() => {
-        this.searchCombineAndTransformStores(storeLatitude, storeLongitude);
-      });
+    // 使用店家經緯度直接搜尋，不需要 GPS
+    this.searchCombineAndTransformStores(storeLatitude, storeLongitude);
   }
 
   onSubmit(): void {
@@ -530,6 +558,7 @@ export class NewSearchComponent implements OnInit {
   onUseCurrentLocation(): void {
     // 變更搜尋模式
     this.isLocationSearchMode = true;
+    this.isUsingHistoryLocation = false;
 
     // 清除商店列表
     this.totalStoresShowList = [];
@@ -544,16 +573,100 @@ export class NewSearchComponent implements OnInit {
         switchMap((position) => {
           this.latitude = position.coords.latitude;
           this.longitude = position.coords.longitude;
+          this.saveLocationToStorage(this.latitude, this.longitude);
           console.log('已取得位置');
           return of(true);
         }),
         catchError((error) => {
-          console.error('取得位置錯誤:', error);
+          console.warn('GPS 定位失敗，嘗試使用上次位置');
+          const lastLocation = this.getLastLocationFromStorage();
+          if (lastLocation) {
+            this.latitude = lastLocation.latitude;
+            this.longitude = lastLocation.longitude;
+          }
           return of(true);
         })
       ).subscribe(() => {
         this.searchCombineAndTransformStores();
       });
+  }
+
+  /** 儲存搜尋位置到 localStorage */
+  private saveLocationToStorage(lat: number, lon: number): void {
+    try {
+      const data = {
+        latitude: lat,
+        longitude: lon,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(this.LOCATION_STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn('無法儲存位置到 localStorage:', e);
+    }
+  }
+
+  /** 從 localStorage 取得上次搜尋位置 */
+  private getLastLocationFromStorage(): { latitude: number; longitude: number; timestamp: number } | null {
+    try {
+      const raw = localStorage.getItem(this.LOCATION_STORAGE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (data && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+        return data;
+      }
+    } catch (e) {
+      console.warn('無法讀取 localStorage 位置:', e);
+    }
+    return null;
+  }
+
+  /** 載入搜尋歷史 */
+  private loadSearchHistory(): void {
+    try {
+      const raw = localStorage.getItem(this.SEARCH_HISTORY_KEY);
+      if (raw) {
+        this.searchHistory = JSON.parse(raw);
+      }
+    } catch (e) {
+      console.warn('無法讀取搜尋歷史:', e);
+    }
+  }
+
+  /** 新增搜尋歷史（最多保留 10 筆，去重） */
+  addSearchHistory(item: { name: string; label: string; addr: string; latitude: number; longitude: number }): void {
+    // 去除重複
+    this.searchHistory = this.searchHistory.filter(h => !(h.name === item.name && h.label === item.label));
+    // 加到最前面
+    this.searchHistory.unshift(item);
+    // 最多保留 10 筆
+    if (this.searchHistory.length > 10) {
+      this.searchHistory = this.searchHistory.slice(0, 10);
+    }
+    this.saveSearchHistory();
+  }
+
+  /** 刪除單筆搜尋歷史 */
+  removeSearchHistory(index: number): void {
+    this.searchHistory.splice(index, 1);
+    this.saveSearchHistory();
+  }
+
+  /** 選擇歷史搜尋項目 */
+  selectSearchHistory(item: { name: string; label: string; addr: string; latitude: number; longitude: number }): void {
+    this.showSearchHistory = false;
+    this.isLocationSearchMode = false;
+    this.totalStoresShowList = [];
+    this.searchTerm = item.label + item.name.replace('店', '') + '門市';
+    this.loadingService.show("正在搜尋店家喵");
+    this.searchCombineAndTransformStores(item.latitude, item.longitude);
+  }
+
+  private saveSearchHistory(): void {
+    try {
+      localStorage.setItem(this.SEARCH_HISTORY_KEY, JSON.stringify(this.searchHistory));
+    } catch (e) {
+      console.warn('無法儲存搜尋歷史:', e);
+    }
   }
 
   combineStoreList(storeLatitude?: number, storeLongitude?: number): void {
@@ -619,6 +732,11 @@ export class NewSearchComponent implements OnInit {
     // 如果没有參數就用默認的定位值
     const finalLatitude = storeLatitude || this.latitude;
     const finalLongitude = storeLongitude || this.longitude;
+
+    // 儲存搜尋位置到 localStorage（供下次 GPS 失敗時 fallback）
+    if (finalLatitude && finalLongitude) {
+      this.saveLocationToStorage(finalLatitude, finalLongitude);
+    }
 
     // 使用 Food Hunter API 一次取得 7-11 + 全家門市資料
     this.foodHunterService.getNearbyAllStores(finalLatitude, finalLongitude, 2).subscribe(
@@ -780,31 +898,21 @@ export class NewSearchComponent implements OnInit {
         this.onOptionSelect(null, lat, lng);
         this.searchTerm = '';
       } else {
-        // 如果找不到，嘗試取得位置後再搜尋
-        from(this.geolocationService.getCurrentPosition())
-          .pipe(
-            switchMap((position) => {
-              this.latitude = position.coords.latitude;
-              this.longitude = position.coords.longitude;
-              return of(null);
-            })
-          ).subscribe(() => {
-            // 使用拼音比對再次搜尋
-            const searchTerm = store.store711Name?.replace('711', '').trim() || '';
-            const matchedStore = this.all711Stores.find(s => 
-              this.matchesSearchTerm(s.name, s.name_pinyin || '', searchTerm)
-            );
-            
-            if (matchedStore) {
-              lat = parseFloat(matchedStore.lat);
-              lng = parseFloat(matchedStore.lng);
-              this.onOptionSelect(null, lat, lng);
-              this.searchTerm = '';
-            } else {
-              console.error('找不到 7-11 商店:', store.store711Name);
-              this.loadingService.hide();
-            }
-          });
+        // 如果找不到，使用拼音比對再次搜尋（不呼叫 GPS）
+        const searchTerm = store.store711Name?.replace('711', '').trim() || '';
+        const matchedStore = this.all711Stores.find(s =>
+          this.matchesSearchTerm(s.name, s.name_pinyin || '', searchTerm)
+        );
+
+        if (matchedStore) {
+          lat = parseFloat(matchedStore.lat);
+          lng = parseFloat(matchedStore.lng);
+          this.onOptionSelect(null, lat, lng);
+          this.searchTerm = '';
+        } else {
+          console.error('找不到 7-11 商店:', store.store711Name);
+          this.loadingService.hide();
+        }
       }
     }
   }

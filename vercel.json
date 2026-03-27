@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/food-hunter-api/:path*",
+      "destination": "https://food-hunter-backend.vercel.app/:path*"
+    }
+  ]
+}

@@ -50,35 +50,64 @@
               <input mat-input type="search"
                 class="flex w-full flex-1 resize-none overflow-hidden rounded-lg text-primary-default focus:outline-none focus:ring-0 border-none bg-primary-light focus:border-transparent focus:bg-inherit h-full placeholder:text-primary-default px-4 rounded-r-lg rounded-l-none border-l-3 pl-2 text-base font-normal leading-normal"
                 [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onInput($event)" (keydown)="onKeyDown($event)"
+                (focus)="onSearchFocus()"
                 enterkeyhint="search"
-                placeholder="輸入店名或地址後按 Enter 搜尋" name="first" />
+                placeholder="輸入店名或地址搜尋" name="first" />
             </div>
           </label>
         </div>
       </div>
       <!-- 下拉選單 -->
       <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelect($event)">
-        <mat-option *ngFor="let store of unifiedDropDownList" [value]="store"
-          class="p-2 hover:bg-primary-light focus:bg-primary-default">
-          <div *ngIf="store.label === '7-11'" class="flex items-center gap-2">
-            <img src="{{ sevenElevenIconUrl }}" alt="7-Eleven Icon" class="w-4 h-4" />
-            <div class="flex flex-col">
-              <span>{{ store.name }}門市</span>
-              <span class="text-xs sm:text-sm text-gray-500">{{ store.addr }}</span>
+        <!-- 搜尋結果 -->
+        <ng-container *ngIf="unifiedDropDownList.length > 0">
+          <mat-option *ngFor="let store of unifiedDropDownList" [value]="store"
+            class="p-2 hover:bg-primary-light focus:bg-primary-default">
+            <div *ngIf="store.label === '7-11'" class="flex items-center gap-2">
+              <img src="{{ sevenElevenIconUrl }}" alt="7-Eleven Icon" class="w-4 h-4" />
+              <div class="flex flex-col">
+                <span>{{ store.name }}門市</span>
+                <span class="text-xs sm:text-sm text-gray-500">{{ store.addr }}</span>
+              </div>
             </div>
-          </div>
-          <div *ngIf="store.label === '全家'" class="flex items-center gap-2">
-            <img src="{{ familyMartIconUrl }}" alt="FamilyMart Icon" class="w-4 h-4" />
-            <div class="flex flex-col">
-              <span>{{ store.name.replace('店', '') }}門市</span>
-              <span class="text-xs sm:text-sm text-gray-500">{{ store.addr }}</span>
+            <div *ngIf="store.label === '全家'" class="flex items-center gap-2">
+              <img src="{{ familyMartIconUrl }}" alt="FamilyMart Icon" class="w-4 h-4" />
+              <div class="flex flex-col">
+                <span>{{ store.name.replace('店', '') }}門市</span>
+                <span class="text-xs sm:text-sm text-gray-500">{{ store.addr }}</span>
+              </div>
             </div>
-          </div>
-        </mat-option>
+          </mat-option>
+        </ng-container>
+        <!-- 歷史搜尋 -->
+        <ng-container *ngIf="showSearchHistory && searchHistory.length > 0 && unifiedDropDownList.length === 0">
+          <mat-option *ngFor="let item of searchHistory; let i = index" [value]="item"
+            class="p-2 hover:bg-primary-light">
+            <div class="flex items-center w-full">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <svg class="shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#9CA3AF" viewBox="0 0 256 256">
+                  <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm64-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h56A8,8,0,0,1,192,128Z"/>
+                </svg>
+                <img *ngIf="item.label === '7-11'" src="{{ sevenElevenIconUrl }}" alt="7-11" class="w-4 h-4 shrink-0" />
+                <img *ngIf="item.label === '全家'" src="{{ familyMartIconUrl }}" alt="全家" class="w-4 h-4 shrink-0" />
+                <div class="flex flex-col min-w-0">
+                  <span class="text-sm truncate">{{ item.label }}{{ item.name.replace('店', '') }}門市</span>
+                  <span *ngIf="item.addr" class="text-xs text-gray-400 truncate">{{ item.addr }}</span>
+                </div>
+              </div>
+              <button type="button" (mousedown)="$event.stopPropagation(); $event.preventDefault(); removeSearchHistory(i)"
+                class="text-gray-400 hover:text-red-500 p-1 ml-auto shrink-0 z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+                  <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>
+                </svg>
+              </button>
+            </div>
+          </mat-option>
+        </ng-container>
       </mat-autocomplete>
 
-      <!-- 使用目前位置按鈕開始 -->
-      <div class="flex px-4 py-3 justify-center items-center">
+      <!-- 使用目前位置按鈕開始（顯示「重新定位」時隱藏） -->
+      <div *ngIf="!isUsingHistoryLocation" class="flex px-4 py-3 justify-center items-center">
         <button type="button" (click)="onUseCurrentLocation()"
           class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-success text-white gap-2 pl-4 text-sm font-bold leading-normal tracking-[0.015em] text-xs sm:text-sm md:text-base">
           <div class="text-white" data-icon="MapPin" data-size="20px" data-weight="regular">
@@ -97,6 +126,24 @@
   </ng-container>
 </div>
 
+
+<!-- 使用歷史位置提示 -->
+<div *ngIf="isUsingHistoryLocation && totalStoresShowList.length > 0" class="flex justify-center">
+  <div class="w-full lg:w-4/5 max-w-screen-lg px-4">
+    <div class="flex items-center justify-between gap-2 bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-4">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#B45309" viewBox="0 0 256 256">
+          <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"/>
+        </svg>
+        <span class="text-amber-800 text-xs sm:text-sm">GPS 定位失敗，目前顯示上次搜尋位置附近的結果</span>
+      </div>
+      <button type="button" (click)="onUseCurrentLocation()"
+        class="text-xs sm:text-sm text-white bg-success rounded-lg px-3 py-1 whitespace-nowrap hover:opacity-80">
+        重新定位
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- 搜尋結果區域 -->
 <ng-container *ngIf="isLocationSearchMode; then locationSearchMode; else storeSearchMode"></ng-container>
