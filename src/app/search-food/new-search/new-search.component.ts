@@ -5,6 +5,7 @@ import { FormGroup, FormControl } from '@angular/forms';
 import { GeolocationService } from 'src/app/services/geolocation.service';
 import { SevenElevenRequestService } from './services/seven-eleven-request.service';
 import { FamilyMartRequestService } from './services/family-mart-request.service';
+import { FoodHunterService } from './services/food-hunter.service';
 import { LoadingService } from '../../services/loading.service'
 import { AuthService } from 'src/app/services/auth.service';
 
@@ -88,6 +89,7 @@ export class NewSearchComponent implements OnInit {
     private geolocationService: GeolocationService,
     private sevenElevenService: SevenElevenRequestService,
     private familyMartService: FamilyMartRequestService,
+    private foodHunterService: FoodHunterService,
     private authService: AuthService,
     public loadingService: LoadingService,
     public dialog: MatDialog,
@@ -171,36 +173,8 @@ export class NewSearchComponent implements OnInit {
     //取得所有 7-11 商店名稱資訊
     this.getSevenElevenAllStore();
 
-    of(true).pipe(
-      switchMap(() => {
-        return this.sevenElevenService.getAccessToken();
-      }),
-      switchMap((token: any) => {
-        if (token && token.element) {
-          sessionStorage.setItem('711Token', token.element);
-          // 如果 token 儲存成功，發送 getFoodCategory 請求
-          return this.sevenElevenService.getFoodCategory();
-        } else {
-          // 如果 token 沒有成功返回，返回空陣列
-          return of([]);
-        }
-      }),
-      catchError((error) => {
-        // 錯誤處理邏輯
-        console.error('Error:', error);
-        return of([]); // 在出錯時返回空陣列，防止應用崩潰
-      })
-    ).subscribe(
-      (res) => {
-        if (res && res.element) {
-          this.foodCategories = res.element;
-          this.loadingService.hide();
-        } else {
-          console.error('Failed to fetch food categories');
-          this.loadingService.hide();
-        }
-      }
-    );
+    // foodCategories 會在搜尋附近門市時由 Food Hunter API 動態建立
+    this.loadingService.hide();
   }
 
   getFamilyMartAllStore() {
@@ -524,45 +498,18 @@ export class NewSearchComponent implements OnInit {
     from(this.geolocationService.getCurrentPosition())
       .pipe(
         switchMap((position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-
-          this.latitude = lat;
-          this.longitude = lng;
-
+          this.latitude = position.coords.latitude;
+          this.longitude = position.coords.longitude;
           console.log('已取得位置');
-
-          return of([]);
+          return of(true);
         }),
-        switchMap((res) => {
-          if(res) {
-            return this.sevenElevenService.getAccessToken();
-          }
-          else{
-            return [];
-          }
-        }),
-        switchMap((token: any) => {
-          if (token && token.element) {
-            sessionStorage.setItem('711Token', token.element);
-            // 如果 token 儲存成功，發送 getFoodCategory 請求
-            return this.sevenElevenService.getFoodCategory();
-          } else {
-            // 如果 token 沒有成功返回，返回空陣列
-            return of([]);
-          }
+        catchError((error) => {
+          console.error('取得位置錯誤:', error);
+          return of(true);
         })
-      ).subscribe(
-        (res) => {
-          if (res) {
-            this.searchCombineAndTransformStores(storeLatitude, storeLongitude);
-            this.loadingService.hide();
-          } else {
-            console.error('Failed to fetch food categories');
-            this.loadingService.hide();
-          }
-        }
-      );
+      ).subscribe(() => {
+        this.searchCombineAndTransformStores(storeLatitude, storeLongitude);
+      });
   }
 
   onSubmit(): void {
@@ -595,45 +542,18 @@ export class NewSearchComponent implements OnInit {
     from(this.geolocationService.getCurrentPosition())
       .pipe(
         switchMap((position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-
-          this.latitude = lat;
-          this.longitude = lng;
-
+          this.latitude = position.coords.latitude;
+          this.longitude = position.coords.longitude;
           console.log('已取得位置');
-
-          return of([]);
+          return of(true);
         }),
-        switchMap((res) => {
-          if(res) {
-            return this.sevenElevenService.getAccessToken();
-          }
-          else{
-            return [];
-          }
-        }),
-        switchMap((token: any) => {
-          if (token && token.element) {
-            sessionStorage.setItem('711Token', token.element);
-            // 如果 token 儲存成功，發送 getFoodCategory 請求
-            return this.sevenElevenService.getFoodCategory();
-          } else {
-            // 如果 token 沒有成功返回，返回空陣列
-            return of([]);
-          }
+        catchError((error) => {
+          console.error('取得位置錯誤:', error);
+          return of(true);
         })
-      ).subscribe(
-        (res) => {
-          if (res) {
-            this.searchCombineAndTransformStores();
-            this.loadingService.hide();
-          } else {
-            console.error('Failed to fetch food categories');
-            this.loadingService.hide();
-          }
-        }
-      );
+      ).subscribe(() => {
+        this.searchCombineAndTransformStores();
+      });
   }
 
   combineStoreList(storeLatitude?: number, storeLongitude?: number): void {
@@ -700,40 +620,22 @@ export class NewSearchComponent implements OnInit {
     const finalLatitude = storeLatitude || this.latitude;
     const finalLongitude = storeLongitude || this.longitude;
 
-    const locationData711: LocationData = {
-      CurrentLocation: {
-        Latitude: finalLatitude,
-        Longitude: finalLongitude
-      },
-      SearchLocation: {
-        Latitude: finalLatitude,
-        Longitude: finalLongitude
-      }
-    };
-
-    const locationFamilyMart: Location = {
-      Latitude: finalLatitude,
-      Longitude: finalLongitude
-    };
-
-
-
-    // 結合兩個 API 請求
-    forkJoin({
-      sevenEleven: this.sevenElevenService.getNearByStoreList(locationData711),
-      familyMart: this.familyMartService.getNearByStoreList(locationFamilyMart)
-    }).subscribe(
+    // 使用 Food Hunter API 一次取得 7-11 + 全家門市資料
+    this.foodHunterService.getNearbyAllStores(finalLatitude, finalLongitude, 2).subscribe(
       ({ sevenEleven, familyMart }) => {
-        // 處理 7-11 資料
-        if (sevenEleven && sevenEleven.element && sevenEleven.element.StoreStockItemList) {
-          this.nearby711Stores = sevenEleven.element.StoreStockItemList.sort(
+        // 處理 7-11 資料（已由 FoodHunterService 轉換為 StoreStockItem 格式）
+        if (sevenEleven && sevenEleven.length > 0) {
+          this.nearby711Stores = sevenEleven.sort(
             (a: StoreStockItem, b: StoreStockItem) => a.Distance - b.Distance
           );
+          // 從門市商品動態建立食物分類
+          this.foodCategories = this.foodHunterService.buildFoodCategories(this.nearby711Stores);
+          this.foodHunterService.alignStoreCategories(this.nearby711Stores, this.foodCategories);
         }
 
-        // 處理全家資料
-        if (familyMart && familyMart.code === 1) {
-          this.nearbyFamilyMartStores = familyMart.data.sort(
+        // 處理全家資料（已由 FoodHunterService 轉換為 StoreModel 格式）
+        if (familyMart && familyMart.length > 0) {
+          this.nearbyFamilyMartStores = familyMart.sort(
             (a: StoreModel, b: StoreModel) => a.distance - b.distance
           );
         }
@@ -749,9 +651,11 @@ export class NewSearchComponent implements OnInit {
           this.storeDataService.setStores(this.totalStoresShowList);
           this.storeDataService.setIsUserLocationSearch(true);
         }
+        this.loadingService.hide();
       },
       (error) => {
         console.error('Error fetching store data:', error);
+        this.loadingService.hide();
       }
     );
   }

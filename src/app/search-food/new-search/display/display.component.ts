@@ -44,7 +44,13 @@ export class DisplayComponent implements OnChanges, OnInit {
       if (this.store.StoreName) {
         this.subCategories = this.category.Children;  // 更新子分類列表
         this.subCategoriesName = this.category.Name;
-        this.loadItemsBySubCategory();  // 載入子分類下的所有商品資料
+        // 檢查門市是否已有嵌入的商品資料（來自 Food Hunter API）
+        if (this.store.CategoryStockItems && this.store.CategoryStockItems.length > 0 &&
+            this.store.CategoryStockItems[0].ItemList && this.store.CategoryStockItems[0].ItemList.length > 0) {
+          this.loadItemsFromEmbeddedData();
+        } else {
+          this.loadItemsBySubCategory();  // 原本的 7-11 API 呼叫
+        }
       }
       else if (this.store.name) {
         this.subCategories = this.category.categories
@@ -62,6 +68,26 @@ export class DisplayComponent implements OnChanges, OnInit {
         });
       }
     }
+  }
+
+  /**
+   * 從 Food Hunter 已嵌入的 CategoryStockItems 中載入商品（不需額外 API 呼叫）
+   */
+  loadItemsFromEmbeddedData() {
+    if (!this.store || !this.store.CategoryStockItems) return;
+
+    const categoryStockItems: CategoryStockItem[] = this.store.CategoryStockItems;
+
+    this.subCategories.forEach((subCategory: any) => {
+      const items: Item[] = [];
+      categoryStockItems.forEach(category => {
+        if (category.Name === subCategory.Name) {
+          items.push(...category.ItemList);
+        }
+      });
+      this.itemsBySubCategory[subCategory.Name] = items || [];
+    });
+    this.isLoading = false;
   }
 
   loadItemsBySubCategory() {

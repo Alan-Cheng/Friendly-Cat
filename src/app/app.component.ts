@@ -13,14 +13,5 @@ export class AppComponent implements OnInit {
   constructor(public dialog: MatDialog) {}
 
   ngOnInit(): void {
-    this.dialog.open(MessageDialogComponent, {
-      width: '420px',
-      data: {
-        title: '通知',
-        message:
-          '由於 711 資源變更，目前僅能查詢到全家的商品，造成不便敬請見諒QQ',
-        imgPath: 'assets/S__222224406.jpg',
-      },
-    });
   }
 }

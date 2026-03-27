@@ -27,6 +27,7 @@ export const environment = {
       mid_v: 'W0_DiF4DlgU5OeQoRswrRcaaNHMWOL7K3ra3381ocZUv-rdOWS6ZuIUtHqv-7pjiccl0C5h51bVSb-Vc7VdFc8eiLEWettduAYML-s4z4Tx0vcl7gJla5iV0H3-8dZfAScnAjUK64qr9LIO_hBZ_Sam6D0LAnYK9Lb0DZm8JatIb-ogpZxJeWboeOWQ'
     }
   },
+  foodHunterUrl: '/food-hunter-api',
   firebaseConfig: {
     apiKey: "AIzaSyA3i_YLXpXuHNrmrHULrqnsIj5Z919aCfw",
     authDomain: "friendly-cat-for-you.firebaseapp.com",

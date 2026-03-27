@@ -1,0 +1,10 @@
+{
+  "/food-hunter-api": {
+    "target": "https://food-hunter-backend.vercel.app",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/food-hunter-api": ""
+    }
+  }
+}
