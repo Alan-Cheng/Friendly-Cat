@@ -27,6 +27,7 @@ export interface StoreStockItem {
   IsOperateTime: boolean;       // 是否營業
   RemainingQty: number;         // 該店總剩餘數量
   CategoryStockItems: CategoryStockItem[]; // 商店所有的分類庫存資料
+  updateDate?: string;          // 資料更新時間
 }
 
 export interface StoreStockResponse {

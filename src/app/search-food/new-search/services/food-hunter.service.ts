@@ -180,6 +180,7 @@ export class FoodHunterService {
       IsOperateTime: store.is_open === 1,
       RemainingQty: store.total_qty,
       CategoryStockItems: categoryStockItems,
+      updateDate: store.updated_at,
     } as StoreStockItem;
   }
 

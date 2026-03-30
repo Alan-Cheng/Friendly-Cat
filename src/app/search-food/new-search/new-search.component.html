@@ -155,8 +155,19 @@
     <div *ngIf="totalStoresShowList.length > 0" class="flex justify-center">
       <div class="w-full lg:w-4/5 max-w-screen-lg">
         <!-- 711區塊 -->
-        <div *ngIf="store.RemainingQty > 0" class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6">
-          <ng-container *ngIf="store.label === '7-11' && store.RemainingQty > 0">
+        <div *ngIf="store.label === '7-11'" class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6"
+          [ngStyle]="{'opacity': isStoreEmpty(store) ? 0.4 : 1}">
+          <ng-container>
+            <!-- 距離 + 更新時間 -->
+            <div class="flex justify-between items-center px-4 pt-2">
+              <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal">
+                距離您: {{ store.distance | round:1 }}
+              </p>
+              <span *ngIf="!store.distance || store.distance < 1"></span>
+              <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap">
+                更新: {{ formatUpdateDate(store.updateDate) }}
+              </span>
+            </div>
             <!-- 商店資訊開始 -->
             <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
               <div class="flex items-center gap-4">
@@ -174,34 +185,29 @@
                       <img src="assets/GoogleMap_icon.png" alt="Google Maps" class="w-6 h-6 inline-block" />
                     </a>
                   </h2>
-                  <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal line-clamp-2">
-                    距離您: {{ store.distance | round:1 }}
-                  </p>
                 </div>
               </div>
               <!-- 喜愛商店區塊 -->
-              <div class="flex items-start justify-end">
-                <button (click)="toggleFavorite(store)" class="text-red-500">
-                  <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                    fill="currentColor" viewBox="0 0 24 24">
-                    <path
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
-                    </path>
-                  </svg>
-                  <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
-                    </path>
-                  </svg>
-                </button>
-              </div>
+              <button (click)="toggleFavorite(store)" class="text-red-500">
+                <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                  fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                  </path>
+                </svg>
+                <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                  </path>
+                </svg>
+              </button>
             </div>
             <!-- 商店資訊結束 -->
 
             <!-- 食物分類區塊 -->
-            <div class="food-categories mt-4">
+            <div *ngIf="store.RemainingQty > 0" class="food-categories mt-4">
               <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
                 <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index; trackBy: trackByCategory">
                   <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
@@ -234,7 +240,18 @@
         </div>
 
         <!-- 全家區塊 -->
-        <div class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6" *ngIf="store.label === '全家'">
+        <div class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6" *ngIf="store.label === '全家'"
+          [ngStyle]="{'opacity': isStoreEmpty(store) ? 0.4 : 1}">
+          <!-- 距離 + 更新時間 -->
+          <div class="flex justify-between items-center px-4 pt-2">
+            <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal">
+              距離您: {{ store.distance | round:1 }}
+            </p>
+            <span *ngIf="!store.distance || store.distance < 1"></span>
+            <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap">
+              更新: {{ formatUpdateDate(store.updateDate) }}
+            </span>
+          </div>
           <!-- 商店資訊開始 -->
           <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
             <div class="flex items-center gap-4">
@@ -252,33 +269,28 @@
                     <img src="assets/GoogleMap_icon.png" alt="Google Maps" class="w-6 h-6 inline-block" />
                   </a>
                 </h2>
-                <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal line-clamp-2">
-                  距離您: {{ store.distance | round:1 }}
-                </p>
               </div>
             </div>
             <!-- 喜愛商店區塊 -->
-            <div class="flex items-start justify-end">
-              <button (click)="toggleFavorite(store)" class="text-red-500">
-                <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                  fill="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
-                  </path>
-                </svg>
-                <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <path
-                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
-                  </path>
-                </svg>
-              </button>
-            </div>
+            <button (click)="toggleFavorite(store)" class="text-red-500">
+              <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                </path>
+              </svg>
+              <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                </path>
+              </svg>
+            </button>
           </div>
           <!-- 商店資訊結束 -->
 
-          <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
+          <div *ngIf="store.info && store.info.length > 0" class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
             <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
             {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
               (click)="toggleSubCategoryDetails(store, category)"
@@ -326,8 +338,19 @@
     <div *ngIf="totalStoresShowList.length > 0" class="flex justify-center">
       <div class="w-full lg:w-4/5 max-w-screen-lg">
         <!-- 711區塊 -->
-        <div *ngIf="store.RemainingQty > 0" class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6">
-          <ng-container *ngIf="store.label === '7-11' && store.RemainingQty > 0">
+        <div *ngIf="store.label === '7-11'" class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6"
+          [ngStyle]="{'opacity': isStoreEmpty(store) ? 0.4 : 1}">
+          <ng-container>
+            <!-- 距離 + 更新時間 -->
+            <div class="flex justify-between items-center px-4 pt-2">
+              <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal">
+                距離您搜尋的商店: {{ store.distance | round:1 }}
+              </p>
+              <span *ngIf="!store.distance || store.distance < 1"></span>
+              <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap">
+                更新: {{ formatUpdateDate(store.updateDate) }}
+              </span>
+            </div>
             <!-- 商店資訊開始 -->
             <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
               <div class="flex items-center gap-4">
@@ -345,37 +368,29 @@
                       <img src="assets/GoogleMap_icon.png" alt="Google Maps" class="w-6 h-6 inline-block" />
                     </a>
                   </h2>
-                  <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal line-clamp-2">
-                    距離您搜尋的商店: {{ store.distance | round:1 }}
-                  </p>
-                  <!-- <p *ngIf="store.distance <= 1" class="text-orange-900 text-sm font-normal leading-normal line-clamp-2">
-                    ( 您搜尋的店家 )
-                  </p> -->
                 </div>
               </div>
               <!-- 喜愛商店區塊 -->
-              <div class="flex items-start justify-end">
-                <button (click)="toggleFavorite(store)" class="text-red-500">
-                  <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                    fill="currentColor" viewBox="0 0 24 24">
-                    <path
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
-                    </path>
-                  </svg>
-                  <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
-                    </path>
-                  </svg>
-                </button>
-              </div>
+              <button (click)="toggleFavorite(store)" class="text-red-500">
+                <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                  fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                  </path>
+                </svg>
+                <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                  </path>
+                </svg>
+              </button>
             </div>
             <!-- 商店資訊結束 -->
 
             <!-- 食物分類區塊 -->
-            <div class="food-categories mt-4">
+            <div *ngIf="store.RemainingQty > 0" class="food-categories mt-4">
               <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
                 <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index; trackBy: trackByCategory">
                   <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
@@ -408,7 +423,18 @@
         </div>
 
         <!-- 全家區塊 -->
-        <div class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6" *ngIf="store.label === '全家'">
+        <div class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6" *ngIf="store.label === '全家'"
+          [ngStyle]="{'opacity': isStoreEmpty(store) ? 0.4 : 1}">
+          <!-- 距離 + 更新時間 -->
+          <div class="flex justify-between items-center px-4 pt-2">
+            <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal">
+              距離您搜尋的商店: {{ store.distance | round:1 }}
+            </p>
+            <span *ngIf="!store.distance || store.distance < 1"></span>
+            <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap">
+              更新: {{ formatUpdateDate(store.updateDate) }}
+            </span>
+          </div>
           <!-- 商店資訊開始 -->
           <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
             <div class="flex items-center gap-4">
@@ -426,36 +452,28 @@
                     <img src="assets/GoogleMap_icon.png" alt="Google Maps" class="w-6 h-6 inline-block" />
                   </a>
                 </h2>
-                <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal line-clamp-2">
-                  距離您搜尋的商店: {{ store.distance | round:1 }}
-                </p>
-                <!-- <p *ngIf="store.distance <= 1" class="text-orange-900 text-sm font-normal leading-normal line-clamp-2">
-                  ( 您搜尋的店家 )
-                </p> -->
               </div>
             </div>
             <!-- 喜愛商店區塊 -->
-            <div class="flex items-start justify-end">
-              <button (click)="toggleFavorite(store)" class="text-red-500">
-                <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                  fill="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
-                  </path>
-                </svg>
-                <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <path
-                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
-                  </path>
-                </svg>
-              </button>
-            </div>
+            <button (click)="toggleFavorite(store)" class="text-red-500">
+              <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                </path>
+              </svg>
+              <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                </path>
+              </svg>
+            </button>
           </div>
           <!-- 商店資訊結束 -->
 
-          <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
+          <div *ngIf="store.info && store.info.length > 0" class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
             <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
             {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
               (click)="toggleSubCategoryDetails(store, category)"

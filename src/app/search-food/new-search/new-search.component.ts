@@ -802,6 +802,34 @@ export class NewSearchComponent implements OnInit {
     return storeName ? storeName.replace('全家', '') : ''
   }
 
+  /**
+   * 格式化更新時間，直接從 ISO 字串截取，不做時區轉換
+   * 輸入範例: "2026-03-30T11:32:10.799108+00:00"
+   * 輸出範例: "03/30 11:32"
+   */
+  formatUpdateDate(dateStr: string): string {
+    if (!dateStr) return '';
+    // 嘗試從 ISO 8601 格式直接截取: YYYY-MM-DDTHH:mm
+    const match = dateStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (match) {
+      return `${match[2]}/${match[3]} ${match[4]}:${match[5]}`;
+    }
+    return dateStr;
+  }
+
+  /**
+   * 判斷店家是否無商品（用於半透明效果）
+   */
+  isStoreEmpty(store: any): boolean {
+    if (store.label === '7-11') {
+      return !store.RemainingQty || store.RemainingQty === 0;
+    }
+    if (store.label === '全家') {
+      return !store.info || store.info.length === 0;
+    }
+    return false;
+  }
+
   loadFavoriteStores() {
     if (this.user.emailVerified) {
       const userRef = this.firestore.collection('users').doc(this.user.uid);
