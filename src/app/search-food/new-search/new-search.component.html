@@ -1,4 +1,4 @@
-<app-sider [user]="user" [favoriteStores]="favoriteStores" (userUpdated)="onUserUpdated($event)"
+﻿<app-sider [user]="user" [favoriteStores]="favoriteStores" (userUpdated)="onUserUpdated($event)"
   (favoriteStoresUpdated)="onFavoriteStoresUpdated($event)" (searchStore)="onFavoriteStoreSearch($event)"
   (foodSearchResult)="onFoodSearchResult($event)"></app-sider>
 
@@ -159,26 +159,25 @@
           [ngStyle]="{'opacity': isStoreEmpty(store) ? 0.4 : 1}">
           <ng-container>
             <!-- 距離 + 更新時間 -->
-            <div class="flex justify-between items-center px-4 pt-2">
-              <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal">
-                距離您: {{ store.distance | round:1 }}
-              </p>
-              <span *ngIf="!store.distance || store.distance < 1"></span>
-              <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap">
-                更新: {{ formatUpdateDate(store.updateDate) }}
-              </span>
-            </div>
-            <!-- 商店資訊開始 -->
+<!-- 商店資訊開始 -->
             <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
-              <div class="flex items-center gap-4">
+              <div class="flex items-center gap-4 w-full">
                 <div
                   class="text-dark border border-gray-200 flex items-center justify-center rounded-lg bg-primary-light shrink-0 size-12"
                   style="padding:16px" data-icon="Storefront" data-size="24px" data-weight="regular">
                   <img [src]="
                     sevenElevenIconUrl" alt="Store Icon" width="24px" height="24px" fill="currentColor" />
                 </div>
-                <div class="flex flex-col justify-center text-lg sm:text-xl font-semibold">
-                  <h2 class="text-dark text-base font-medium leading-normal line-clamp-1">
+                <div class="flex w-full flex-col gap-1 text-lg sm:text-xl font-semibold">
+                  <div class="flex w-full items-center justify-between gap-3">
+                    <span *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal whitespace-nowrap">
+                      距離: {{ store.distance | round:1 }}
+                    </span>
+                    <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap font-normal">
+                      更新: {{ formatUpdateDate(store.updateDate) }}
+                    </span>
+                  </div>
+                  <h2 class="text-dark text-base font-medium leading-normal line-clamp-1 store-title">
                     7-11{{ store.StoreName }}門市
                     <a href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank"
                       class="ml-2">
@@ -243,26 +242,25 @@
         <div class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6" *ngIf="store.label === '全家'"
           [ngStyle]="{'opacity': isStoreEmpty(store) ? 0.4 : 1}">
           <!-- 距離 + 更新時間 -->
-          <div class="flex justify-between items-center px-4 pt-2">
-            <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal">
-              距離您: {{ store.distance | round:1 }}
-            </p>
-            <span *ngIf="!store.distance || store.distance < 1"></span>
-            <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap">
-              更新: {{ formatUpdateDate(store.updateDate) }}
-            </span>
-          </div>
-          <!-- 商店資訊開始 -->
+<!-- 商店資訊開始 -->
           <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 w-full">
               <div
                 class="text-dark border border-gray-200 flex items-center justify-center rounded-lg bg-primary-light shrink-0 size-12"
                 style="padding:16px" data-icon="Storefront" data-size="24px" data-weight="regular">
                 <img [src]="
                   familyMartIconUrl" alt="Store Icon" width="24px" height="24px" fill="currentColor" />
               </div>
-              <div class="flex flex-col justify-center text-lg sm:text-xl font-semibold">
-                <h2 class="text-dark text-base font-medium leading-normal line-clamp-1">
+              <div class="flex w-full flex-col gap-1 text-lg sm:text-xl font-semibold">
+                <div class="flex w-full items-center justify-between gap-3">
+                  <span *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal whitespace-nowrap">
+                    距離: {{ store.distance | round:1 }}
+                  </span>
+                  <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap font-normal">
+                    更新: {{ formatUpdateDate(store.updateDate) }}
+                  </span>
+                </div>
+                <h2 class="text-dark text-base font-medium leading-normal line-clamp-1 store-title">
                   {{ store.name }}
                   <a href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank"
                     class="ml-2">
@@ -342,26 +340,25 @@
           [ngStyle]="{'opacity': isStoreEmpty(store) ? 0.4 : 1}">
           <ng-container>
             <!-- 距離 + 更新時間 -->
-            <div class="flex justify-between items-center px-4 pt-2">
-              <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal">
-                距離您搜尋的商店: {{ store.distance | round:1 }}
-              </p>
-              <span *ngIf="!store.distance || store.distance < 1"></span>
-              <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap">
-                更新: {{ formatUpdateDate(store.updateDate) }}
-              </span>
-            </div>
-            <!-- 商店資訊開始 -->
+<!-- 商店資訊開始 -->
             <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
-              <div class="flex items-center gap-4">
+              <div class="flex items-center gap-4 w-full">
                 <div
                   class="text-dark border border-gray-200 flex items-center justify-center rounded-lg bg-primary-light shrink-0 size-12"
                   style="padding:16px" data-icon="Storefront" data-size="24px" data-weight="regular">
                   <img [src]="
                     sevenElevenIconUrl" alt="Store Icon" width="24px" height="24px" fill="currentColor" />
                 </div>
-                <div class="flex flex-col justify-center text-lg sm:text-xl font-semibold">
-                  <h2 class="text-dark text-base font-medium leading-normal line-clamp-1">
+                <div class="flex w-full flex-col gap-1 text-lg sm:text-xl font-semibold">
+                  <div class="flex w-full items-center justify-between gap-3">
+                    <span *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal whitespace-nowrap">
+                      距離: {{ store.distance | round:1 }}
+                    </span>
+                    <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap font-normal">
+                      更新: {{ formatUpdateDate(store.updateDate) }}
+                    </span>
+                  </div>
+                  <h2 class="text-dark text-base font-medium leading-normal line-clamp-1 store-title">
                     7-11{{ store.StoreName }}門市
                     <a href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank"
                       class="ml-2">
@@ -426,26 +423,25 @@
         <div class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6" *ngIf="store.label === '全家'"
           [ngStyle]="{'opacity': isStoreEmpty(store) ? 0.4 : 1}">
           <!-- 距離 + 更新時間 -->
-          <div class="flex justify-between items-center px-4 pt-2">
-            <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal">
-              距離您搜尋的商店: {{ store.distance | round:1 }}
-            </p>
-            <span *ngIf="!store.distance || store.distance < 1"></span>
-            <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap">
-              更新: {{ formatUpdateDate(store.updateDate) }}
-            </span>
-          </div>
-          <!-- 商店資訊開始 -->
+<!-- 商店資訊開始 -->
           <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 w-full">
               <div
                 class="text-dark border border-gray-200 flex items-center justify-center rounded-lg bg-primary-light shrink-0 size-12"
                 style="padding:16px" data-icon="Storefront" data-size="24px" data-weight="regular">
                 <img [src]="
                   familyMartIconUrl" alt="Store Icon" width="24px" height="24px" fill="currentColor" />
               </div>
-              <div class="flex flex-col justify-center text-lg sm:text-xl font-semibold">
-                <h2 class="text-dark text-base font-medium leading-normal line-clamp-1">
+              <div class="flex w-full flex-col gap-1 text-lg sm:text-xl font-semibold">
+                <div class="flex w-full items-center justify-between gap-3">
+                  <span *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal whitespace-nowrap">
+                    距離: {{ store.distance | round:1 }}
+                  </span>
+                  <span *ngIf="store.updateDate" class="text-xs text-gray-400 whitespace-nowrap font-normal">
+                    更新: {{ formatUpdateDate(store.updateDate) }}
+                  </span>
+                </div>
+                <h2 class="text-dark text-base font-medium leading-normal line-clamp-1 store-title">
                   {{ store.name }}
                   <a href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank"
                     class="ml-2">
@@ -500,3 +496,9 @@
     </div>
   </ng-container>
 </ng-template>
+
+
+
+
+
+

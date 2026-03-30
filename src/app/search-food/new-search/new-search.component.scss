@@ -1,3 +1,7 @@
 ::ng-deep .mat-mdc-autocomplete-panel mat-option .mdc-list-item__primary-text {
   width: 100%;
 }
+
+::ng-deep .mat-typography .store h2.store-title {
+  margin: 0 !important;
+}

@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "Angular Dev Server",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["start"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["ng", "serve"],
       "port": 4200
     }
   ]
