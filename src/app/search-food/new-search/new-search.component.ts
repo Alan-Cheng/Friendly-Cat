@@ -173,7 +173,7 @@ export class NewSearchComponent implements OnInit {
 
     of(true).pipe(
       switchMap(() => {
-        return this.sevenElevenService.getAccessToken();
+        return this.sevenElevenService.ensureWorkerReady();
       }),
       switchMap((token: any) => {
         if (token && token.element) {
@@ -536,7 +536,7 @@ export class NewSearchComponent implements OnInit {
         }),
         switchMap((res) => {
           if(res) {
-            return this.sevenElevenService.getAccessToken();
+            return this.sevenElevenService.ensureWorkerReady();
           }
           else{
             return [];
@@ -607,7 +607,7 @@ export class NewSearchComponent implements OnInit {
         }),
         switchMap((res) => {
           if(res) {
-            return this.sevenElevenService.getAccessToken();
+            return this.sevenElevenService.ensureWorkerReady();
           }
           else{
             return [];

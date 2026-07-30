@@ -1,0 +1,7 @@
+name = "friendlycat-711-proxy"
+main = "src/index.js"
+compatibility_date = "2026-07-30"
+workers_dev = false
+
+# In Cloudflare, bind proxy.friendlycat.alan-cheng.com to this Worker.
+# Configure MALL_KEY, MID, and GID as Worker secrets; do not put them here.

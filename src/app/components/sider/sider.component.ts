@@ -257,7 +257,7 @@ export class SiderComponent {
 
   // 執行食物搜尋
   performFoodSearch(searchTerm: string) {
-    return from(this.sevenElevenService.getAccessToken())
+    return from(this.sevenElevenService.ensureWorkerReady())
       .pipe(
         switchMap((token: any) => {
           if (token && token.element) {
