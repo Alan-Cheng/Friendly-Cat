@@ -136,7 +136,7 @@ export class LoginPageComponent {
           data: {
             title: "登入成功",
             message: `${user.displayName}～歡迎回來喵`,
-            imgPath: "assets/S__222224406.jpg"
+            imgPath: "assets/S__222224406.png"
           }
         });
         dialogRef.afterClosed().subscribe((result) => {
@@ -213,7 +213,7 @@ export class LoginPageComponent {
           data: {
             title: "登入成功",
             message: `${user.displayName}～歡迎回來喵`,
-            imgPath: "assets/S__222224406.jpg"
+            imgPath: "assets/S__222224406.png"
           }
         });
         dialogRef.afterClosed().subscribe((result) => {

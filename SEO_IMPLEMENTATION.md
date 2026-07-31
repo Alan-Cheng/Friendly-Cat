@@ -34,7 +34,7 @@
   "name": "友善黑貓 Friendly Cat",
   "alternateName": ["Friendly Cat", "友善超人"],
   "url": "https://alan-cheng.github.io/Friendly-Cat/",
-  "logo": "https://github.com/Alan-Cheng/Friendly-Cat/blob/main/src/assets/S__222224406.jpg?raw=true",
+  "logo": "https://github.com/Alan-Cheng/Friendly-Cat/blob/main/src/assets/S__222224406.png?raw=true",
   "description": "最懂你也最方便的友善時光查詢平台",
   "sameAs": ["https://github.com/Alan-Cheng/Friendly-Cat"]
 }

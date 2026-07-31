@@ -800,7 +800,7 @@ export class NewSearchComponent implements OnInit {
           data: {
             title: "取消收藏",
             message: `已將『${store.storeName}』從收藏中移除`,
-            imgPath: "assets/S__222224406.jpg"
+            imgPath: "assets/S__222224406.png"
           }
         });
         dialogRef.afterClosed().subscribe(result => {
@@ -811,7 +811,7 @@ export class NewSearchComponent implements OnInit {
           data: {
             title: "新增收藏",
             message: `『${store.storeName}』已加入您的收藏店家`,
-            imgPath: "assets/S__222224406.jpg"
+            imgPath: "assets/S__222224406.png"
           }
         });
 
