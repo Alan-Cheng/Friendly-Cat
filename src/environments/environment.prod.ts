@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
+  turnstileSiteKey: '0x4AAAAAAEEefTsxRSmYSGna',
   familyMartUrl: {
     icon: 'https://www.family.com.tw/ESG/images/icon/LOGO.ico',
     base: 'https://stamp.family.com.tw/api/maps',

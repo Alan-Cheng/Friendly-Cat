@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -8,6 +9,10 @@ import { Observable } from 'rxjs';
 export class RequestService {
 
   constructor(private http: HttpClient) {}
+
+  private isSevenElevenProxy(url: string): boolean {
+    return url.startsWith(environment.sevenElevenUrl.base);
+  }
 
   get(url: string, params: any = {}): Observable<any> {
     let httpParams = new HttpParams();
@@ -20,7 +25,10 @@ export class RequestService {
     }
 
     // 發送 GET 請求
-    return this.http.get(url, { params: httpParams });
+    return this.http.get(url, {
+      params: httpParams,
+      withCredentials: this.isSevenElevenProxy(url)
+    });
   }
 
   post(url: string, params?: any, body?: any, headers?: any): Observable<any> {
@@ -36,6 +44,10 @@ export class RequestService {
     }
 
     // 發送 POST 請求
-    return this.http.post(url, body || {}, { params: httpParams, headers });
+    return this.http.post(url, body || {}, {
+      params: httpParams,
+      headers,
+      withCredentials: this.isSevenElevenProxy(url)
+    });
   }
 }

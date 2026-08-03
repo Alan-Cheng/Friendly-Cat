@@ -3,7 +3,10 @@ const UPSTREAM_ORIGIN = "https://lovefood.openpoint.com.tw";
 const TOKEN_PATH = "/LoveFood/api/Auth/FrontendAuth/AccessToken";
 const LOVEFOOD_PREFIX = "/LoveFood/api/";
 const IMAP_PREFIX = "/iMap/api/";
+const PROXY_TOKEN_PATH = "/proxy-token";
 const ALLOWED_ORIGIN = "https://friendlycat.alan-cheng.com";
+const PROXY_TOKEN_COOKIE = "proxy-token";
+const PROXY_TOKEN_TTL_SECONDS = 10 * 60;
 
 const TOKEN_CACHE_KEY = "https://worker.internal/cache/7-eleven-token";
 const MIN_TOKEN_TTL_HOURS = 1;
@@ -107,7 +110,8 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Turnstile-Token",
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
@@ -129,6 +133,8 @@ async function logRequestAsCurl(
 
   headers.delete("host");
   headers.delete("content-length");
+  headers.delete("cookie");
+  headers.delete("x-turnstile-token");
 
   let body;
 
@@ -190,6 +196,100 @@ function configured(env) {
     typeof env.MID === "string" &&
     typeof env.GID === "string"
   );
+}
+
+function proxyTokenConfigured(env) {
+  return (
+    typeof env.TURNSTILE_SECRET_KEY === "string" &&
+    env.TURNSTILE_SECRET_KEY &&
+    env.PROXY_TOKENS
+  );
+}
+
+function cookieValue(request, name) {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = request.headers
+    .get("Cookie")
+    ?.match(new RegExp(`(?:^|;\\s*)${escapedName}=([^;]*)`));
+
+  return match ? match[1] : null;
+}
+
+function createProxyToken() {
+  // 24 random bytes encode to exactly 32 URL-safe Base64 characters.
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return base64Url(bytes);
+}
+
+function proxyTokenCookie(token) {
+  return [
+    `${PROXY_TOKEN_COOKIE}=${token}`,
+    "Path=/",
+    `Max-Age=${PROXY_TOKEN_TTL_SECONDS}`,
+    "HttpOnly",
+    "Secure",
+    "SameSite=None",
+  ].join("; ");
+}
+
+async function verifyTurnstileToken(request, env) {
+  const token = request.headers.get("X-Turnstile-Token");
+
+  if (!token) {
+    return false;
+  }
+
+  const form = new FormData();
+  form.set("secret", env.TURNSTILE_SECRET_KEY);
+  form.set("response", token);
+
+  const clientIp = request.headers.get("CF-Connecting-IP");
+  if (clientIp) {
+    form.set("remoteip", clientIp);
+  }
+
+  const response = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    { method: "POST", body: form },
+  );
+  const result = await response.json().catch(() => null);
+
+  return response.ok && result?.success === true && result?.action === "proxy-token";
+}
+
+async function issueProxyToken(request, env, origin) {
+  if (!proxyTokenConfigured(env)) {
+    return responseWithCors(
+      new Response("Turnstile and PROXY_TOKENS bindings are required", { status: 500 }),
+      origin,
+    );
+  }
+
+  if (!(await verifyTurnstileToken(request, env))) {
+    return responseWithCors(
+      new Response("Invalid Turnstile token", { status: 403 }),
+      origin,
+    );
+  }
+
+  const token = createProxyToken();
+  await env.PROXY_TOKENS.put(`proxy-token:${token}`, "1", {
+    expirationTtl: PROXY_TOKEN_TTL_SECONDS,
+  });
+
+  return responseWithCors(
+    Response.json(
+      { expiresIn: PROXY_TOKEN_TTL_SECONDS },
+      { headers: { "Set-Cookie": proxyTokenCookie(token), "Cache-Control": "no-store" } },
+    ),
+    origin,
+  );
+}
+
+async function hasValidProxyToken(request, env) {
+  const token = cookieValue(request, PROXY_TOKEN_COOKIE);
+  return Boolean(token && (await env.PROXY_TOKENS.get(`proxy-token:${token}`)));
 }
 
 async function refreshToken(env) {
@@ -341,6 +441,7 @@ async function forwardRequest(
   headers.delete("Referer");
   headers.delete("Host");
   headers.delete("Content-Length");
+  headers.delete("Cookie");
 
   await logRequestAsCurl(
     "711 proxy upstream curl",
@@ -391,6 +492,21 @@ export default {
       );
     }
 
+    const path = new URL(request.url).pathname;
+
+    // A new Turnstile verification is also the refresh mechanism: it replaces
+    // the existing short-lived cookie with a new ten-minute proxy token.
+    if (path === PROXY_TOKEN_PATH) {
+      if (request.method !== "GET") {
+        return responseWithCors(
+          new Response("Use GET", { status: 405 }),
+          origin,
+        );
+      }
+
+      return issueProxyToken(request, env, origin);
+    }
+
     if (!configured(env)) {
       return responseWithCors(
         new Response(
@@ -403,9 +519,23 @@ export default {
       );
     }
 
-    const path = new URL(request.url).pathname;
+    if (!proxyTokenConfigured(env)) {
+      return responseWithCors(
+        new Response("Turnstile and PROXY_TOKENS bindings are required", {
+          status: 500,
+        }),
+        origin,
+      );
+    }
 
     try {
+      if (!(await hasValidProxyToken(request, env))) {
+        return responseWithCors(
+          new Response("Valid proxy token required", { status: 401 }),
+          origin,
+        );
+      }
+
       // 保留原有 API 相容性，但不將 JWT 暴露給瀏覽器。
       if (path === TOKEN_PATH) {
         await getToken(env);

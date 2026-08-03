@@ -556,7 +556,6 @@ export class NewSearchComponent implements OnInit {
         (res) => {
           if (res) {
             this.searchCombineAndTransformStores(storeLatitude, storeLongitude);
-            this.loadingService.hide();
           } else {
             console.error('Failed to fetch food categories');
             this.loadingService.hide();
@@ -591,7 +590,7 @@ export class NewSearchComponent implements OnInit {
     this.unifiedDropDownList = [];
     this.searchTerm = '';
 
-    this.loadingService.show("搜尋店家中喵")
+    this.loadingService.show("搜尋店家中")
     from(this.geolocationService.getCurrentPosition())
       .pipe(
         switchMap((position) => {
@@ -627,7 +626,6 @@ export class NewSearchComponent implements OnInit {
         (res) => {
           if (res) {
             this.searchCombineAndTransformStores();
-            this.loadingService.hide();
           } else {
             console.error('Failed to fetch food categories');
             this.loadingService.hide();
@@ -693,6 +691,17 @@ export class NewSearchComponent implements OnInit {
       // 根據距離排序
       this.totalStoresShowList.sort((a, b) => a.distance - b.distance);
     }
+
+    if (this.totalStoresShowList.length === 0) {
+      this.dialog.open(MessageDialogComponent, {
+        width: '360px',
+        data: {
+          title: '目前沒有商品',
+          message: '目前搜尋範圍內沒有商品，請稍後再試。',
+          imgPath: 'assets/NoResult.jpg'
+        }
+      });
+    }
   }
 
   searchCombineAndTransformStores(storeLatitude?: number, storeLongitude?: number): void {
@@ -716,7 +725,7 @@ export class NewSearchComponent implements OnInit {
       Longitude: finalLongitude
     };
 
-
+    this.loadingService.show('正在取得附近門市資訊，請稍後');
 
     // 結合兩個 API 請求
     forkJoin({
@@ -724,6 +733,10 @@ export class NewSearchComponent implements OnInit {
       familyMart: this.familyMartService.getNearByStoreList(locationFamilyMart)
     }).subscribe(
       ({ sevenEleven, familyMart }) => {
+        // 每一次搜尋都以本次回應重建清單，不能沿用上一次的門市資料。
+        this.nearby711Stores = [];
+        this.nearbyFamilyMartStores = [];
+
         // 處理 7-11 資料
         if (sevenEleven && sevenEleven.element && sevenEleven.element.StoreStockItemList) {
           this.nearby711Stores = sevenEleven.element.StoreStockItemList.sort(
@@ -749,9 +762,12 @@ export class NewSearchComponent implements OnInit {
           this.storeDataService.setStores(this.totalStoresShowList);
           this.storeDataService.setIsUserLocationSearch(true);
         }
+
+        this.loadingService.hide();
       },
       (error) => {
         console.error('Error fetching store data:', error);
+        this.loadingService.hide();
       }
     );
   }

@@ -54,7 +54,11 @@
   <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link rel="preconnect" href="https://www.google-analytics.com">
+  <link rel="preconnect" href="https://challenges.cloudflare.com">
   <link rel="dns-prefetch" href="https://www.google-analytics.com">
+
+  <!-- Load Turnstile before Angular starts so 7-ELEVEN verification is ready sooner. -->
+  <script id="turnstile-api" src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">

@@ -5,3 +5,5 @@ workers_dev = false
 
 # In Cloudflare, bind proxy.friendlycat.alan-cheng.com to this Worker.
 # Configure MALL_KEY, MID, and GID as Worker secrets; do not put them here.
+# Configure TURNSTILE_SECRET_KEY as a Worker secret and bind a KV namespace as
+# PROXY_TOKENS before deploying. See README for the required commands.

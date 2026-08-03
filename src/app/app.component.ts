@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ProxyTokenService } from './services/proxy-token.service';
 
 @Component({
   selector: 'app-root',
@@ -8,5 +9,9 @@ import { Component, OnInit } from '@angular/core';
 export class AppComponent implements OnInit {
   title = 'friendly-time';
 
-  ngOnInit(): void {}
+  constructor(private readonly proxyTokenService: ProxyTokenService) {}
+
+  ngOnInit(): void {
+    void this.proxyTokenService.start();
+  }
 }
