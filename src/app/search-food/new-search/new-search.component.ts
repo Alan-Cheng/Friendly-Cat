@@ -639,18 +639,20 @@ export class NewSearchComponent implements OnInit {
     this.totalStoresShowList = [];
 
     // 處理7-11商店
-    this.nearby711Stores.forEach((store) => {
-      const transformedStore = {
-        ...store,
-        storeName: `7-11${store.StoreName}門市`,
-        label: '7-11',
-        distance: store.Distance, // 統一使用 `distance` 字段
-        remainingQty: store.RemainingQty,
-        showDistance: true,
-        CategoryStockItems: store.CategoryStockItems // 確保保留 CategoryStockItems
-      };
-      this.totalStoresShowList.push(transformedStore); // 推入統一列表
-    });
+    this.nearby711Stores
+      .filter((store) => Number(store.RemainingQty) > 0)
+      .forEach((store) => {
+        const transformedStore = {
+          ...store,
+          storeName: `7-11${store.StoreName}門市`,
+          label: '7-11',
+          distance: store.Distance, // 統一使用 `distance` 字段
+          remainingQty: store.RemainingQty,
+          showDistance: true,
+          CategoryStockItems: store.CategoryStockItems // 確保保留 CategoryStockItems
+        };
+        this.totalStoresShowList.push(transformedStore); // 推入統一列表
+      });
 
     // 處理全家商店
     this.nearbyFamilyMartStores.forEach((store) => {
@@ -692,12 +694,17 @@ export class NewSearchComponent implements OnInit {
       this.totalStoresShowList.sort((a, b) => a.distance - b.distance);
     }
 
+    const hasNearbyStore =
+      this.nearby711Stores.length > 0 || this.nearbyFamilyMartStores.length > 0;
+
     if (this.totalStoresShowList.length === 0) {
       this.dialog.open(MessageDialogComponent, {
         width: '360px',
         data: {
           title: '目前沒有商品',
-          message: '目前搜尋範圍內沒有商品，請稍後再試。',
+          message: hasNearbyStore
+            ? '目前的搜尋範圍內並無折扣商品，請稍後再試。'
+            : '搜尋範圍內沒有商店，請稍後再試。',
           imgPath: 'assets/NoResult.jpg'
         }
       });
