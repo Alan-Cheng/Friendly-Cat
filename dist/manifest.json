@@ -1,0 +1,20 @@
+{
+  "name": "友善黑貓 Friendly Cat",
+  "short_name": "友善黑貓",
+  "description": "最懂你也最方便的友善時光查詢平台",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "zh-TW",
+  "categories": ["lifestyle", "utilities", "food"],
+  "icons": [
+    {
+      "src": "assets/icon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    }
+  ]
+} 
