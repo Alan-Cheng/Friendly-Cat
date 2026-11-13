@@ -114,6 +114,9 @@ li span, li small { display: block; } li small { color: #687568; margin-top: 4px
 .store-directory .directory-store-name { flex: 1; min-width: 0; }
 .store-directory .directory-quantity { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-width: 44px; padding: 4px 7px; border-radius: 5px; background: #e3ede0; color: #476c47; font-size: 11px; }
 .store-directory .directory-quantity.is-unknown { color: #97a28a; background: #edf0e5; }
+.store-directory .directory-metrics { display: flex; flex-shrink: 0; align-items: center; gap: 8px; }
+.store-directory .directory-distance { color: #174ea6; font-size: 12px; font-weight: 400; line-height: 1.5; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.store-directory .directory-distance.is-unavailable { color: #5f6368; }
 
 /* Map navigation: search and chips above, utility controls along the edges. */
 .town-header { top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); right: auto; width: min(420px, calc(100% - 24px)); display: block; }

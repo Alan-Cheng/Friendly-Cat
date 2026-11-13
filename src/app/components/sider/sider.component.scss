@@ -10,6 +10,11 @@
 h2 { font-size: 23px; letter-spacing: -.04em; margin: 5px 0 0; font-weight: 600; }
 .close-btn { width: 44px; min-height: 44px; border: 0; border-radius: 50%; background: transparent; color: #425a3c; font-size: 26px; cursor: pointer; }
 .close-btn:hover { background: #ccd9c1; }
+#sidebar-title:focus { outline: none; }
+.navigation-icon { width: 18px; height: 18px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+@media (hover: none) {
+  .close-btn:hover, .close-btn:focus { background: transparent; outline: none; }
+}
 .sidebar-body { flex: 1; min-height: 0; padding: 22px; overflow-y: auto; overscroll-behavior: contain; }
 .sidebar-intro { font-size: 13px; color: #74816b; line-height: 1.8; margin: 0 0 28px; }
 h3 { display: flex; justify-content: space-between; margin: 0 0 14px; font-size: 14px; font-weight: 600; } h3 span { font-size: 11px; font-weight: 400; color: #75866b; }

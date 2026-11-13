@@ -49,6 +49,19 @@
     <summary><span>店家清單 <small>{{ visibleStores.length }} 間門市</small></span></summary>
     <p *ngIf="dataError">{{ dataError }}</p>
     <p *ngIf="!visibleStores.length">這個範圍尚無符合的店家，請移動或縮小地圖。</p>
-    <ul><li *ngFor="let store of visibleStores"><button type="button" (mouseenter)="highlightStore(store.id)" (mouseleave)="highlightStore()" (focus)="highlightStore(store.id)" (blur)="highlightStore()" [class.is-highlighted]="highlightedId === store.id" (click)="select(store)"><span class="directory-name-row"><span class="directory-store-name">{{ store.name }}</span><span class="directory-quantity" [class.is-unknown]="store.quantity === undefined">{{ store.quantity === undefined ? '—' : store.quantity + ' 件' }}</span></span><small>{{ distance(store) }} · {{ store.address }}</small></button></li></ul>
+    <ul>
+      <li *ngFor="let store of visibleStores">
+        <button type="button" (mouseenter)="highlightStore(store.id)" (mouseleave)="highlightStore()" (focus)="highlightStore(store.id)" (blur)="highlightStore()" [class.is-highlighted]="highlightedId === store.id" (click)="select(store)">
+          <span class="directory-name-row">
+            <span class="directory-store-name">{{ store.name }}</span>
+            <span class="directory-metrics">
+              <span class="directory-quantity" [class.is-unknown]="store.quantity === undefined">{{ store.quantity === undefined ? '—' : store.quantity + ' 件' }}</span>
+              <span class="directory-distance" [class.is-unavailable]="!hasLocation()" [title]="hasLocation() ? '與目前位置的直線距離' : '開啟定位後顯示距離'">{{ distance(store) }}</span>
+            </span>
+          </span>
+          <small class="directory-address">{{ store.address || '暫無地址資訊' }}</small>
+        </button>
+      </li>
+    </ul>
   </details>
 </section>

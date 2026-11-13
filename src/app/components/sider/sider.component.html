@@ -3,7 +3,7 @@
   <span class="text-with-shadow">友善黑貓 Friendly Cat</span>
 </mat-toolbar>
 <dialog #sidebarWindow id="world-sidebar" class="sidebar" aria-labelledby="sidebar-title" closedby="any" (close)="sidebarOpen = false">
-  <header class="sidebar-header"><div><h2 id="sidebar-title">FRIENDLY CAT</h2></div><button type="button" autofocus (click)="closeSidebar()" class="close-btn" aria-label="關閉會員與收藏選單">×</button></header>
+  <header class="sidebar-header"><div><h2 id="sidebar-title" tabindex="-1" autofocus>FRIENDLY CAT</h2></div><button type="button" (click)="closeSidebar()" class="close-btn" aria-label="關閉會員與收藏選單">×</button></header>
   <div class="sidebar-body">
     <p class="sidebar-intro">{{ user ? user.displayName + '，今天想去哪一間？' : '登入後，把喜歡的街角收藏起來。' }}</p>
     <section class="search-section" aria-labelledby="sidebar-search-title">
@@ -14,15 +14,15 @@
       <p class="field-hint" *ngIf="inventoryState === 'ready' && !hasStoreData">目前街區沒有可搜尋的即期商品。</p>
       <p class="field-hint" *ngIf="inventoryState === 'error'">商品服務暫時無法回應，移動地圖後會重新查詢。</p>
       <p class="field-hint" *ngIf="inventoryState === 'idle'">正在準備附近門市資料。</p>
-      <div class="search-results" *ngIf="foodSearchResults.length"><p class="result-count">找到 {{ foodSearchResults.length }} 個結果</p><ul><li *ngFor="let result of foodSearchResults"><button type="button" class="result-item" (click)="closeSidebar(); onFoodResultClick(result)"><span><strong>{{ result.foodName }}</strong><small>{{ result.storeName }}</small></span><span aria-hidden="true">↗</span></button></li></ul></div>
+      <div class="search-results" *ngIf="foodSearchResults.length"><p class="result-count">找到 {{ foodSearchResults.length }} 個結果</p><ul><li *ngFor="let result of foodSearchResults"><button type="button" class="result-item" (click)="closeSidebar(); onFoodResultClick(result)"><span><strong>{{ result.foodName }}</strong><small>{{ result.storeName }}</small></span><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button></li></ul></div>
       <p class="field-hint" *ngIf="hasSearched && !foodSearchResults.length && !isSearching">找不到相關商品</p>
       <p class="field-hint" *ngIf="isSearching" role="status">正在搜尋食物…</p>
     </section>
     <section class="favorites-section" aria-labelledby="sidebar-favorites-title"><h3 id="sidebar-favorites-title">收藏店家 <span>{{ user ? favoriteStores.length : 0 }}</span></h3>
       <p class="empty-favorites" *ngIf="!user || !favoriteStores.length">{{ user ? '還沒有收藏的店家。' : '登入後，就能保存常去的門市。' }}</p>
-      <ul *ngIf="user"><li *ngFor="let store of favoriteStores"><button type="button" class="store-item" (click)="closeSidebar(); onSearchStore(store)"><span class="store-brand">{{ store.storeName.includes('7-11') ? '7-ELEVEN' : 'FamilyMart' }}</span><span class="store-name">{{ store.storeName }}</span><span aria-hidden="true">↗</span></button></li></ul>
+      <ul *ngIf="user"><li *ngFor="let store of favoriteStores"><button type="button" class="store-item" (click)="closeSidebar(); onSearchStore(store)"><span class="store-brand">{{ store.storeName.includes('7-11') ? '7-ELEVEN' : 'FamilyMart' }}</span><span class="store-name">{{ store.storeName }}</span><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button></li></ul>
     </section>
 
   </div>
-  <footer class="login-section"><a class="version-link" [href]="worldMode ? '/classic' : '/'">{{ worldMode ? '切換舊版頁面' : '切換 3D 頁面' }}<span aria-hidden="true">⇄</span></a><button *ngIf="worldMode" type="button" class="tour-link" (click)="closeSidebar(); tutorialRequested.emit()"><span>觀看網站導引</span><span aria-hidden="true">↗</span></button><button type="button" class="login-btn" (click)="closeSidebar(); loginOrlogout()">{{ user ? '登出帳號' : '登入／建立帳號' }}</button><span>友善時光，從這個街區開始。</span></footer>
+  <footer class="login-section"><a class="version-link" [href]="worldMode ? '/classic' : '/'">{{ worldMode ? '切換舊版頁面' : '切換 3D 頁面' }}<svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 8h16m-4-4 4 4-4 4M20 16H4m4-4-4 4 4 4"/></svg></a><button *ngIf="worldMode" type="button" class="tour-link" (click)="closeSidebar(); tutorialRequested.emit()"><span>觀看網站導引</span><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button><button type="button" class="login-btn" (click)="closeSidebar(); loginOrlogout()">{{ user ? '登出帳號' : '登入／建立帳號' }}</button><span>友善時光，從這個街區開始。</span></footer>
 </dialog>

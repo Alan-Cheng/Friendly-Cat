@@ -69,7 +69,7 @@
   <article *ngFor="let store of totalStoresShowList; trackBy: trackByStore" class="inventory-store">
     <header class="store-heading">
       <img [src]="store.label === '7-11' ? sevenElevenIconUrl : familyMartIconUrl" class="store-brand-logo" [alt]="store.label">
-      <div class="store-identity"><span class="store-brand-name">{{ store.label === '7-11' ? 'SEVEN ELEVEN' : 'FAMILYMART' }}</span><h3>{{ store.storeName || store.StoreName || store.name }}</h3><p *ngIf="store.distance > 0">距離約 {{ store.distance | round:1 }} 公尺</p></div>
+      <div class="store-identity"><span class="store-brand-name">{{ store.label === '7-11' ? 'SEVEN ELEVEN' : 'FAMILYMART' }}</span><h3>{{ store.storeName || store.StoreName || store.name }}</h3><p *ngIf="store.distance > 0" class="store-distance">距離約 {{ store.distance | round:1 }}</p></div>
       <a class="store-map-link" [href]="'https://www.google.com/maps/search/' + (store.storeName || store.StoreName || store.name)" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 查看門市"><img src="assets/GoogleMap_icon.png" alt="Google Maps" class="store-map-logo"></a>
       <button *ngIf="user" type="button" class="store-favorite" (click)="toggleFavorite(store)" [attr.aria-pressed]="isFavorite(store)" [attr.aria-label]="isFavorite(store) ? '取消收藏門市' : '收藏門市'">{{ isFavorite(store) ? '♥' : '♡' }}</button>
     </header>
