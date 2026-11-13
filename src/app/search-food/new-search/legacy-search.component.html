@@ -1,0 +1,439 @@
+<app-sider [user]="user" [favoriteStores]="favoriteStores" (userUpdated)="onUserUpdated($event)"
+  (favoriteStoresUpdated)="onFavoriteStoresUpdated($event)" (searchStore)="onFavoriteStoreSearch($event)"
+  (foodSearchResult)="onFoodSearchResult($event)"></app-sider>
+
+
+<div class="search-panel container mx-auto my-3 p-6 bg-primary-white max-w-4xl" style="margin-top: 80px;">
+  <ng-container>
+    <div class="flex items-center bg-primary-white justify-center mb-6 h-24">
+      <img src="assets/S__222224406.png" alt="Friendly Superhero" class="w-24 h-24 sm:w-16 sm:h-16 md:w-24 md:h-24">
+      <h5
+        class="text-primary-default sm:text-xl font-bold ml-4 py-1 px-3 border-2 border-primary-default rounded-full bg-primary-light inline-block">
+        <!-- 當 loading$ 為 true 時顯示進度條和訊息 -->
+        <div *ngIf="loadingService.loading$ | async" class="loading-container">
+          <span class="flex items-center text-primary-default lg:text-md sm:text-xl">
+            {{ loadingService.message$ | async }}
+            <mat-progress-spinner mode="indeterminate" diameter="20"
+              class="text-primary-default"></mat-progress-spinner>
+          </span> <!-- 顯示傳入的訊息 -->
+        </div>
+
+        <!-- 當 loading$ 為 false 時顯示提示文字 -->
+        <div class="text-primary-default lg:text-md sm:text-xl" *ngIf="!(loadingService.loading$ | async)">
+          看看附近有啥好吃的吧！
+        </div>
+      </h5>
+    </div>
+    <!-- 提示訊息區域 -->
+    <div class="text-xs sm:text-sm text-success mb-4 text-center">
+      <p>* 資訊僅供參考，請以店內商品為準</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="w-full">
+      <!-- 輸入搜尋框開始 -->
+      <div class="flex justify-center w-full">
+        <div class="w-full px-4 py-3">
+          <label class="flex flex-col h-12 w-full">
+            <div class="flex w-full items-stretch rounded-lg h-full">
+              <!-- 搜尋框放大鏡icon -->
+              <div
+                class="text-primary-default flex border-none bg-primary-light items-center justify-center pl-4 rounded-l-lg border-r-0"
+                data-icon="MagnifyingGlass" data-size="24px" data-weight="regular">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor"
+                  viewBox="0 0 256 256">
+                  <path
+                    d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z">
+                  </path>
+                </svg>
+              </div>
+              <!-- input框 -->
+              <input mat-input type="search"
+                [disabled]="(loadingService.verificationLoading$ | async) === true"
+                class="flex w-full flex-1 resize-none overflow-hidden rounded-lg text-primary-default focus:outline-none focus:ring-0 border-none bg-primary-light focus:border-transparent focus:bg-inherit h-full placeholder:text-primary-default px-4 rounded-r-lg rounded-l-none border-l-3 pl-2 text-base font-normal leading-normal"
+                [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onInput($event)" (keydown)="onKeyDown($event)"
+                enterkeyhint="search"
+                placeholder="輸入店名或地址後按 Enter 搜尋" name="first" />
+            </div>
+          </label>
+        </div>
+      </div>
+      <!-- 下拉選單 -->
+      <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelect($event)">
+        <mat-option *ngFor="let store of unifiedDropDownList" [value]="store"
+          class="p-2 hover:bg-primary-light focus:bg-primary-default">
+          <div *ngIf="store.label === '7-11'" class="flex items-center gap-2">
+            <img src="{{ sevenElevenIconUrl }}" alt="7-Eleven Icon" class="w-4 h-4" />
+            <div class="flex flex-col">
+              <span>{{ store.name }}門市</span>
+              <span class="text-xs sm:text-sm text-gray-500">{{ store.addr }}</span>
+            </div>
+          </div>
+          <div *ngIf="store.label === '全家'" class="flex items-center gap-2">
+            <img src="{{ familyMartIconUrl }}" alt="FamilyMart Icon" class="w-4 h-4" />
+            <div class="flex flex-col">
+              <span>{{ store.name.replace('店', '') }}門市</span>
+              <span class="text-xs sm:text-sm text-gray-500">{{ store.addr }}</span>
+            </div>
+          </div>
+        </mat-option>
+      </mat-autocomplete>
+
+      <!-- 使用目前位置按鈕開始 -->
+      <div class="flex px-4 py-3 justify-center items-center">
+        <button type="button" (click)="onUseCurrentLocation()"
+          [disabled]="(loadingService.verificationLoading$ | async) === true"
+          class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-success text-white gap-2 pl-4 text-sm font-bold leading-normal tracking-[0.015em] text-xs sm:text-sm md:text-base">
+          <div class="text-white" data-icon="MapPin" data-size="20px" data-weight="regular">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor"
+              viewBox="0 0 256 256">
+              <path
+                d="M128,64a40,40,0,1,0,40,40A40,40,0,0,0,128,64Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,128Zm0-112a88.1,88.1,0,0,0-88,88c0,31.4,14.51,64.68,42,96.25a254.19,254.19,0,0,0,41.45,38.3,8,8,0,0,0,9.18,0A254.19,254.19,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25A88.1,88.1,0,0,0,128,16Zm0,206c-16.53-13-72-60.75-72-118a72,72,0,0,1,144,0C200,161.23,144.53,209,128,222Z">
+              </path>
+            </svg>
+          </div>
+          <span class="truncate">使用目前位置</span>
+        </button>
+      </div>
+      <!-- 使用目前位置按鈕結束 -->
+    </form>
+  </ng-container>
+</div>
+
+
+<!-- 搜尋結果區域 -->
+<ng-container *ngIf="isLocationSearchMode; then locationSearchMode; else storeSearchMode"></ng-container>
+
+<!-- 使用者位置搜尋模式 -->
+<ng-template #locationSearchMode>
+  <!-- 711與全家店家頁面 -->
+  <ng-container *ngFor="let store of totalStoresShowList; trackBy: trackByStore">
+    <div *ngIf="totalStoresShowList.length > 0" class="flex justify-center">
+      <div class="w-full lg:w-4/5 max-w-screen-lg">
+        <!-- 711區塊 -->
+        <div *ngIf="store.RemainingQty > 0" class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6">
+          <ng-container *ngIf="store.label === '7-11' && store.RemainingQty > 0">
+            <!-- 商店資訊開始 -->
+            <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
+              <div class="flex items-center gap-4">
+                <div
+                  class="text-dark border border-gray-200 flex items-center justify-center rounded-lg bg-primary-light shrink-0 size-12"
+                  style="padding:16px" data-icon="Storefront" data-size="24px" data-weight="regular">
+                  <img [src]="
+                    sevenElevenIconUrl" alt="Store Icon" width="24px" height="24px" fill="currentColor" />
+                </div>
+                <div class="flex flex-col justify-center text-lg sm:text-xl font-semibold">
+                  <h2 class="text-dark text-base font-medium leading-normal line-clamp-1">
+                    7-11{{ store.StoreName }}門市
+                    <a href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank"
+                      class="ml-2">
+                      <img src="assets/GoogleMap_icon.png" alt="Google Maps" class="w-6 h-6 inline-block" />
+                    </a>
+                  </h2>
+                  <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal line-clamp-2">
+                    距離您: {{ store.distance | round:1 }}
+                  </p>
+                </div>
+              </div>
+              <!-- 喜愛商店區塊 -->
+              <div class="flex items-start justify-end">
+                <button (click)="toggleFavorite(store)" class="text-red-500">
+                  <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                    fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                    </path>
+                  </svg>
+                  <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                    </path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <!-- 商店資訊結束 -->
+
+            <!-- 食物分類區塊 -->
+            <div class="food-categories mt-4">
+              <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
+                <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index; trackBy: trackByCategory">
+                  <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
+                      {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
+                    (click)="toggleSubCategoryDetails(store, category)"
+                    [class.pointer-events-none]="getSubCategoryTotalQty(store, category) === 0">
+                    <img [src]="category.ImageUrl" alt="{{ category.Name }}"
+                      class="w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-1 sm:mb-2 object-cover"
+                      [ngStyle]="{'opacity': getSubCategoryTotalQty(store, category) === 0 ? 0.3 : 1}" />
+                    <div>
+                      <span class="block text-sm sm:text-base font-semibold leading-tight mb-1">{{ category.Name }}</span>
+                      <div
+                        class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-2 py-0.5 sm:px-4 sm:py-2 rounded-full">
+                        {{ getSubCategoryTotalQty(store, category) }}
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+              <!-- 食物分類區塊結束 -->
+
+              <!-- 食品分類與子商品區塊 -->
+              <div *ngIf="store.selectedCategory" class="sub-category-details mt-4">
+                <app-legacy-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetails711">
+                </app-legacy-display>
+              </div>
+            </div>
+            <!-- 食品分類與子商品區塊結束 -->
+          </ng-container>
+        </div>
+
+        <!-- 全家區塊 -->
+        <div class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6" *ngIf="store.label === '全家'">
+          <!-- 商店資訊開始 -->
+          <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
+            <div class="flex items-center gap-4">
+              <div
+                class="text-dark border border-gray-200 flex items-center justify-center rounded-lg bg-primary-light shrink-0 size-12"
+                style="padding:16px" data-icon="Storefront" data-size="24px" data-weight="regular">
+                <img [src]="
+                  familyMartIconUrl" alt="Store Icon" width="24px" height="24px" fill="currentColor" />
+              </div>
+              <div class="flex flex-col justify-center text-lg sm:text-xl font-semibold">
+                <h2 class="text-dark text-base font-medium leading-normal line-clamp-1">
+                  {{ store.name }}
+                  <a href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank"
+                    class="ml-2">
+                    <img src="assets/GoogleMap_icon.png" alt="Google Maps" class="w-6 h-6 inline-block" />
+                  </a>
+                </h2>
+                <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal line-clamp-2">
+                  距離您: {{ store.distance | round:1 }}
+                </p>
+              </div>
+            </div>
+            <!-- 喜愛商店區塊 -->
+            <div class="flex items-start justify-end">
+              <button (click)="toggleFavorite(store)" class="text-red-500">
+                <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                  fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                  </path>
+                </svg>
+                <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                  </path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <!-- 商店資訊結束 -->
+
+          <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
+            <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
+            {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
+              (click)="toggleSubCategoryDetails(store, category)"
+              [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0">
+              <img [src]="getFUrl(category)" alt="{{ getFCatName(category) }}"
+                class="w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-1 sm:mb-2 object-cover"
+                [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
+              <div>
+                <span class="block text-sm sm:text-base font-semibold leading-tight mb-1">{{ getFCatName(category) }}</span>
+                <div
+                  class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-2 py-0.5 sm:px-4 sm:py-2 rounded-full">
+                  {{ getFSubCategoryQty(store, category) }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="store.selectedCategory" class="sub-category-details mt-4 border-gray-700">
+            <app-legacy-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetailsFamilyMart"
+              class="border-gray-700">
+            </app-legacy-display>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</ng-template>
+
+<!-- 店家搜尋模式 -->
+<ng-template #storeSearchMode>
+
+  <!-- 目標商店為空的提示訊息區塊 -->
+  <ng-container *ngIf="totalStoresShowList[0]?.distance > 1 || totalStoresShowList[0]?.remainingQty === 0">
+    <div class="flex justify-center">
+      <div class="w-full lg:w-4/5 max-w-screen-lg">
+        <div class="text-center text-primary-default text-lg font-bold mt-4">
+          您搜尋的商店目前無折扣商品，以下為附近店家：
+        </div>
+      </div>
+    </div>
+    <br />
+  </ng-container>
+
+  <!-- 711與全家店家頁面 -->
+  <ng-container *ngFor="let store of totalStoresShowList; trackBy: trackByStore">
+    <div *ngIf="totalStoresShowList.length > 0" class="flex justify-center">
+      <div class="w-full lg:w-4/5 max-w-screen-lg">
+        <!-- 711區塊 -->
+        <div *ngIf="store.RemainingQty > 0" class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6">
+          <ng-container *ngIf="store.label === '7-11' && store.RemainingQty > 0">
+            <!-- 商店資訊開始 -->
+            <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
+              <div class="flex items-center gap-4">
+                <div
+                  class="text-dark border border-gray-200 flex items-center justify-center rounded-lg bg-primary-light shrink-0 size-12"
+                  style="padding:16px" data-icon="Storefront" data-size="24px" data-weight="regular">
+                  <img [src]="
+                    sevenElevenIconUrl" alt="Store Icon" width="24px" height="24px" fill="currentColor" />
+                </div>
+                <div class="flex flex-col justify-center text-lg sm:text-xl font-semibold">
+                  <h2 class="text-dark text-base font-medium leading-normal line-clamp-1">
+                    7-11{{ store.StoreName }}門市
+                    <a href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank"
+                      class="ml-2">
+                      <img src="assets/GoogleMap_icon.png" alt="Google Maps" class="w-6 h-6 inline-block" />
+                    </a>
+                  </h2>
+                  <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal line-clamp-2">
+                    距離您搜尋的商店: {{ store.distance | round:1 }}
+                  </p>
+                  <!-- <p *ngIf="store.distance <= 1" class="text-orange-900 text-sm font-normal leading-normal line-clamp-2">
+                    ( 您搜尋的店家 )
+                  </p> -->
+                </div>
+              </div>
+              <!-- 喜愛商店區塊 -->
+              <div class="flex items-start justify-end">
+                <button (click)="toggleFavorite(store)" class="text-red-500">
+                  <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                    fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                    </path>
+                  </svg>
+                  <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                    </path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <!-- 商店資訊結束 -->
+
+            <!-- 食物分類區塊 -->
+            <div class="food-categories mt-4">
+              <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
+                <ng-container *ngFor="let category of foodCategories | slice:0:10; let i = index; trackBy: trackByCategory">
+                  <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
+                      {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
+                    (click)="toggleSubCategoryDetails(store, category)"
+                    [class.pointer-events-none]="getSubCategoryTotalQty(store, category) === 0">
+                    <img [src]="category.ImageUrl" alt="{{ category.Name }}"
+                      class="w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-1 sm:mb-2 object-cover"
+                      [ngStyle]="{'opacity': getSubCategoryTotalQty(store, category) === 0 ? 0.3 : 1}" />
+                    <div>
+                      <span class="block text-sm sm:text-base font-semibold leading-tight mb-1">{{ category.Name }}</span>
+                      <div
+                        class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-2 py-0.5 sm:px-4 sm:py-2 rounded-full">
+                        {{ getSubCategoryTotalQty(store, category) }}
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+              <!-- 食物分類區塊結束 -->
+
+              <!-- 食品分類與子商品區塊 -->
+              <div *ngIf="store.selectedCategory" class="sub-category-details mt-4">
+                <app-legacy-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetails711">
+                </app-legacy-display>
+              </div>
+            </div>
+            <!-- 食品分類與子商品區塊結束 -->
+          </ng-container>
+        </div>
+
+        <!-- 全家區塊 -->
+        <div class="store p-4 border border-gray-300 rounded-lg shadow-md mb-6" *ngIf="store.label === '全家'">
+          <!-- 商店資訊開始 -->
+          <div class="flex items-center gap-4 bg-primary-white px-4 min-h-[72px] py-2 justify-between">
+            <div class="flex items-center gap-4">
+              <div
+                class="text-dark border border-gray-200 flex items-center justify-center rounded-lg bg-primary-light shrink-0 size-12"
+                style="padding:16px" data-icon="Storefront" data-size="24px" data-weight="regular">
+                <img [src]="
+                  familyMartIconUrl" alt="Store Icon" width="24px" height="24px" fill="currentColor" />
+              </div>
+              <div class="flex flex-col justify-center text-lg sm:text-xl font-semibold">
+                <h2 class="text-dark text-base font-medium leading-normal line-clamp-1">
+                  {{ store.name }}
+                  <a href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank"
+                    class="ml-2">
+                    <img src="assets/GoogleMap_icon.png" alt="Google Maps" class="w-6 h-6 inline-block" />
+                  </a>
+                </h2>
+                <p *ngIf="store.distance >= 1" class="text-success text-sm font-normal leading-normal line-clamp-2">
+                  距離您搜尋的商店: {{ store.distance | round:1 }}
+                </p>
+                <!-- <p *ngIf="store.distance <= 1" class="text-orange-900 text-sm font-normal leading-normal line-clamp-2">
+                  ( 您搜尋的店家 )
+                </p> -->
+              </div>
+            </div>
+            <!-- 喜愛商店區塊 -->
+            <div class="flex items-start justify-end">
+              <button (click)="toggleFavorite(store)" class="text-red-500">
+                <svg *ngIf="isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                  fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                  </path>
+                </svg>
+                <svg *ngIf="!isFavorite(store) && user" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+                  </path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <!-- 商店資訊結束 -->
+
+          <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-1">
+            <div *ngFor="let category of store.info | slice:0:10; let i = index; trackBy: trackByCategory" class="border border-primary-light p-1 sm:p-3 md:p-4 rounded-lg text-center cursor-pointer w-full
+            {{ store.selectedCategory === category ? 'bg-primary-light' : '' }}"
+              (click)="toggleSubCategoryDetails(store, category)"
+              [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0">
+              <img [src]="getFUrl(category)" alt="{{ getFCatName(category) }}"
+                class="w-8 h-8 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 mx-auto mb-1 sm:mb-2 object-cover"
+                [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
+              <div>
+                <span class="block text-sm sm:text-base font-semibold leading-tight mb-1">{{ getFCatName(category) }}</span>
+                <div
+                  class="inline-block text-xs bg-orange-200 text-orange-900 sm:text-sm font-semibold px-2 py-0.5 sm:px-4 sm:py-2 rounded-full">
+                  {{ getFSubCategoryQty(store, category) }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="store.selectedCategory" class="sub-category-details mt-4 border-gray-700">
+            <app-legacy-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetailsFamilyMart"
+              class="border-gray-700">
+            </app-legacy-display>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</ng-template>

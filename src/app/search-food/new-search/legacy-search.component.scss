@@ -1,0 +1,7 @@
+.search-panel input:disabled,
+.search-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+:host { display: block; position: fixed; inset: 0; overflow-y: auto; background: #fff; overscroll-behavior: contain; }

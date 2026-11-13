@@ -36,3 +36,9 @@ button:focus-visible { outline: 3px solid #b08a3b; outline-offset: 2px; } button
 .toolbar { top: max(16px, calc(env(safe-area-inset-top) + 4px)); left: max(20px, calc(env(safe-area-inset-left) + 8px)); border: 0; border-radius: 50%; background: transparent; box-shadow: none; color: #5f6368; }
 
 .login-section .tour-link { margin-top: 0; margin-bottom: 12px; }
+
+.version-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 12px 13px; margin-bottom: 12px; border: 1px solid #d7dfcd; border-radius: 9px; background: #fffdf7; color: #526d47; text-decoration: none; font-size: 13px; }
+.version-link:hover { background: #eaf0e1; }
+.version-link:focus-visible { outline: 2px solid #365a40; outline-offset: 2px; }
+.toolbar:not(.world-toolbar) { top: 0; left: 0; width: 100%; height: 64px; padding: 0 16px; border-radius: 0; background: #faf9f0; border-bottom: 1px solid #d0d9c9; }
+.toolbar:not(.world-toolbar) .text-with-shadow { display: block; margin-left: 12px; font-size: 18px; }

@@ -33,6 +33,7 @@ import { SiderComponent } from '../components/sider/sider.component';
     EmptyInfoPipe,
     SiderComponent
   ],
+  exports: [SiderComponent, RoundPipe, EmptyInfoPipe],
   imports: [
     StoreMapComponent,
     CommonModule,

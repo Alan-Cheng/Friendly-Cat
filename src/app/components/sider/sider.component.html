@@ -24,5 +24,5 @@
     </section>
 
   </div>
-  <footer class="login-section"><button type="button" class="tour-link" (click)="closeSidebar(); tutorialRequested.emit()"><span>觀看網站導引</span><span aria-hidden="true">↗</span></button><button type="button" class="login-btn" (click)="closeSidebar(); loginOrlogout()">{{ user ? '登出帳號' : '登入／建立帳號' }}</button><span>友善時光，從這個街區開始。</span></footer>
+  <footer class="login-section"><a class="version-link" [href]="worldMode ? '/classic' : '/'">{{ worldMode ? '切換舊版頁面' : '切換 3D 頁面' }}<span aria-hidden="true">⇄</span></a><button *ngIf="worldMode" type="button" class="tour-link" (click)="closeSidebar(); tutorialRequested.emit()"><span>觀看網站導引</span><span aria-hidden="true">↗</span></button><button type="button" class="login-btn" (click)="closeSidebar(); loginOrlogout()">{{ user ? '登出帳號' : '登入／建立帳號' }}</button><span>友善時光，從這個街區開始。</span></footer>
 </dialog>
