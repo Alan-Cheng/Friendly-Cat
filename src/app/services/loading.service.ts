@@ -10,6 +10,12 @@ export class LoadingService {
   private normalLoading = false;
   private normalMessage = '';
   private verificationLoading = false;
+  private verificationLoadingSubject = new BehaviorSubject<boolean>(false);
+  public verificationLoading$ = this.verificationLoadingSubject.asObservable();
+
+  get isVerifying(): boolean {
+    return this.verificationLoading;
+  }
 
   // 載入狀態
   public loading$ = this.loadingSubject.asObservable();
@@ -41,12 +47,14 @@ export class LoadingService {
 
   showVerification(message: string): void {
     this.verificationLoading = true;
+    this.verificationLoadingSubject.next(true);
     this.loadingSubject.next(true);
     this.messageSubject.next(message);
   }
 
   hideVerification(): void {
     this.verificationLoading = false;
+    this.verificationLoadingSubject.next(false);
     this.loadingSubject.next(this.normalLoading);
     this.messageSubject.next(this.normalLoading ? this.normalMessage : '');
   }

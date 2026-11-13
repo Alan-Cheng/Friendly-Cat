@@ -571,6 +571,10 @@ export class NewSearchComponent implements OnInit {
 
   // 執行搜尋（統一入口）
   performSearch(): void {
+    if (this.loadingService.isVerifying) {
+      return;
+    }
+
     if (this.searchTerm && this.searchTerm.trim().length > 0) {
       this.handleSearch(this.searchTerm.trim());
     } else {
@@ -580,6 +584,10 @@ export class NewSearchComponent implements OnInit {
   }
 
   onUseCurrentLocation(): void {
+    if (this.loadingService.isVerifying) {
+      return;
+    }
+
     // 變更搜尋模式
     this.isLocationSearchMode = true;
 

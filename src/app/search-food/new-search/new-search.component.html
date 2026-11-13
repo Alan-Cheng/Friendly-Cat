@@ -3,7 +3,7 @@
   (foodSearchResult)="onFoodSearchResult($event)"></app-sider>
 
 
-<div class="container mx-auto my-3 p-6 bg-primary-white max-w-4xl" style="margin-top: 80px;">
+<div class="search-panel container mx-auto my-3 p-6 bg-primary-white max-w-4xl" style="margin-top: 80px;">
   <ng-container>
     <div class="flex items-center bg-primary-white justify-center mb-6 h-24">
       <img src="assets/S__222224406.png" alt="Friendly Superhero" class="w-24 h-24 sm:w-16 sm:h-16 md:w-24 md:h-24">
@@ -48,6 +48,7 @@
               </div>
               <!-- input框 -->
               <input mat-input type="search"
+                [disabled]="(loadingService.verificationLoading$ | async) === true"
                 class="flex w-full flex-1 resize-none overflow-hidden rounded-lg text-primary-default focus:outline-none focus:ring-0 border-none bg-primary-light focus:border-transparent focus:bg-inherit h-full placeholder:text-primary-default px-4 rounded-r-lg rounded-l-none border-l-3 pl-2 text-base font-normal leading-normal"
                 [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onInput($event)" (keydown)="onKeyDown($event)"
                 enterkeyhint="search"
@@ -80,6 +81,7 @@
       <!-- 使用目前位置按鈕開始 -->
       <div class="flex px-4 py-3 justify-center items-center">
         <button type="button" (click)="onUseCurrentLocation()"
+          [disabled]="(loadingService.verificationLoading$ | async) === true"
           class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-success text-white gap-2 pl-4 text-sm font-bold leading-normal tracking-[0.015em] text-xs sm:text-sm md:text-base">
           <div class="text-white" data-icon="MapPin" data-size="20px" data-weight="regular">
             <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor"
