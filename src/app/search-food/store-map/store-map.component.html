@@ -24,7 +24,7 @@
             <path d="M18 30v1m-8-2-4-1m4 3-4 1m20-3 4-1m-4 3 4 1" stroke="#a7adba" stroke-width="1" stroke-linecap="round"/>
           </g>
         </svg></span></span>
-        <span class="direction-switch-label">{{ directionRequesting ? '授權中' : '方向跟隨' }}</span>
+        <span class="direction-switch-label">{{ directionRequesting ? '定位中' : '方向跟隨' }}</span>
       </button>
       <button type="button" class="perspective" [attr.aria-pressed]="is3D" (click)="togglePerspective()" [disabled]="!ready">{{ is3D ? '切換 2D 地圖' : '切換 3D 街景' }}</button>
     </div>

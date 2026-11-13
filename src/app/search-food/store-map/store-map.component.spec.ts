@@ -4,9 +4,17 @@ import { StoreMapComponent, MapStore } from './store-map.component';
 
 describe('StoreMapComponent data and location', () => {
   let component: StoreMapComponent;
+  let originalPermission: PropertyDescriptor | undefined;
   const family = { pkeynew: '01', Name: '全家測試店', addr: '台北市信義區', Tel: '02-12345678', px_wgs84: '121.5654', py_wgs84: '25.033' };
-  beforeEach(() => { component = new StoreMapComponent({} as HttpClient, new NgZone({ enableLongStackTrace: false })); });
-  afterEach(() => component.ngOnDestroy());
+  beforeEach(() => {
+    originalPermission = Object.getOwnPropertyDescriptor(DeviceOrientationEvent, 'requestPermission');
+    component = new StoreMapComponent({} as HttpClient, new NgZone({ enableLongStackTrace: false }));
+  });
+  afterEach(() => {
+    component.ngOnDestroy();
+    if (originalPermission) Object.defineProperty(DeviceOrientationEvent, 'requestPermission', originalPermission);
+    else Reflect.deleteProperty(DeviceOrientationEvent, 'requestPermission');
+  });
   function update() { component.ngOnChanges({ familyStores: new SimpleChange([], component.familyStores, true), sevenStores: new SimpleChange([], component.sevenStores, true) }); }
 
   it('normalizes each brand using its actual directory schema', () => {
@@ -75,7 +83,8 @@ describe('StoreMapComponent data and location', () => {
     component.querying = true; component.requestProducts(); expect(emit).toHaveBeenCalledTimes(1);
     component.querying = false; component.inventoryBlocked = true; component.requestProducts(); expect(emit).toHaveBeenCalledTimes(1);
   });
-  it('uses absolute compass headings in both perspectives and ignores relative alpha', () => {
+  it('uses absolute compass headings in both perspectives and ignores relative alpha', async () => {
+    await component.enableOrientation();
     const setHeading = jasmine.createSpy('setHeading');
     (component as any).cat = { setHeading };
     const angle = window.screen.orientation?.angle ?? 0;
@@ -92,6 +101,7 @@ describe('StoreMapComponent data and location', () => {
   });
 
   it('prefers Safari compass data and removes sensor listeners on destroy', async () => {
+    await component.enableOrientation();
     const setHeading = jasmine.createSpy('setHeading');
     (component as any).cat = { setHeading };
     const remove = spyOn(window, 'removeEventListener').and.callThrough();
@@ -102,9 +112,12 @@ describe('StoreMapComponent data and location', () => {
     expect(remove).toHaveBeenCalledWith('deviceorientationabsolute', (component as any).onOrientation);
   });
 
-  it('defaults to direction following, restores the original heading on disable, and can re-enable', async () => {
+  it('automatically follows when explicit permission is unnecessary, and can disable and re-enable', async () => {
+    Object.defineProperty(DeviceOrientationEvent, 'requestPermission', { configurable: true, value: undefined });
     const setHeading = jasmine.createSpy('setHeading');
     (component as any).cat = { setHeading };
+    expect(component.directionFollowing).toBeFalse();
+    (component as any).startDefaultDirectionFollowing();
     expect(component.directionFollowing).toBeTrue();
     await component.toggleDirectionFollowing();
     expect(component.directionFollowing).toBeFalse();
@@ -122,7 +135,8 @@ describe('StoreMapComponent data and location', () => {
     expect(setHeading).not.toHaveBeenCalled();
   });
 
-  it('ignores compass jitter and accepts a short turn across north', () => {
+  it('ignores compass jitter and accepts a short turn across north', async () => {
+    await component.enableOrientation();
     const setHeading = jasmine.createSpy('setHeading');
     (component as any).cat = { setHeading };
     (component as any).updateHeading(359);
@@ -133,7 +147,8 @@ describe('StoreMapComponent data and location', () => {
     expect(setHeading.calls.allArgs()).toEqual([[359], [1]]);
   });
 
-  it('keeps the absolute sensor source instead of alternating between competing events', () => {
+  it('keeps the absolute sensor source instead of alternating between competing events', async () => {
+    await component.enableOrientation();
     const setHeading = jasmine.createSpy('setHeading');
     (component as any).cat = { setHeading };
     (component as any).onOrientation({ type: 'deviceorientationabsolute', absolute: true, alpha: 270 });
@@ -148,12 +163,58 @@ describe('StoreMapComponent data and location', () => {
     let onPosition!: PositionCallback;
     spyOn(navigator.geolocation, 'watchPosition').and.callFake(callback => { onPosition = callback; return 1; });
     spyOn(component as any, 'updateCat').and.returnValue(Promise.resolve());
+    await component.enableOrientation();
     await component.toggleDirectionFollowing();
     setHeading.calls.reset();
     component.locate();
     onPosition({ coords: { latitude: 25.033, longitude: 121.5654, heading: 90, accuracy: 10 } } as GeolocationPosition);
     (component as any).onOrientation({ absolute: true, alpha: 180 });
     expect(setHeading).not.toHaveBeenCalled();
+  });
+
+  it('keeps the iPhone switch off until its own tap grants sensor permission', async () => {
+    let resolvePermission!: (value: string) => void;
+    const requestPermission = jasmine.createSpy('requestPermission').and.returnValue(new Promise<string>(resolve => { resolvePermission = resolve; }));
+    Object.defineProperty(DeviceOrientationEvent, 'requestPermission', { configurable: true, value: requestPermission });
+    (component as any).startDefaultDirectionFollowing();
+    expect(component.directionFollowing).toBeFalse();
+    window.dispatchEvent(new Event('pointerup'));
+    expect(requestPermission).not.toHaveBeenCalled();
+    const enabling = component.toggleDirectionFollowing();
+    expect(component.directionFollowing).toBeFalse();
+    expect(component.directionRequesting).toBeTrue();
+    expect(requestPermission).toHaveBeenCalledOnceWith(true);
+    resolvePermission('granted');
+    await enabling;
+    expect(component.directionFollowing).toBeTrue();
+    expect(component.directionRequesting).toBeFalse();
+  });
+
+  it('stays off when iPhone permission is denied and allows another attempt', async () => {
+    const requestPermission = jasmine.createSpy('requestPermission').and.returnValues(Promise.resolve('denied'), Promise.resolve('granted'));
+    Object.defineProperty(DeviceOrientationEvent, 'requestPermission', { configurable: true, value: requestPermission });
+    await component.toggleDirectionFollowing();
+    expect(component.directionFollowing).toBeFalse();
+    expect(component.directionRequesting).toBeFalse();
+    expect(component.headingStatus).toContain('維持關閉');
+    await component.toggleDirectionFollowing();
+    expect(component.directionFollowing).toBeTrue();
+    expect(component.headingStatus).toBe('');
+  });
+
+  it('stays off after a permission error or destruction while permission is pending', async () => {
+    const requestPermission = jasmine.createSpy('requestPermission').and.callFake(() => Promise.reject(new Error('NotAllowedError')));
+    Object.defineProperty(DeviceOrientationEvent, 'requestPermission', { configurable: true, value: requestPermission });
+    await component.toggleDirectionFollowing();
+    expect(component.directionFollowing).toBeFalse();
+    expect(component.directionRequesting).toBeFalse();
+    let resolvePermission!: (value: string) => void;
+    requestPermission.and.returnValue(new Promise<string>(resolve => { resolvePermission = resolve; }));
+    const enabling = component.toggleDirectionFollowing();
+    component.ngOnDestroy();
+    resolvePermission('granted');
+    await enabling;
+    expect(component.directionFollowing).toBeFalse();
   });
 
 });

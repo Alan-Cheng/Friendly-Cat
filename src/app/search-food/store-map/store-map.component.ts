@@ -63,25 +63,18 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private heading?: number;
   private compassHeading?: number;
   private orientationListening = false;
-  private directionFollowingEnabled = true;
   private compassSource?: 'webkit' | 'absolute';
   private orientationRequesting = false;
   headingStatus = '';
-  get directionFollowing(): boolean { return this.directionFollowingEnabled; }
+  get directionFollowing(): boolean { return this.orientationListening; }
   get directionRequesting(): boolean { return this.orientationRequesting; }
 
   async toggleDirectionFollowing(): Promise<void> {
     if (this.orientationRequesting) return;
-    if (!this.directionFollowingEnabled) {
-      if (!window.isSecureContext || typeof DeviceOrientationEvent === 'undefined') {
-        this.headingStatus = '此瀏覽器無法開啟方向跟隨，請使用支援方向感測的瀏覽器與 HTTPS 連線。';
-        return;
-      }
-      this.directionFollowingEnabled = true;
+    if (!this.orientationListening) {
       await this.enableOrientation();
       return;
     }
-    this.directionFollowingEnabled = false;
     this.stopOrientation();
     this.compassSource = undefined;
     this.compassHeading = undefined;
@@ -91,7 +84,6 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private stopOrientation(): void {
-    window.removeEventListener('pointerup', this.onOrientationGesture);
     window.removeEventListener('deviceorientation', this.onOrientation);
     window.removeEventListener('deviceorientationabsolute', this.onOrientation);
     window.screen.orientation?.removeEventListener('change', this.onScreenOrientation);
@@ -99,7 +91,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private readonly onOrientation = (event: DeviceOrientationEvent): void => {
-    if (!this.directionFollowingEnabled) return;
+    if (!this.orientationListening) return;
     const compass = event as DeviceOrientationEvent & { webkitCompassHeading?: number; webkitCompassAccuracy?: number };
     let heading: number | undefined;
     if (typeof compass.webkitCompassHeading === 'number' && Number.isFinite(compass.webkitCompassHeading)
@@ -120,38 +112,37 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   };
 
   private updateHeading(heading: number): void {
-    if (!this.directionFollowingEnabled) return;
+    if (!this.orientationListening) return;
     const next = ((heading % 360) + 360) % 360;
     if (this.heading !== undefined && Math.abs(((next - this.heading + 540) % 360) - 180) < 2) return;
     this.heading = next;
     this.cat?.setHeading(this.heading);
   }
 
-  private readonly onOrientationGesture = (): void => {
-    window.removeEventListener('pointerup', this.onOrientationGesture);
-    if (this.directionFollowingEnabled) void this.enableOrientation();
-  };
-
   private startDefaultDirectionFollowing(): void {
     if (!window.isSecureContext || typeof DeviceOrientationEvent === 'undefined') return;
-    if ('requestPermission' in DeviceOrientationEvent) {
-      window.addEventListener('pointerup', this.onOrientationGesture);
-    } else void this.enableOrientation();
+    // iOS needs a deliberate tap on the switch before requesting sensor access.
+    const orientation = DeviceOrientationEvent as typeof DeviceOrientationEvent & { requestPermission?: unknown };
+    if (typeof orientation.requestPermission !== 'function') void this.enableOrientation();
   }
 
   async enableOrientation(): Promise<boolean> {
     if (this.orientationListening) return true;
-    if (this.orientationRequesting || typeof DeviceOrientationEvent === 'undefined') return false;
+    if (this.orientationRequesting) return false;
+    if (!window.isSecureContext || typeof DeviceOrientationEvent === 'undefined') {
+      this.headingStatus = '此瀏覽器無法開啟方向跟隨，請使用支援方向感測的瀏覽器與 HTTPS 連線。';
+      return false;
+    }
     const orientation = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
       requestPermission?: (absolute?: boolean) => Promise<string>;
     };
     this.orientationRequesting = true;
     try {
       if (orientation.requestPermission && await orientation.requestPermission(true) !== 'granted') {
-        this.headingStatus = '未開啟方向權限，黑貓會在移動時依 GPS 行進方向轉向。';
+        this.headingStatus = '方向權限未開啟，方向跟隨維持關閉。可點擊開關重新嘗試授權。';
         return false;
       }
-      if (this.destroyed || !this.directionFollowingEnabled) return false;
+      if (this.destroyed) return false;
       this.zone.runOutsideAngular(() => {
         window.addEventListener('deviceorientation', this.onOrientation);
         window.addEventListener('deviceorientationabsolute', this.onOrientation);
@@ -161,7 +152,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.headingStatus = '';
       return true;
     } catch {
-      this.headingStatus = '暫時無法讀取手機方向，黑貓會在移動時依 GPS 行進方向轉向。';
+      this.headingStatus = '方向跟隨無法啟用，請確認瀏覽器的動作與方向權限後再試。';
       return false;
     } finally {
       this.orientationRequesting = false;
@@ -373,7 +364,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       if (this.destroyed) return;
       const first = !this.hasLocation();
       this.latitude = position.coords.latitude; this.longitude = position.coords.longitude;
-      if (this.directionFollowingEnabled && this.compassHeading === undefined && position.coords.heading !== null && Number.isFinite(position.coords.heading)) {
+      if (this.directionFollowing && this.compassHeading === undefined && position.coords.heading !== null && Number.isFinite(position.coords.heading)) {
         this.updateHeading(position.coords.heading);
       }
       this.locating = false;
