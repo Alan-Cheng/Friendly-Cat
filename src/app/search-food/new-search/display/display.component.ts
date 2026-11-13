@@ -1,10 +1,9 @@
+import { of } from 'rxjs';
 import { Component, Input, OnChanges, SimpleChanges, OnInit, ElementRef, ViewChild } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
 
 import { Item, CategoryStockItem, FoodDetail711  } from '../../model/seven-eleven.model';  // 根據你的實際路徑導入模型
 import { ProductModel, FoodDetailFamilyMart } from '../../model/family-mart.model'
 
-import { ImageDialogComponent } from '../image-dialog/image-dialog.component';
 
 import { SevenElevenRequestService } from '../services/seven-eleven-request.service';
 
@@ -16,6 +15,8 @@ import Fuse from 'fuse.js';
   styleUrls: ['./display.component.scss']
 })
 export class DisplayComponent implements OnChanges, OnInit {
+  @ViewChild('imageWindow', { static: true }) imageWindow!: ElementRef<HTMLDialogElement>;
+  previewImage = '';
   @Input() store!: any;  // 接收父組件傳遞的 store
   @Input() category!: any;  // 接收父組件傳遞的 category
   @Input() foodDetails!: any[];
@@ -27,7 +28,6 @@ export class DisplayComponent implements OnChanges, OnInit {
 
   constructor(
     private sevenElevenRequestService: SevenElevenRequestService,
-    private dialog: MatDialog,
   ) {}
 
   ngOnInit() {}
@@ -67,7 +67,12 @@ export class DisplayComponent implements OnChanges, OnInit {
   loadItemsBySubCategory() {
     if (this.store) {
       this.isLoading = true;
-      this.sevenElevenRequestService.getItemsByStoreNo(this.store.StoreNo).subscribe(response => {
+      // A direct map lookup already contains the complete item snapshot; reuse it so
+      // the label, category counts and item list do not come from different requests.
+      const stock$ = this.store.stockItemsLoaded
+        ? of({ isSuccess: true, element: { StoreStockItem: this.store } })
+        : this.sevenElevenRequestService.getItemsByStoreNo(this.store.StoreNo);
+      stock$.subscribe(response => {
         if (response.isSuccess && response.element.StoreStockItem) {
           let categoryStockItems: CategoryStockItem[] = response.element.StoreStockItem.CategoryStockItems;
 
@@ -227,9 +232,7 @@ export class DisplayComponent implements OnChanges, OnInit {
   }
 
   openImageDialog(imageUrl: string): void {
-    this.dialog.open(ImageDialogComponent, {
-      data: { image: imageUrl },
-      panelClass: 'custom-dialog' // 可用於自定義樣式
-    });
+    this.previewImage = imageUrl;
+    this.imageWindow.nativeElement.showModal();
   }
 }

@@ -19,6 +19,22 @@
     3. 商品資訊
 * 會員功能 - 收藏喜愛的商店
 
+## 3D 街區地圖
+
+首頁以 MapLibre + OpenFreeMap 的滿版 3D 街區為主畫面，不需要地圖 API Key。建築以真實輪廓和示意高度呈現，商家與黑貓由 Three.js 建模。進站自動執行既有 Cloudflare Turnstile 驗證，驗證與場景就緒後自動進入；驗證失敗可重試，需人工確認時保留官方提示。
+
+- 進站驗證與街區準備分別顯示 spinner，完成後切換勾選。進入世界後請求定位，授權後顯示黑貓並追蹤座標；附近庫存也同步供側邊欄食物搜尋使用，不需先手動查門市。未授權時預設瀏覽台北街區。
+- 搜尋與商品內容以原生視窗開啟，Esc 關閉後回到世界；會員與收藏透過左上角的街區手帳開啟。首次進站提供 Driver.js 導引，完成或略過後會記住狀態，手帳內可重新開啟。
+- 點擊地圖店家或店家清單，直接開啟該門市的商品視窗；以分類切換與分隔線商品列表呈現，右上角重新整理、右下角保留庫存提醒。店家清單同步顯示庫存件數。
+- 7-ELEVEN 標籤顯示 `SevenEleven n 件`，件數直接取門市 `RemainingQty`；點店後用同一份明細快照更新彈窗與標籤，較早發出的請求不會覆蓋較新的單店資料。
+- 滑過店家清單時，對應 3D 店家會發亮並放大；物件本身 hover 不會發亮。標籤依屋頂投影定位，黑貓與店家隨地圖拉遠自然縮小。
+- 支援品牌篩選、2D／3D 切換與鍵盤操作；每個視野最多顯示最近 60 間商家。
+- 地圖失敗時保留商家清單。定位需 HTTPS 或 localhost，未定位不顯示黑貓或使用者距離。
+- 底圖保留 OpenMapTiles／OpenStreetMap 來源標示；服務政策見 [OpenFreeMap](https://openfreemap.org/)。庫存仍依賴既有商家 API 與瀏覽器驗證。
+- 地圖與 Three.js 分開延遲載入；全家目錄可由本機 assets 備援，7-ELEVEN 沿用既有遠端目錄。
+
+執行地圖與驗證測試：`npm test -- --watch=false --browsers=ChromeHeadless --include=src/app/search-food/store-map/store-map.component.spec.ts --include=src/app/services/proxy-token.service.spec.ts`。
+
 ## DEMO
 #### 連結： [友善黑貓](https://friendlycat.alan-cheng.com/)
 >

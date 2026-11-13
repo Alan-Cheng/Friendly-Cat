@@ -32,7 +32,6 @@ import { AngularFireAuthModule } from '@angular/fire/compat/auth';  // 引入認
 import { AngularFireDatabaseModule } from '@angular/fire/compat/database';
 
 import { environment } from 'src/environments/environment';
-import { ChatbotComponent } from './chatbot/chatbot.component';
 
 @NgModule({
   declarations: [AppComponent, MessageDialogComponent, LoginPageComponent],
@@ -55,8 +54,7 @@ import { ChatbotComponent } from './chatbot/chatbot.component';
     AngularFireDatabaseModule,
     MatDividerModule,
     MatCardModule,
-    MatMenuModule,
-    ChatbotComponent
+    MatMenuModule
   ],
   providers: [
     provideHttpClient(withInterceptorsFromDi()),

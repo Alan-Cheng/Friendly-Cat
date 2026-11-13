@@ -1,0 +1,17 @@
+:host { display: block; color: #24494b; }
+.product-loading { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 150px; color: #6c8581; font-size: 13px; }
+.product-group { padding: 25px 0 0; }
+.product-group h4 { margin: 0 0 4px; color: #5e7b72; font-size: 11px; font-weight: 500; letter-spacing: .05em; }
+.product-list { list-style: none; padding: 0; margin: 0; }
+.product-row { display: grid; grid-template-columns: 104px minmax(0, 1fr) auto; align-items: start; gap: 24px; padding: 24px 0; border-bottom: 1px solid #e2ebe5; }
+.product-row:last-child { border-bottom: 0; }
+.product-image { display: block; width: 104px; height: 104px; padding: 0; border: 0; border-radius: 8px; background: #f0f5ef; cursor: zoom-in; overflow: hidden; }
+.product-image img { width: 100%; height: 100%; object-fit: contain; }
+.product-copy { min-width: 0; padding-top: 4px; }.product-copy h5 { margin: 0 0 10px; color: #24494b; font-size: 16px; font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
+.product-stock { display: flex; align-items: baseline; gap: 5px; margin-top: 4px; padding: 8px 11px; border-radius: 5px; background: #e5f1ea; color: #367978; font-size: 16px; font-weight: 600; white-space: nowrap; }.product-stock small { font-size: 10px; font-weight: 400; }
+.product-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 0 0 10px; color: #83968d; font-size: 11px; }.product-price strong { color: #a76a42; font-size: 19px; font-weight: 600; }.product-price del { color: #94a39b; }
+.product-description, .product-calories { margin: 6px 0 0; color: #5d7870; font-size: 12px; line-height: 1.85; }.product-calories { color: #64796f; font-size: 10px; }
+.product-tags { display: flex; gap: 6px; }.product-tags:empty { display: none; }.product-tags span { padding: 3px 6px; margin-bottom: 8px; border-radius: 3px; background: #f3eddf; color: #9c774b; font-size: 10px; }
+button:focus-visible { outline: 3px solid #b79555; outline-offset: 3px; }
+.product-image-dialog { max-width: min(720px, calc(100vw - 32px)); max-height: 88dvh; padding: 30px; border: 1px solid #cbded4; border-radius: 14px; background: #fcfdf9; }.product-image-dialog::backdrop { background: #1d3b3c80; }.product-image-dialog img { display: block; max-width: 100%; max-height: 72dvh; object-fit: contain; }.product-image-dialog>button { position: absolute; top: 0; right: 0; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #f0f5ef; color: #406b68; font-size: 24px; cursor: pointer; }
+@media(max-width: 600px) { .product-row { grid-template-columns: 72px minmax(0, 1fr); gap: 12px 16px; padding: 20px 0; }.product-image { width: 72px; height: 72px; }.product-copy h5 { font-size: 14px; }.product-stock { grid-column: 2; justify-self: start; margin-top: -4px; font-size: 14px; }.product-group { padding-top: 20px; } }

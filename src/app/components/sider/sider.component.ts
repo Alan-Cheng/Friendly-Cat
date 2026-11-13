@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MessageDialogComponent } from '../message-dialog/message-dialog.component';
 import { AuthService } from 'src/app/services/auth.service';
@@ -17,6 +17,9 @@ import { getDistance } from 'geolib';
   styleUrls: ['./sider.component.scss'],
 })
 export class SiderComponent {
+  @ViewChild('sidebarWindow', { static: true }) sidebarWindow!: ElementRef<HTMLDialogElement>;
+  @Output() tutorialRequested = new EventEmitter<void>();
+  @Input() worldMode = false;
   @Input() user: any;
   @Input() favoriteStores: any[] = [];
 
@@ -41,6 +44,7 @@ export class SiderComponent {
   
   // 商店資料狀態
   hasStoreData = false;
+  inventoryState: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
 
   constructor(
     private authService: AuthService,
@@ -50,6 +54,7 @@ export class SiderComponent {
     private geolocationService: GeolocationService,
     private storeDataService: StoreDataService
   ) { 
+    this.storeDataService.inventoryState$.subscribe(state => this.inventoryState = state);
     // 監聽商店資料狀態
     this.storeDataService.stores$.subscribe(stores => {
       this.hasStoreData = stores && stores.length > 0;
@@ -58,11 +63,13 @@ export class SiderComponent {
 
   // 切換側邊欄
   toggleSidebar() {
-    this.sidebarOpen = !this.sidebarOpen;
+    if (this.sidebarWindow.nativeElement.open) this.closeSidebar();
+    else { this.sidebarOpen = true; this.sidebarWindow.nativeElement.showModal(); }
   }
 
   // 關閉側邊欄
   closeSidebar() {
+    this.sidebarWindow.nativeElement.close();
     this.sidebarOpen = false;
   }
 
@@ -108,6 +115,7 @@ export class SiderComponent {
 
   // 點擊搜尋按鈕
   onSearchClick() {
+    if (this.inventoryState === 'loading' || !this.hasStoreData) return;
     if (this.foodSearchTerm && this.foodSearchTerm.trim().length > 0) {
       this.isSearching = true;
       this.hasSearched = true; // 標記已執行搜尋
@@ -126,7 +134,9 @@ export class SiderComponent {
 
   // 獲取搜尋框提示文字
   getSearchPlaceholder(): string {
-    return this.hasStoreData ? '輸入食物名稱...' : '請先搜尋商店';
+    if (this.inventoryState === 'loading') return '附近門市商品載入中…';
+    if (this.inventoryState === 'error') return '附近商品暫時無法載入';
+    return this.hasStoreData ? '輸入食物名稱…' : '目前沒有可搜尋的商品';
   }
 
   // 搜尋食物在商店中的庫存

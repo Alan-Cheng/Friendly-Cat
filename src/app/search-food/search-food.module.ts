@@ -1,3 +1,4 @@
+import { StoreMapComponent } from './store-map/store-map.component';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'; // 用於雙向綁定 [(ngModel)]
@@ -32,7 +33,9 @@ import { SiderComponent } from '../components/sider/sider.component';
     EmptyInfoPipe,
     SiderComponent
   ],
+  exports: [SiderComponent, RoundPipe, EmptyInfoPipe],
   imports: [
+    StoreMapComponent,
     CommonModule,
     FormsModule, // 支援 [(ngModel)]
     MatFormFieldModule,  // 新增

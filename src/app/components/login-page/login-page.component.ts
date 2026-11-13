@@ -20,6 +20,7 @@ export class LoginPageComponent {
     private dialogRef: MatDialogRef<LoginPageComponent>,
     public dialog: MatDialog,
   ) {
+    this.dialogRef.addPanelClass('world-auth-panel');
     // 初始化表單
     this.authForm = this.fb.group(
       {
@@ -54,6 +55,16 @@ export class LoginPageComponent {
     return null;
   }
 
+
+  toggleRegister(): void {
+    this.isRegister = !this.isRegister;
+    this.errorMessage = '';
+    const confirmation = this.authForm.get('rePassword')!;
+    confirmation.setValidators(this.isRegister ? [Validators.required] : []);
+    if (!this.isRegister) { confirmation.reset(''); this.authForm.get('displayName')?.reset(''); }
+    confirmation.updateValueAndValidity();
+    this.authForm.updateValueAndValidity();
+  }
 
   // 提交表單
   submitForm() {
