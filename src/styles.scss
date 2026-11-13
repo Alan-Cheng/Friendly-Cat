@@ -1,19 +1,44 @@
+@use '@angular/material' as mat;
 @import "driver.js/dist/driver.css";
 @import "maplibre-gl/dist/maplibre-gl.css";
+
+$cat-palette: (
+  50: #faf9f0, 100: #dce5d4, 200: #cbd6bf, 300: #a7bc9b, 400: #728f68,
+  500: #365a40, 600: #304f39, 700: #2c4335, 800: #23382b, 900: #182b20,
+  contrast: (50: #2c4335, 100: #2c4335, 200: #2c4335, 300: #2c4335, 400: #fff,
+    500: #fff, 600: #fff, 700: #fff, 800: #fff, 900: #fff)
+);
+$cat-primary: mat.m2-define-palette($cat-palette);
+$cat-theme: mat.m2-define-light-theme((color: (primary: $cat-primary, accent: $cat-primary)));
+@include mat.button-color($cat-theme);
+@include mat.icon-button-color($cat-theme);
+
 /* You can add global styles to this file, and also import other style files */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 html, body { height: 100%; }
+:root {
+  --cat-surface: #faf9f0;
+  --cat-selected: #dce5d4;
+  --cat-hover: #eaf0e1;
+  --cat-pressed: #ccd9c1;
+  --cat-border: #b7c6ac;
+  --cat-primary: #365a40;
+  --cat-ink: #2c4335;
+  accent-color: var(--cat-primary);
+  -webkit-tap-highlight-color: rgba(54, 90, 64, .14);
+}
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+:where(button, a, input, select, textarea, summary, canvas, [tabindex]):focus-visible { outline: 2px solid var(--cat-primary); outline-offset: 2px; }
 
 /* MapLibre markers live outside Angular's component style scoping. */
 .cat-shop-marker { width: 54px; height: 62px; padding: 8px 3px 0; border: 0; background: transparent; cursor: pointer; filter: drop-shadow(0 4px 2px #263b3130); }
 .cat-shop-marker .shop-roof { position: relative; display: block; height: 18px; line-height: 18px; color: white; background: #278252; border-top: 5px solid #69b8d4; border-radius: 4px 4px 0 0; font: bold 7px/13px Arial, sans-serif; transform: skewY(-5deg); }
 .cat-shop-marker .shop-building { display: block; margin: 0 3px; height: 27px; background: #fffdf0; border-bottom: 5px solid #c9c9aa; border-right: 6px solid #d7d8bf; color: #86a3a2; font: 26px/24px Arial, sans-serif; transform: skewY(-5deg); }
 .cat-shop-marker.seven .shop-roof { background: #e66d30; border-top-color: #388657; font-size: 16px; }
-.cat-shop-marker:focus-visible { outline: 3px solid #a86a27; outline-offset: 3px; border-radius: 6px; }
+.cat-shop-marker:focus-visible { outline: 3px solid var(--cat-primary); outline-offset: 3px; border-radius: 6px; }
 .maplibregl-ctrl-group button { width: 44px; height: 44px; }
 #map-product-results { scroll-margin-top: 80px; }
 body:not(.cat-world-entered) app-chatbot { visibility: hidden; pointer-events: none; }
@@ -33,7 +58,7 @@ body { overflow: hidden; }
 .cat-shop-marker .shop-stock-count { position: static; margin-bottom: 2px; order: -1; border-radius: 5px; padding: 1px 6px; min-width: 26px; font-size: 10px; line-height: 14px; }
 .cat-shop-marker.highlighted .shop-roof, .cat-shop-marker.highlighted .shop-stock-count { outline: 2px solid #e2b04d; background: #fff2bc; color: #334c35; }
 .driver-popover.cat-tour-popover { background: #faf9ef; color: #2d4635; border: 1px solid #bfcdb3; border-radius: 14px; padding: 24px; box-shadow: 0 16px 60px #263b3130; font-family: Arial, sans-serif; }
-.cat-tour-popover .driver-popover-title { font-size: 22px; font-weight: 600; letter-spacing: -.04em; line-height: 1.5; }.cat-tour-popover .driver-popover-description { font-size: 13px; line-height: 1.9; color: #76836a; }.cat-tour-popover .driver-popover-footer button { min-height: 44px; border: 1px solid #c5d2b8; border-radius: 8px; padding: 10px 14px; background: #eef2e4; color: #46613c; text-shadow: none; font-size: 12px; }.cat-tour-popover .driver-popover-footer .driver-popover-next-btn { background: #365a40; color: white; border-color: #365a40; }.cat-tour-popover .driver-popover-close-btn { width: 44px; height: 44px; color: #73876a; }.cat-tour-popover .driver-popover-progress-text { color: #8c9a7e; font-size: 11px; }.cat-tour-popover button:focus-visible { outline: 3px solid #ad893e; outline-offset: 3px; }
+.cat-tour-popover .driver-popover-title { font-size: 22px; font-weight: 600; letter-spacing: -.04em; line-height: 1.5; }.cat-tour-popover .driver-popover-description { font-size: 13px; line-height: 1.9; color: #76836a; }.cat-tour-popover .driver-popover-footer button { min-height: 44px; border: 1px solid #c5d2b8; border-radius: 8px; padding: 10px 14px; background: #eef2e4; color: #46613c; text-shadow: none; font-size: 12px; }.cat-tour-popover .driver-popover-footer .driver-popover-next-btn { background: #365a40; color: white; border-color: #365a40; }.cat-tour-popover .driver-popover-close-btn { width: 44px; height: 44px; color: #73876a; }.cat-tour-popover .driver-popover-progress-text { color: #8c9a7e; font-size: 11px; }.cat-tour-popover button:focus-visible { outline: 3px solid var(--cat-primary); outline-offset: 3px; }
 /* FamilyMart inventory belongs to the roof label, rather than a detached badge. */
 .cat-shop-marker.family .shop-label { left: -16px; width: 76px; display: grid; grid-template-columns: 44px 32px; align-items: center; background: #28724df0; border-radius: 4px; box-shadow: 0 1px 4px #183b2030; }
 .cat-shop-marker.family .shop-roof { width: 44px; font-size: 7px; background: transparent; box-shadow: none; }
@@ -50,9 +75,14 @@ body { overflow: hidden; }
 
 .world-message-panel .mat-mdc-dialog-surface { border: 1px solid #c4d5cc; border-radius: 16px; background: #fcfdf9; box-shadow: 0 22px 80px #20382840; }
 
-.cat-world-entered .maplibregl-ctrl-top-right { top: auto; bottom: max(112px, calc(env(safe-area-inset-bottom) + 96px)); right: max(12px, env(safe-area-inset-right)); }
+.cat-world-entered .maplibregl-ctrl-top-right { top: auto; bottom: max(112px, calc(env(safe-area-inset-bottom) + 96px)); right: max(18px, calc(env(safe-area-inset-right) + 6px)); }
 .cat-world-entered .maplibregl-ctrl-top-right .maplibregl-ctrl { margin: 0; }
 .cat-world-entered .maplibregl-ctrl-group { border: 1px solid #dadce0; border-radius: 10px; background: #fff; box-shadow: 0 2px 7px #20212430; }
-.cat-world-entered .maplibregl-ctrl-group button:focus-visible { outline: 2px solid #1a73e8; outline-offset: -3px; }
+.cat-world-entered .maplibregl-ctrl-group button:focus-visible { outline: 2px solid var(--cat-primary); outline-offset: -3px; }
+.cat-world-entered .maplibregl-ctrl-group button:focus { box-shadow: inset 0 0 0 2px var(--cat-primary); }
 
-.cat-world-entered .maplibregl-ctrl-compass:active { background: #e8f0fe; }
+.cat-world-entered .maplibregl-ctrl-compass:active { background: var(--cat-selected); }
+
+.cat-world-entered .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+.cat-world-entered .maplibregl-ctrl-group button:hover { background-color: var(--cat-hover); }
+.cat-world-entered .maplibregl-ctrl-group button:active { background-color: var(--cat-pressed); }

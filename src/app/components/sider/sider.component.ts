@@ -33,6 +33,7 @@ export class SiderComponent {
   
   // 側邊欄狀態
   sidebarOpen = false;
+  sidebarClosing = false;
   
   // 食物搜尋相關
   foodSearchTerm = '';
@@ -68,9 +69,38 @@ export class SiderComponent {
   }
 
   // 關閉側邊欄
-  closeSidebar() {
-    this.sidebarWindow.nativeElement.close();
-    this.sidebarOpen = false;
+  async closeSidebar(): Promise<void> {
+    const drawer = this.sidebarWindow.nativeElement;
+    if (!drawer.open || this.sidebarClosing) return;
+    this.sidebarClosing = true;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const currentTransform = getComputedStyle(drawer).transform;
+    drawer.getAnimations().forEach(animation => animation.cancel());
+    const animation = drawer.animate(
+      reducedMotion ? [{ opacity: 1 }, { opacity: 0 }]
+        : [{ transform: currentTransform }, { transform: 'translateX(-100%)' }],
+      { duration: reducedMotion ? 100 : 200, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' }
+    );
+    try { await animation.finished; } catch { /* Finish closing if the animation is interrupted. */ }
+    finally {
+      drawer.close();
+      animation.cancel();
+      this.sidebarOpen = false;
+      this.sidebarClosing = false;
+    }
+  }
+
+  onSidebarCancel(event: Event): void { event.preventDefault(); void this.closeSidebar(); }
+  async openTutorial(): Promise<void> { await this.closeSidebar(); this.tutorialRequested.emit(); }
+  async openAccount(): Promise<void> { await this.closeSidebar(); this.loginOrlogout(); }
+  async openFoodResult(result: any): Promise<void> { await this.closeSidebar(); this.onFoodResultClick(result); }
+  async openFavoriteStore(store: any): Promise<void> { await this.closeSidebar(); this.onSearchStore(store); }
+  async openVersion(event: MouseEvent): Promise<void> {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const href = (event.currentTarget as HTMLAnchorElement).href;
+    await this.closeSidebar();
+    window.location.assign(href);
   }
 
   loginOrlogout() {

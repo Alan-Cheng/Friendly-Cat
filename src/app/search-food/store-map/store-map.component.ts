@@ -63,22 +63,27 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private heading?: number;
   private compassHeading?: number;
   private orientationListening = false;
+  private directionFollowingEnabled = true;
+  private compassSource?: 'webkit' | 'absolute';
   private orientationRequesting = false;
   headingStatus = '';
-  get directionFollowing(): boolean { return this.orientationListening; }
+  get directionFollowing(): boolean { return this.directionFollowingEnabled; }
   get directionRequesting(): boolean { return this.orientationRequesting; }
 
   async toggleDirectionFollowing(): Promise<void> {
     if (this.orientationRequesting) return;
-    if (!this.orientationListening) {
+    if (!this.directionFollowingEnabled) {
       if (!window.isSecureContext || typeof DeviceOrientationEvent === 'undefined') {
         this.headingStatus = '此瀏覽器無法開啟方向跟隨，請使用支援方向感測的瀏覽器與 HTTPS 連線。';
         return;
       }
+      this.directionFollowingEnabled = true;
       await this.enableOrientation();
       return;
     }
+    this.directionFollowingEnabled = false;
     this.stopOrientation();
+    this.compassSource = undefined;
     this.compassHeading = undefined;
     this.heading = undefined;
     this.cat?.setHeading(undefined);
@@ -86,6 +91,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private stopOrientation(): void {
+    window.removeEventListener('pointerup', this.onOrientationGesture);
     window.removeEventListener('deviceorientation', this.onOrientation);
     window.removeEventListener('deviceorientationabsolute', this.onOrientation);
     window.screen.orientation?.removeEventListener('change', this.onScreenOrientation);
@@ -93,12 +99,16 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private readonly onOrientation = (event: DeviceOrientationEvent): void => {
+    if (!this.directionFollowingEnabled) return;
     const compass = event as DeviceOrientationEvent & { webkitCompassHeading?: number; webkitCompassAccuracy?: number };
     let heading: number | undefined;
     if (typeof compass.webkitCompassHeading === 'number' && Number.isFinite(compass.webkitCompassHeading)
       && (compass.webkitCompassAccuracy === undefined || compass.webkitCompassAccuracy >= 0)) {
       heading = compass.webkitCompassHeading;
+      this.compassSource = 'webkit';
     } else if (event.absolute && event.alpha !== null && Number.isFinite(event.alpha)) {
+      if (this.compassSource === 'webkit' || (this.compassSource === 'absolute' && event.type !== 'deviceorientationabsolute')) return;
+      if (event.type === 'deviceorientationabsolute') this.compassSource = 'absolute';
       heading = 360 - event.alpha;
     }
     if (heading === undefined) return;
@@ -110,8 +120,23 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   };
 
   private updateHeading(heading: number): void {
-    this.heading = ((heading % 360) + 360) % 360;
+    if (!this.directionFollowingEnabled) return;
+    const next = ((heading % 360) + 360) % 360;
+    if (this.heading !== undefined && Math.abs(((next - this.heading + 540) % 360) - 180) < 2) return;
+    this.heading = next;
     this.cat?.setHeading(this.heading);
+  }
+
+  private readonly onOrientationGesture = (): void => {
+    window.removeEventListener('pointerup', this.onOrientationGesture);
+    if (this.directionFollowingEnabled) void this.enableOrientation();
+  };
+
+  private startDefaultDirectionFollowing(): void {
+    if (!window.isSecureContext || typeof DeviceOrientationEvent === 'undefined') return;
+    if ('requestPermission' in DeviceOrientationEvent) {
+      window.addEventListener('pointerup', this.onOrientationGesture);
+    } else void this.enableOrientation();
   }
 
   async enableOrientation(): Promise<boolean> {
@@ -126,7 +151,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         this.headingStatus = '未開啟方向權限，黑貓會在移動時依 GPS 行進方向轉向。';
         return false;
       }
-      if (this.destroyed) return false;
+      if (this.destroyed || !this.directionFollowingEnabled) return false;
       this.zone.runOutsideAngular(() => {
         window.addEventListener('deviceorientation', this.onOrientation);
         window.addEventListener('deviceorientationabsolute', this.onOrientation);
@@ -159,6 +184,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   async ngAfterViewInit(): Promise<void> {
+    this.startDefaultDirectionFollowing();
     // A local directory keeps the map usable when the inventory proxy is unavailable.
     this.subscription = this.http.get<any[]>('assets/family_mart_stores.json').subscribe({
       next: data => { this.localFamily = data; this.normalizeStores(); },
@@ -347,7 +373,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       if (this.destroyed) return;
       const first = !this.hasLocation();
       this.latitude = position.coords.latitude; this.longitude = position.coords.longitude;
-      if (this.compassHeading === undefined && position.coords.heading !== null && Number.isFinite(position.coords.heading)) {
+      if (this.directionFollowingEnabled && this.compassHeading === undefined && position.coords.heading !== null && Number.isFinite(position.coords.heading)) {
         this.updateHeading(position.coords.heading);
       }
       this.locating = false;

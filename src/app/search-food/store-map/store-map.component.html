@@ -11,8 +11,8 @@
         <button type="button" [attr.aria-pressed]="filter === '全家'" (click)="setFilter('全家')">全家</button>
         <button type="button" [attr.aria-pressed]="filter === '7-11'" (click)="setFilter('7-11')">7-ELEVEN</button>
       </div>
-      <button type="button" class="direction-follow" [attr.aria-pressed]="directionFollowing" [attr.aria-label]="directionRequesting ? '方向跟隨，等待權限回覆' : directionFollowing ? '方向跟隨，點擊關閉' : '方向跟隨，點擊開啟'" [title]="directionFollowing ? '關閉方向跟隨' : '開啟方向跟隨'" [disabled]="directionRequesting" (click)="toggleDirectionFollowing()">
-        <svg class="direction-cat" viewBox="0 0 36 36" width="32" height="32" aria-hidden="true" focusable="false">
+      <button type="button" class="direction-follow" role="switch" [attr.aria-checked]="directionFollowing" aria-label="方向跟隨" [attr.aria-busy]="directionRequesting" [title]="directionRequesting ? '等待方向感測權限' : directionFollowing ? '關閉方向跟隨' : '開啟方向跟隨'" [disabled]="directionRequesting" (click)="toggleDirectionFollowing()">
+        <span class="direction-switch-track" aria-hidden="true"><span class="direction-switch-thumb"><svg class="direction-cat" viewBox="0 0 36 36" width="32" height="32" aria-hidden="true" focusable="false">
           <path class="turn-arrow" d="M7 12C8 4 22 2 29 9m-1-5 2 6-6-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           <g class="turn-head">
             <path d="m8 20-1-9 8 5a15 15 0 0 1 6 0l8-5-1 9c2 2 3 4 3 6 0 5-6 8-13 8S5 31 5 26c0-2 1-4 3-6Z" fill="#242a35"/>
@@ -23,8 +23,8 @@
             <path d="m16 28 2 2 2-2Z" fill="#e8a9b7"/>
             <path d="M18 30v1m-8-2-4-1m4 3-4 1m20-3 4-1m-4 3 4 1" stroke="#a7adba" stroke-width="1" stroke-linecap="round"/>
           </g>
-        </svg>
-        <span>方向跟隨</span>
+        </svg></span></span>
+        <span class="direction-switch-label">{{ directionRequesting ? '授權中' : '方向跟隨' }}</span>
       </button>
       <button type="button" class="perspective" [attr.aria-pressed]="is3D" (click)="togglePerspective()" [disabled]="!ready">{{ is3D ? '切換 2D 地圖' : '切換 3D 街景' }}</button>
     </div>

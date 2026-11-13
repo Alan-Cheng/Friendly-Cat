@@ -26,7 +26,7 @@ export function createBlackCatModel(): THREE.Group {
     ball(cat, black, x, .42, .42, .23, .4, .24);
     ball(cat, charcoal, x, .17, .61, .28, .18, .32);
   }
-  const head = new THREE.Group(); head.position.set(0, 1.85, .1); cat.add(head);
+  const head = new THREE.Group(); head.name = 'head'; head.position.set(0, 1.85, .1); cat.add(head);
   ball(head, black, 0, 0, 0, 1.02, .83, .77);
   const faceZ = (x: number, y: number) => .77 * Math.sqrt(Math.max(0, 1 - (x / 1.02) ** 2 - (y / .83) ** 2));
   const earShape = new THREE.Shape();

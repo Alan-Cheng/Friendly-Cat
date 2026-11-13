@@ -102,10 +102,13 @@ describe('StoreMapComponent data and location', () => {
     expect(remove).toHaveBeenCalledWith('deviceorientationabsolute', (component as any).onOrientation);
   });
 
-  it('enables direction following from its own control and stops on the next click', async () => {
+  it('defaults to direction following, restores the original heading on disable, and can re-enable', async () => {
     const setHeading = jasmine.createSpy('setHeading');
     (component as any).cat = { setHeading };
+    expect(component.directionFollowing).toBeTrue();
+    await component.toggleDirectionFollowing();
     expect(component.directionFollowing).toBeFalse();
+    expect(setHeading).toHaveBeenCalledWith(undefined);
     await component.toggleDirectionFollowing();
     expect(component.directionFollowing).toBeTrue();
     const event = new DeviceOrientationEvent('deviceorientationabsolute', { alpha: 270, absolute: true });
@@ -116,6 +119,40 @@ describe('StoreMapComponent data and location', () => {
     expect(setHeading).toHaveBeenCalledWith(undefined);
     setHeading.calls.reset();
     window.dispatchEvent(event);
+    expect(setHeading).not.toHaveBeenCalled();
+  });
+
+  it('ignores compass jitter and accepts a short turn across north', () => {
+    const setHeading = jasmine.createSpy('setHeading');
+    (component as any).cat = { setHeading };
+    (component as any).updateHeading(359);
+    (component as any).updateHeading(359.6);
+    (component as any).updateHeading(.4);
+    expect(setHeading.calls.allArgs()).toEqual([[359]]);
+    (component as any).updateHeading(1);
+    expect(setHeading.calls.allArgs()).toEqual([[359], [1]]);
+  });
+
+  it('keeps the absolute sensor source instead of alternating between competing events', () => {
+    const setHeading = jasmine.createSpy('setHeading');
+    (component as any).cat = { setHeading };
+    (component as any).onOrientation({ type: 'deviceorientationabsolute', absolute: true, alpha: 270 });
+    setHeading.calls.reset();
+    (component as any).onOrientation({ type: 'deviceorientation', absolute: true, alpha: 180 });
+    expect(setHeading).not.toHaveBeenCalled();
+  });
+
+  it('does not let GPS or late sensor events rotate the cat after following is disabled', async () => {
+    const setHeading = jasmine.createSpy('setHeading');
+    (component as any).cat = { setHeading };
+    let onPosition!: PositionCallback;
+    spyOn(navigator.geolocation, 'watchPosition').and.callFake(callback => { onPosition = callback; return 1; });
+    spyOn(component as any, 'updateCat').and.returnValue(Promise.resolve());
+    await component.toggleDirectionFollowing();
+    setHeading.calls.reset();
+    component.locate();
+    onPosition({ coords: { latitude: 25.033, longitude: 121.5654, heading: 90, accuracy: 10 } } as GeolocationPosition);
+    (component as any).onOrientation({ absolute: true, alpha: 180 });
     expect(setHeading).not.toHaveBeenCalled();
   });
 

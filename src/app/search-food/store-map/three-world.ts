@@ -10,8 +10,11 @@ export async function createTownLayer(longitude: number, latitude: number) {
   const origin = MercatorCoordinate.fromLngLat([longitude, latitude], 0);
   const meter = origin.meterInMercatorCoordinateUnits();
   const cat = createBlackCatModel();
+  const catHead = cat.getObjectByName('head')!;
   cat.visible = false;
   let heading: number | undefined;
+  let displayedHeading: number | undefined;
+  let lastFrameTime: number | undefined;
   // A ground-plane sector shares the cat's geographic frame, so rotating the map
   // cannot change the direction it indicates. Its radius stays constant on screen.
   const fanCanvas = document.createElement('canvas');
@@ -74,11 +77,24 @@ export async function createTownLayer(longitude: number, latitude: number) {
     render(gl, args) {
       const scale = meter;
       cat.scale.setScalar(13);
+      // Lift the face toward the overhead camera, returning to its normal pose in 3D.
+      catHead.rotation.x = -Math.PI / 4 * Math.max(0, Math.min(1, 1 - mapInstance.getPitch() / 55));
+      const now = performance.now();
+      const elapsed = lastFrameTime === undefined ? 0 : Math.min(64, now - lastFrameTime);
+      lastFrameTime = now;
+      if (heading === undefined) displayedHeading = undefined;
+      else if (displayedHeading === undefined) displayedHeading = heading;
+      else {
+        const delta = ((heading - displayedHeading + 540) % 360) - 180;
+        displayedHeading = (displayedHeading + delta * (1 - Math.exp(-elapsed / 140)) + 360) % 360;
+        if (Math.abs(delta) > .1) mapInstance.triggerRepaint();
+        else displayedHeading = heading;
+      }
       directionFan.visible = cat.visible && heading !== undefined && mapInstance.getPitch() <= .5;
       if (directionFan.visible) {
         directionFan.position.copy(cat.position);
         directionFan.position.y = .04;
-        directionFan.rotation.y = -heading! * Math.PI / 180;
+        directionFan.rotation.y = -displayedHeading! * Math.PI / 180;
         const metersPerPixel = 40075016.686 * Math.cos(catLatitude * Math.PI / 180)
           / (512 * Math.pow(2, mapInstance.getZoom()));
         directionFan.scale.setScalar(48 * metersPerPixel);
@@ -104,8 +120,8 @@ export async function createTownLayer(longitude: number, latitude: number) {
       camera.projectionMatrix = new THREE.Matrix4().fromArray(args.defaultProjectionData.mainMatrix).multiply(model);
       // The model faces +Z (south); compass headings turn clockwise from north.
       // Both map perspectives share this world-space direction.
-      cat.rotation.y = heading === undefined ? -mapInstance.getBearing() * Math.PI / 180
-        : (180 - heading) * Math.PI / 180;
+      cat.rotation.y = displayedHeading === undefined ? -mapInstance.getBearing() * Math.PI / 180
+        : (180 - displayedHeading) * Math.PI / 180;
       // World pieces stay visible over the schematic base buildings, with normal depth between their own surfaces.
       renderer.resetState(); renderer.clearDepth(); renderer.render(scene, camera);
       if (projectionListener) {

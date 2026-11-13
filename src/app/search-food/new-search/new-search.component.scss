@@ -32,7 +32,7 @@ progress { display: block; width: 100%; height: 6px; border: 0; border-radius: 5
 progress::-webkit-progress-bar { background: #e3e7d9; } progress::-webkit-progress-value { background: #58734c; } progress::-moz-progress-bar { background: #58734c; }
 .boot-note { margin: 14px 0 0; font-size: 10px; color: #7a856c; line-height: 1.6; }
 .boot-retry { margin-top: 16px; min-height: 44px; border: 0; border-radius: 8px; background: #3c5e40; color: #fff; padding: 10px 16px; cursor: pointer; }
-button:focus-visible { outline: 3px solid #aa7c30; outline-offset: 3px; }
+button:focus-visible { outline: 3px solid var(--cat-primary); outline-offset: 3px; }
 @media(max-width: 600px) { .world-window { width: calc(100vw - 20px); max-height: 88dvh; }.window-body { padding: 12px; }.boot-body { padding: 24px; }.boot-body h1 { font-size: 29px; }.world-boot { padding: 18px; } }
 @media(prefers-reduced-motion: no-preference) { .world-window[open] { animation: window-enter .2s ease-out; } @keyframes window-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } } }
 .world-window:modal { overscroll-behavior: contain; }
@@ -66,7 +66,7 @@ button:focus-visible { outline: 3px solid #aa7c30; outline-offset: 3px; }
 .inventory-store:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
 .inventory-store .store-heading { justify-content: flex-start; gap: 12px; padding: 0 0 22px; }
 .store-identity { min-width: 0; }.store-brand-name { color: #899d91; font-size: 8px; letter-spacing: .12em; }.store-identity h3 { margin: 4px 0 0; font-size: 18px; font-weight: 600; line-height: 1.4; color: #24494b; }.store-identity p { margin: 5px 0 0; color: #8a9c92; font-size: 11px; }
-.store-identity .store-distance { color: #174ea6; font-size: 12px; font-variant-numeric: tabular-nums; }
+.store-identity .store-distance { color: var(--cat-primary); font-size: 12px; font-variant-numeric: tabular-nums; }
 .store-map-link { display: grid; place-items: center; width: 44px; min-height: 44px; margin-left: auto; flex-shrink: 0; }.store-favorite { width: 44px; min-height: 44px; border: 0; background: transparent; color: #a6796d; font-size: 25px; cursor: pointer; }
 .category-switcher { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 0 16px; border-bottom: 1px solid #dce7df; }
 .category-option { display: inline-flex; align-items: center; gap: 10px; min-height: 64px; max-width: 100%; padding: 10px 14px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #5d7872; font-size: 1rem; font-weight: 600; line-height: 1.4; cursor: pointer; }.category-option img { width: 44px; height: 44px; aspect-ratio: 1; flex-shrink: 0; object-fit: contain; }.category-option small { min-width: 20px; padding: 3px 5px; border-radius: 4px; background: #edf2e9; color: #7e9787; font-size: .8125rem; }.category-option.active { background: #e7f0e9; color: #326e69; }.category-option.active small { background: #d2e5d8; color: #3b7770; }.category-option:hover:not(:disabled) { background: #f0f5ee; }.category-option:disabled { opacity: .4; cursor: default; }.category-prompt { padding: 32px 0; color: #90a197; font-size: 12px; text-align: center; }
@@ -90,6 +90,8 @@ button:focus-visible { outline: 3px solid #aa7c30; outline-offset: 3px; }
 .map-search-dropdown strong { font-size: 14px; font-weight: 500; }
 .map-search-dropdown small { margin-top: 3px; font-size: 12px; color: #70757a; }
 .map-search-dropdown li button:hover, .map-search-row button:hover, .map-search-heading button:hover { background: #f1f3f4; }
-.map-search-panel button:focus-visible, .map-search-row input:focus-visible { outline: 2px solid #1a73e8; outline-offset: -2px; }
+.map-search-panel button:focus-visible, .map-search-row input:focus-visible { outline: 2px solid var(--cat-primary); outline-offset: -2px; }
+.map-search-dropdown li button:hover, .map-search-row button:hover, .map-search-heading button:hover { background: var(--cat-hover); }
+.map-search-dropdown li button:active, .map-search-row button:active, .map-search-heading button:active { background: var(--cat-pressed); }
 
 .map-search-dropdown { border-radius: 0 0 16px 16px; overflow: hidden; }
