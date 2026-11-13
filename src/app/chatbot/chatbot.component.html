@@ -1,12 +1,9 @@
 <div class="chatbot-container" [class.open]="isOpen" *ngIf="true">
-    <div class="chatbot-header" (click)="toggleChat()">
-        黑貓幫你找💬
-        <button class="toggle-btn" (click)="toggleChat($event)">
-            {{ isOpen ? '➖' : '➕' }}
-        </button>
-    </div>
+    <button type="button" class="chatbot-header" (click)="toggleChat()" [attr.aria-expanded]="isOpen" aria-controls="blackcat-chat-content">
+        <span>黑貓幫你找</span><span aria-hidden="true">{{ isOpen ? '−' : '＋' }}</span>
+    </button>
 
-    <div #chatBody *ngIf="isOpen" class="chatbot-body">
+    <div #chatBody id="blackcat-chat-content" *ngIf="isOpen" class="chatbot-body">
         <div *ngFor="let msg of messages" [ngClass]="msg.sender">
             <span *ngIf="msg.sender === 'user'" class="text-gray-700">{{ msg.text }}</span>
             <div *ngIf="msg.sender === 'bot' && !msg.isLoading" class="text-primary-default">

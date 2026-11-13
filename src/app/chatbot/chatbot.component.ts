@@ -60,6 +60,7 @@ export class ChatbotComponent {
       if (!user) {
         this.isLogin = false;
         this.putMessage(`嗨～！ 想找什麼類型的食物呢？`, "bot");
+        return;
       }
         this.userName = user.displayName;
         this.putMessage(`歡迎回來～${this.userName}！ 想找什麼類型的食物呢？`, "bot")

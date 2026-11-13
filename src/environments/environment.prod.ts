@@ -2,7 +2,7 @@ export const environment = {
   production: true,
   turnstileSiteKey: '0x4AAAAAAEEefTsxRSmYSGna',
   familyMartUrl: {
-    icon: 'https://www.family.com.tw/ESG/images/icon/LOGO.ico',
+    icon: 'assets/family-mart.ico',
     base: 'https://stamp.family.com.tw/api/maps',
     storeQuery: 'https://family.map.com.tw/famiport/api/dropdownlist/Select_StoreName',
     endpoint: {
@@ -11,7 +11,7 @@ export const environment = {
     }
   },
   sevenElevenUrl: {
-    icon: 'https://www.7-11.com.tw/favicon.ico',
+    icon: 'assets/seven-eleven.ico',
     base: 'https://proxy.friendlycat.alan-cheng.com/LoveFood/api/',
     endpoint: {
       getList: 'Master/FrontendItemCategory/GetList',

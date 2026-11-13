@@ -5,6 +5,9 @@ import { BehaviorSubject, Observable } from 'rxjs';
   providedIn: 'root' // 全局單例服務
 })
 export class StoreDataService {
+  private inventoryStateSubject = new BehaviorSubject<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  readonly inventoryState$ = this.inventoryStateSubject.asObservable();
+  setInventoryState(state: 'idle' | 'loading' | 'ready' | 'error'): void { this.inventoryStateSubject.next(state); }
   private storesSubject = new BehaviorSubject<any[]>([]); // 用 BehaviorSubject 儲存商店列表
   public stores$: Observable<any[]> = this.storesSubject.asObservable(); // 提供訂閱的 Observable
 
@@ -14,6 +17,7 @@ export class StoreDataService {
   // 更新商店列表
   setStores(stores: any[]) {
     this.storesSubject.next(stores);
+    this.setInventoryState('ready');
   }
 
   // 獲取當前商店列表（同步方式）

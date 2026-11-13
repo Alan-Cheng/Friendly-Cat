@@ -46,11 +46,11 @@ export class SevenElevenRequestService {
     return this.requestService.post(url)
   }
 
-  getItemsByStoreNo(storeNo: string): Observable<any> {
+  getItemsByStoreNo(storeNo: string, location?: { Latitude: number; Longitude: number }): Observable<any> {
     const url = this.baseUrl + environment.sevenElevenUrl.endpoint.getStoreDetail;
     const body = {
       storeNo: storeNo,
-      CurrentLocation: {
+      CurrentLocation: location || {
         Latitude: 25.0375197,
         Longitude: 121.5636704
       }

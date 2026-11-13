@@ -17,6 +17,7 @@ export class MessageDialogComponent implements OnInit {
     public dialogRef: MatDialogRef<MessageDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any // 接收傳遞的數據
   ) {
+    this.dialogRef.addPanelClass('world-message-panel');
     // 設置傳遞的訊息
     this.title = data.title || "提示";
     this.message = data.message || '請稍後再試';

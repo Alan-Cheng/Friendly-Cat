@@ -1,133 +1,46 @@
-<div *ngIf="subCategories.length > 0" class="transition-all duration-300 ease-in-out min-h-[200px]">
-  <!-- 7-11顯示區塊 -->
-  <ng-container *ngIf="category.Name">
-    <div *ngIf="isLoading" class="flex flex-col items-center justify-center p-12">
-      <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
-      <p class="mt-4 text-primary-default animate-pulse">載入商品資訊中...</p>
-    </div>
-    
-    <div [hidden]="isLoading">
-      <h2 class="text-2xl font-bold mb-4 text-primary-default">{{ category.Name }}</h2>
-      <ng-container *ngFor="let subCategory of subCategories">
-        <div *ngIf="itemsBySubCategory[subCategory.Name] && itemsBySubCategory[subCategory.Name].length > 0"
-             class="sub-category-item bg-white border border-gray-100 p-6 mb-8 rounded-lg shadow-lg"
-        >
-          <div class="mb-4">
-            <h3 class="text-2xl font-bold text-primary-default text-primary-light">
-              {{ subCategory.Name }}
-            </h3>
-          </div>
-
-          <!-- 7-11顯示的子分類商品內容區塊 -->
-          <ul class="space-y-6 sm:space-y-4">
-            <li *ngFor="let item of itemsBySubCategory[subCategory.Name]">
-              <div class="border border-gray-300 flex flex-col sm:flex-row items-start p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                <img [src]="getFoodDetail711(item).image"
-                  [alt]="getFoodDetail711(item).name"
-                  class="object-contain rounded-lg mb-4 sm:mb-0 sm:mr-6 shadow-md w-24 h-24 sm:w-32 sm:h-32 cursor-pointer"
-                  (click)="openImageDialog(getFoodDetail711(item).image)">
-
-                <div class="flex-1">
-                  <!-- 商品名稱與標籤 -->
-                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-                    <h3 class="text-sm sm:text-lg font-semibold text-gray-600">
-                      {{ item.ItemName }}
-                    </h3>
-                    <div class="text-center inline-block bg-green-100 text-green-800 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full">
-                      剩餘數量: {{ item.RemainingQty }}
-                    </div>
-                  </div>
-
-                  <!-- 商品標籤 -->
-                  <div class="flex space-x-2 mb-2">
-                    <div *ngIf="getFoodDetail711(item).new === 'True'"
-                         class="inline-block bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full">
-                      新品
-                    </div>
-                    <div *ngIf="getFoodDetail711(item).special_sale === 'True'"
-                         class="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
-                      特價中
-                    </div>
-                  </div>
-
-                  <!-- 商品描述 -->
-                  <div *ngIf="getFoodDetail711(item).image !== 'assets/此商品暫無圖片.png'">
-                    <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
-                      <span class="text-gray-800">價格(NT$): </span>
-                      <span class="line-through text-gray-500">{{ getFoodDetail711(item).originalPrice }}</span>
-                      <span class="text-red-600 mx-2">→</span>
-                      <span class="text-red-600">
-                        {{ getFoodDetail711(item).discountedPrice | round:-1 }}
-                      </span>
-                    </div>
-                    <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ getFoodDetail711(item).content | emptyInfo}}</p>
-                    <p class="text-xs sm:text-sm text-gray-500 mb-1">卡路里(kcal): {{ getFoodDetail711(item).kcal | emptyInfo}}</p>
-                  </div>
-                  <!-- 商品沒資訊的話 -->
-                  <div *ngIf="getFoodDetail711(item).image === 'assets/此商品暫無圖片.png'">
-                    <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
-                      <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: 暫無此商品資訊</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </ng-container>
-    </div>
-  </ng-container>
-
-  <!-- 全家顯示區塊 -->
-  <ng-container *ngIf="category.name">
-    <h2 class="text-2xl font-bold mb-4 text-primary-default">{{ category.name }}</h2>
+<div class="product-details" *ngIf="subCategories.length">
+  <div class="product-loading" *ngIf="isLoading"><mat-progress-spinner mode="indeterminate" diameter="28"></mat-progress-spinner><span>正在載入商品資訊…</span></div>
+  <ng-container *ngIf="!isLoading && category.Name">
     <ng-container *ngFor="let subCategory of subCategories">
-      <div *ngIf="itemsBySubCategory[subCategory.name] && itemsBySubCategory[subCategory.name].length > 0"
-           class="sub-category-item bg-white border border-gray-100 p-6 mb-8 rounded-lg shadow-lg">
-        <div class="mb-4">
-          <h3 class="text-2xl font-bold text-primary-default">
-            {{ subCategory.name }}
-          </h3>
-        </div>
-
-        <!-- 全家顯示的子分類商品內容區塊 -->
-        <ul class="space-y-6 sm:space-y-4">
-          <li *ngFor="let item of itemsBySubCategory[subCategory.name]">
-            <div class="border border-gray-300 food-item flex flex-col sm:flex-row items-start p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-              <img [src]="getFoodDetailFamilyMart(item).picture_url"
-                [alt]="getFoodDetailFamilyMart(item).title"
-                class="object-contain rounded-lg mb-4 sm:mb-0 sm:mr-6 shadow-md w-24 h-24 sm:w-32 sm:h-32 cursor-pointer"
-                (click)="openImageDialog(getFoodDetailFamilyMart(item).picture_url)">
-
-
-
-              <div class="flex-1">
-                <!-- 商品名稱與標籤 -->
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-                  <h3 class="text-sm sm:text-lg font-semibold text-gray-600">
-                    {{ item.ItemName }}
-                  </h3>
-                  <div class="text-center bg-green-100 text-green-800 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full">
-                    剩餘數量: {{ item.RemainingQty }}
-                  </div>
+      <section class="product-group" *ngIf="itemsBySubCategory[subCategory.Name]?.length">
+        <h4>{{ subCategory.Name }}</h4>
+        <ul class="product-list">
+          <ng-container *ngFor="let item of itemsBySubCategory[subCategory.Name]">
+            <li class="product-row" *ngIf="item.RemainingQty > 0">
+              <ng-container *ngIf="getFoodDetail711(item) as detail">
+                <button type="button" class="product-image" (click)="openImageDialog(detail.image)" [attr.aria-label]="'放大' + item.ItemName + '圖片'"><img [src]="detail.image" [alt]="item.ItemName" loading="lazy"></button>
+                <div class="product-copy"><h5>{{ item.ItemName }}</h5><div class="product-tags"><span *ngIf="detail.new === 'True'">新品</span><span *ngIf="detail.special_sale === 'True'">特價中</span></div>
+                  <ng-container *ngIf="detail.image !== 'assets/此商品暫無圖片.png'; else unavailableSeven">
+                    <p class="product-price"><span>價格 NT$</span> <del>{{ detail.originalPrice }}</del><span aria-hidden="true">→</span><strong>{{ detail.discountedPrice | round:-1 }}</strong></p>
+                    <p class="product-description">{{ detail.content | emptyInfo }}</p><p class="product-calories">{{ detail.kcal | emptyInfo }} kcal</p>
+                  </ng-container>
+                  <ng-template #unavailableSeven><p class="product-description">暫無此商品資訊</p></ng-template>
                 </div>
-                <!-- 商品描述 -->
-                <div *ngIf="getFoodDetailFamilyMart(item).picture_url !== 'assets/此商品暫無圖片.png'">
-                  <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ getFoodDetailFamilyMart(item).Description | emptyInfo}}</p>
-                  <!-- <p class="text-xs sm:text-sm text-gray-500 mb-1">卡路里(kcal): {{ getFoodDetailFamilyMart(item).Calories | emptyInfo}}</p> -->
-                </div>
-                <!-- 商品沒資訊的話 -->
-                <div *ngIf="getFoodDetailFamilyMart(item).picture_url === 'assets/此商品暫無圖片.png'">
-                  <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
-                    <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: 暫無此商品資訊</p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </li>
+                <span class="product-stock"><small>剩餘</small>{{ item.RemainingQty }}<small>件</small></span>
+              </ng-container>
+            </li>
+          </ng-container>
         </ul>
-      </div>
+      </section>
+    </ng-container>
+  </ng-container>
+  <ng-container *ngIf="!isLoading && category.name">
+    <ng-container *ngFor="let subCategory of subCategories">
+      <section class="product-group" *ngIf="itemsBySubCategory[subCategory.name]?.length">
+        <h4>{{ subCategory.name }}</h4>
+        <ul class="product-list">
+          <ng-container *ngFor="let item of itemsBySubCategory[subCategory.name]">
+            <li class="product-row" *ngIf="item.RemainingQty > 0">
+              <ng-container *ngIf="getFoodDetailFamilyMart(item) as detail">
+                <button type="button" class="product-image" (click)="openImageDialog(detail.picture_url)" [attr.aria-label]="'放大' + item.ItemName + '圖片'"><img [src]="detail.picture_url" [alt]="item.ItemName" loading="lazy"></button>
+                <div class="product-copy"><h5>{{ item.ItemName }}</h5><p class="product-description">{{ detail.picture_url === 'assets/此商品暫無圖片.png' ? '暫無此商品資訊' : (detail.Description | emptyInfo) }}</p></div>
+                <span class="product-stock"><small>剩餘</small>{{ item.RemainingQty }}<small>件</small></span>
+              </ng-container>
+            </li>
+          </ng-container>
+        </ul>
+      </section>
     </ng-container>
   </ng-container>
 </div>
+<dialog #imageWindow class="product-image-dialog" aria-label="商品放大圖片" closedby="any"><button type="button" (click)="imageWindow.close()" aria-label="關閉商品圖片">×</button><img *ngIf="previewImage" [src]="previewImage" alt="商品放大圖片"></dialog>

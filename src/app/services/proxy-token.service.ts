@@ -1,6 +1,8 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, OnDestroy } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, timeout } from 'rxjs';
+
+export type BrowserVerificationState = 'checking' | 'verified' | 'failed';
 import { environment } from 'src/environments/environment';
 import { LoadingService } from './loading.service';
 
@@ -18,6 +20,9 @@ declare global {
 
 @Injectable({ providedIn: 'root' })
 export class ProxyTokenService implements OnDestroy {
+  private readonly stateSubject = new BehaviorSubject<BrowserVerificationState>('checking');
+  readonly verificationState$ = this.stateSubject.asObservable();
+
   private readonly turnstileScriptId = 'turnstile-api';
   private readonly proxyOrigin = new URL(environment.sevenElevenUrl.base).origin;
   private readonly refreshEveryMs = 9 * 60 * 1000;
@@ -36,6 +41,7 @@ export class ProxyTokenService implements OnDestroy {
 
   async start(): Promise<void> {
     if (!environment.turnstileSiteKey) {
+      this.stateSubject.next('failed');
       console.error('Turnstile site key is not configured; 7-ELEVEN requests will be unavailable.');
       return;
     }
@@ -77,11 +83,14 @@ export class ProxyTokenService implements OnDestroy {
   }
 
   private async exchangeTurnstileToken(): Promise<void> {
+    this.stateSubject.next('checking');
     this.loadingService.showVerification('驗證您的瀏覽器中，請稍後');
+    let challengeTimeout: ReturnType<typeof setTimeout> | undefined;
 
     try {
       const turnstile = await this.loadTurnstile();
       const token = await new Promise<string>((resolve, reject) => {
+        challengeTimeout = setTimeout(() => reject(new Error('Browser verification timed out.')), 90000);
         this.tokenResolver = resolve;
         this.tokenRejecter = reject;
         turnstile.execute(this.widgetId!);
@@ -90,9 +99,16 @@ export class ProxyTokenService implements OnDestroy {
       await firstValueFrom(this.http.get(`${this.proxyOrigin}/proxy-token`, {
         headers: new HttpHeaders({ 'X-Turnstile-Token': token }),
         withCredentials: true
-      }));
+      }).pipe(timeout(20000)));
       this.validUntil = Date.now() + this.refreshEveryMs;
+      this.stateSubject.next('verified');
+    } catch (error) {
+      this.stateSubject.next('failed');
+      throw error;
     } finally {
+      clearTimeout(challengeTimeout);
+      this.tokenResolver = undefined;
+      this.tokenRejecter = undefined;
       // Turnstile response tokens are single-use. Reset before the next refresh.
       if (this.widgetId && window.turnstile) {
         window.turnstile.reset(this.widgetId);
@@ -112,6 +128,7 @@ export class ProxyTokenService implements OnDestroy {
 
     if (!this.widgetId) {
       const container = document.createElement('div');
+      container.className = 'browser-verification-widget';
       container.style.cssText = 'position:fixed;right:0;bottom:0;z-index:2147483647';
       document.body.appendChild(container);
       this.widgetId = window.turnstile.render(container, {
@@ -144,8 +161,10 @@ export class ProxyTokenService implements OnDestroy {
     }
 
     this.turnstileLoadPromise = new Promise<void>((resolve, reject) => {
-      script!.addEventListener('load', () => resolve(), { once: true });
+      const timer = setTimeout(() => { script!.remove(); reject(new Error('Turnstile script timed out.')); }, 20000);
+      script!.addEventListener('load', () => { clearTimeout(timer); resolve(); }, { once: true });
       script!.addEventListener('error', () => {
+        clearTimeout(timer);
         script!.remove();
         reject(new Error('Failed to load Turnstile.'));
       }, { once: true });

@@ -1,0 +1,39 @@
+<section class="town" aria-labelledby="town-title" (keydown.escape)="closeCard()">
+  <header class="town-header">
+    <div class="world-wordmark"><span class="eyebrow">FRIENDLY CAT</span><h1 id="town-title">友善黑貓</h1></div>
+    <div class="world-actions"><ng-content select="[mapSearch]"></ng-content><button type="button" class="locate primary" (click)="locate()" [disabled]="locating" [attr.aria-label]="locating ? '定位中' : hasLocation() ? '回到黑貓' : '開啟我的定位'" [title]="hasLocation() ? '回到黑貓' : '開啟我的定位'"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="2.5"></circle><path d="M12 1v4m0 14v4M1 12h4m14 0h4"></path></svg></button></div>
+  </header>
+  <div class="map-frame">
+    <div #canvas class="map-canvas" [attr.aria-busy]="!ready && !failed"></div>
+    <div class="map-toolbar" aria-label="地圖顯示選項">
+      <div class="brand-filters" role="group" aria-label="商家品牌">
+        <button type="button" [attr.aria-pressed]="filter === 'all'" (click)="setFilter('all')">全部店家</button>
+        <button type="button" [attr.aria-pressed]="filter === '全家'" (click)="setFilter('全家')">全家</button>
+        <button type="button" [attr.aria-pressed]="filter === '7-11'" (click)="setFilter('7-11')">7-ELEVEN</button>
+      </div>
+      <button type="button" class="perspective" [attr.aria-pressed]="is3D" (click)="togglePerspective()" [disabled]="!ready">{{ is3D ? '切換 2D 地圖' : '回到 3D 街景' }}</button>
+    </div>
+    <div class="map-notice" *ngIf="!ready || failed">
+      <strong>{{ failed ? '街區暫時無法開啟' : '正在鋪好街道…' }}</strong>
+      <p>{{ failed ? '你仍然可以從街區清單查看商家。' : '載入免費地圖與附近店家' }}</p>
+      <button type="button" *ngIf="failed" (click)="retry()">重新載入地圖</button>
+    </div>
+    <!-- <span class="map-hint" *ngIf="ready && !selected">點小店看商品 · 標記為剩餘件數（— 尚未取得）</span> -->
+    <article class="store-card" *ngIf="selected as store" aria-labelledby="selected-store-title">
+      <button type="button" class="close-card" (click)="closeCard()" aria-label="關閉商家資訊">×</button>
+      <span class="brand-label" [class.seven]="store.brand === '7-11'">{{ store.brand === '全家' ? 'FamilyMart 全家' : '7-ELEVEN' }}</span>
+      <h2 #cardTitle id="selected-store-title" tabindex="-1">{{ store.name }}</h2>
+      <p class="distance">{{ distance(store) }}</p><p>{{ store.address || '暫無地址資訊' }}</p><p *ngIf="store.phone">{{ store.phone }}</p>
+      <p class="stock-note">即期商品庫存尚未查詢，實際數量以門市為準。</p>
+      <p class="stock-note" *ngIf="inventoryBlocked">查詢商品前，請先完成頁面上的瀏覽器驗證。</p>
+      <div class="card-actions"><button type="button" class="primary" [disabled]="querying || inventoryBlocked" (click)="requestProducts()">{{ querying ? '查詢中…' : '查看此店商品' }}</button><a [href]="navigationUrl(store)" target="_blank" rel="noopener noreferrer">前往導航 ↗</a></div>
+    </article>
+  </div>
+  <div class="map-status"><span class="status-dot" aria-hidden="true"></span><p role="status">{{ status }}</p><span class="store-count">{{ visibleStores.length }} 間店家{{ visibleStores.length === 60 ? '（顯示最近 60 間）' : '' }}</span></div>
+  <details class="store-directory" [open]="failed">
+    <summary><span>店家清單 <small>{{ visibleStores.length }} 間門市</small></span></summary>
+    <p *ngIf="dataError">{{ dataError }}</p>
+    <p *ngIf="!visibleStores.length">這個範圍尚無符合的店家，請移動或縮小地圖。</p>
+    <ul><li *ngFor="let store of visibleStores"><button type="button" (mouseenter)="highlightStore(store.id)" (mouseleave)="highlightStore()" (focus)="highlightStore(store.id)" (blur)="highlightStore()" [class.is-highlighted]="highlightedId === store.id" (click)="select(store)"><span class="directory-name-row"><span class="directory-store-name">{{ store.name }}</span><span class="directory-quantity" [class.is-unknown]="store.quantity === undefined">{{ store.quantity === undefined ? '—' : store.quantity + ' 件' }}</span></span><small>{{ distance(store) }} · {{ store.address }}</small></button></li></ul>
+  </details>
+</section>

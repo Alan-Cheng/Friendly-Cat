@@ -1,0 +1,12 @@
+:host { display: block; color: #24494b; }
+.message-dialog { padding: 28px 24px 24px; text-align: center; background: #fcfdf9; }
+.message-image { width: 88px; height: 88px; margin: 0 auto 12px; object-fit: contain; }
+h2[mat-dialog-title] { margin: 0; padding: 0; color: #24494b; font: inherit; font-size: 22px; font-weight: 700; line-height: 1.5; }
+h2[mat-dialog-title]::before { display: none; }
+.message-content { padding: 12px 0 24px; color: #617573; font: inherit; line-height: 1.7; overflow-wrap: anywhere; }
+p { margin: 0; white-space: pre-line; }
+.message-actions { padding: 0; min-height: 0; justify-content: center; }
+button { width: 100%; min-height: 44px; padding: 10px 20px; border: 1px solid #367878; border-radius: 10px; background: #367878; color: #fff; font: inherit; font-weight: 600; cursor: pointer; transition: background .15s; }
+button:hover { background: #285f60; }
+button:focus-visible { outline: 3px solid #91b7aa; outline-offset: 3px; }
+@media (max-width: 400px) { .message-dialog { padding: 24px 20px 20px; } }
