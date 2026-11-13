@@ -12,6 +12,31 @@ export async function createTownLayer(longitude: number, latitude: number) {
   const cat = createBlackCatModel();
   cat.visible = false;
   let heading: number | undefined;
+  // A ground-plane sector shares the cat's geographic frame, so rotating the map
+  // cannot change the direction it indicates. Its radius stays constant on screen.
+  const fanCanvas = document.createElement('canvas');
+  fanCanvas.width = fanCanvas.height = 128;
+  const fanContext = fanCanvas.getContext('2d')!;
+  const fade = fanContext.createRadialGradient(64, 64, 0, 64, 64, 64);
+  fade.addColorStop(0, 'rgba(66, 133, 244, .65)');
+  fade.addColorStop(.45, 'rgba(66, 133, 244, .4)');
+  fade.addColorStop(1, 'rgba(66, 133, 244, 0)');
+  fanContext.fillStyle = fade;
+  fanContext.fillRect(0, 0, 128, 128);
+  const fanTexture = new THREE.CanvasTexture(fanCanvas);
+  fanTexture.colorSpace = THREE.SRGBColorSpace;
+  const directionFan = new THREE.Group();
+  const sector = new THREE.Mesh(
+    new THREE.CircleGeometry(1, 48, Math.PI / 3, Math.PI / 3),
+    new THREE.MeshBasicMaterial({ map: fanTexture, transparent: true, depthWrite: false, side: THREE.DoubleSide })
+  );
+  // Circle +Y becomes north (-Z) on the map's ground plane.
+  sector.rotation.x = -Math.PI / 2;
+  sector.renderOrder = -1;
+  directionFan.add(sector);
+  directionFan.visible = false;
+  scene.add(directionFan);
+  let catLatitude = latitude;
   const shops = new THREE.Group();
   scene.add(shops);
   const shopMaterials: InstanceType<typeof THREE.Material>[] = [];
@@ -49,6 +74,15 @@ export async function createTownLayer(longitude: number, latitude: number) {
     render(gl, args) {
       const scale = meter;
       cat.scale.setScalar(13);
+      directionFan.visible = cat.visible && heading !== undefined && mapInstance.getPitch() <= .5;
+      if (directionFan.visible) {
+        directionFan.position.copy(cat.position);
+        directionFan.position.y = .04;
+        directionFan.rotation.y = -heading! * Math.PI / 180;
+        const metersPerPixel = 40075016.686 * Math.cos(catLatitude * Math.PI / 180)
+          / (512 * Math.pow(2, mapInstance.getZoom()));
+        directionFan.scale.setScalar(48 * metersPerPixel);
+      }
       for (const shop of shops.children) {
         const active = shop.userData['storeId'] === highlightedId;
         shop.scale.setScalar(active ? 3.25 : 2.5);
@@ -99,6 +133,7 @@ export async function createTownLayer(longitude: number, latitude: number) {
       geometries.add(glowGeometry);
       geometries.forEach(geometry => geometry.dispose());
       materials.forEach(material => material.dispose());
+      textures.add(fanTexture);
       textures.forEach(texture => texture.dispose());
       renderer?.dispose();
     }
@@ -108,7 +143,7 @@ export async function createTownLayer(longitude: number, latitude: number) {
     setHeading(value?: number) { heading = value; mapInstance?.triggerRepaint(); },
     setHighlight(id?: string) { highlightedId = id; mapInstance?.triggerRepaint(); },
     setProjectionListener(listener: typeof projectionListener) { projectionListener = listener; mapInstance?.triggerRepaint(); },
-    setPosition(lng: number, lat: number) { cat.position.copy(localPoint(lng,lat)); cat.visible = true; },
+    setPosition(lng: number, lat: number) { catLatitude = lat; cat.position.copy(localPoint(lng,lat)); cat.visible = true; mapInstance?.triggerRepaint(); },
     setStores(stores: { id: string; latitude: number; longitude: number; brand: string }[]) {
       shops.clear();
       for (const store of stores) {
