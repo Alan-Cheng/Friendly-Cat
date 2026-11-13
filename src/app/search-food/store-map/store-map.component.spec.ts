@@ -75,4 +75,31 @@ describe('StoreMapComponent data and location', () => {
     component.querying = true; component.requestProducts(); expect(emit).toHaveBeenCalledTimes(1);
     component.querying = false; component.inventoryBlocked = true; component.requestProducts(); expect(emit).toHaveBeenCalledTimes(1);
   });
+  it('uses absolute compass headings in both perspectives and ignores relative alpha', () => {
+    const setHeading = jasmine.createSpy('setHeading');
+    (component as any).cat = { setHeading };
+    const angle = window.screen.orientation?.angle ?? 0;
+    const emit = (alpha: number, absolute: boolean) => (component as any).onOrientation({ alpha, absolute });
+    emit(270, false);
+    expect(setHeading).not.toHaveBeenCalled();
+    emit(270, true);
+    expect(setHeading).toHaveBeenCalledWith((90 + angle) % 360);
+    component.is3D = false;
+    emit(0, true);
+    expect(setHeading).toHaveBeenCalledWith(angle % 360);
+    emit(NaN, true);
+    expect(setHeading).toHaveBeenCalledTimes(2);
+  });
+
+  it('prefers Safari compass data and removes sensor listeners on destroy', async () => {
+    const setHeading = jasmine.createSpy('setHeading');
+    (component as any).cat = { setHeading };
+    const remove = spyOn(window, 'removeEventListener').and.callThrough();
+    (component as any).onOrientation({ webkitCompassHeading: 359, webkitCompassAccuracy: 10, alpha: 180, absolute: false });
+    expect(setHeading).toHaveBeenCalledWith((359 + (window.screen.orientation?.angle ?? 0)) % 360);
+    component.ngOnDestroy();
+    expect(remove).toHaveBeenCalledWith('deviceorientation', (component as any).onOrientation);
+    expect(remove).toHaveBeenCalledWith('deviceorientationabsolute', (component as any).onOrientation);
+  });
+
 });

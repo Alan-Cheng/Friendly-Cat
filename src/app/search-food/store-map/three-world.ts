@@ -11,6 +11,7 @@ export async function createTownLayer(longitude: number, latitude: number) {
   const meter = origin.meterInMercatorCoordinateUnits();
   const cat = createBlackCatModel();
   cat.visible = false;
+  let heading: number | undefined;
   const shops = new THREE.Group();
   scene.add(shops);
   const shopMaterials: InstanceType<typeof THREE.Material>[] = [];
@@ -67,7 +68,10 @@ export async function createTownLayer(longitude: number, latitude: number) {
         .scale(new THREE.Vector3(scale, -scale, scale))
         .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
       camera.projectionMatrix = new THREE.Matrix4().fromArray(args.defaultProjectionData.mainMatrix).multiply(model);
-      cat.rotation.y = -mapInstance.getBearing() * Math.PI / 180;
+      // The model faces +Z (south); compass headings turn clockwise from north.
+      // Both map perspectives share this world-space direction.
+      cat.rotation.y = heading === undefined ? -mapInstance.getBearing() * Math.PI / 180
+        : (180 - heading) * Math.PI / 180;
       // World pieces stay visible over the schematic base buildings, with normal depth between their own surfaces.
       renderer.resetState(); renderer.clearDepth(); renderer.render(scene, camera);
       if (projectionListener) {
@@ -101,6 +105,7 @@ export async function createTownLayer(longitude: number, latitude: number) {
   };
   return {
     layer,
+    setHeading(value: number) { heading = value; mapInstance?.triggerRepaint(); },
     setHighlight(id?: string) { highlightedId = id; mapInstance?.triggerRepaint(); },
     setProjectionListener(listener: typeof projectionListener) { projectionListener = listener; mapInstance?.triggerRepaint(); },
     setPosition(lng: number, lat: number) { cat.position.copy(localPoint(lng,lat)); cat.visible = true; },
