@@ -65,6 +65,32 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private orientationListening = false;
   private orientationRequesting = false;
   headingStatus = '';
+  get directionFollowing(): boolean { return this.orientationListening; }
+  get directionRequesting(): boolean { return this.orientationRequesting; }
+
+  async toggleDirectionFollowing(): Promise<void> {
+    if (this.orientationRequesting) return;
+    if (!this.orientationListening) {
+      if (!window.isSecureContext || typeof DeviceOrientationEvent === 'undefined') {
+        this.headingStatus = '此瀏覽器無法開啟方向跟隨，請使用支援方向感測的瀏覽器與 HTTPS 連線。';
+        return;
+      }
+      await this.enableOrientation();
+      return;
+    }
+    this.stopOrientation();
+    this.compassHeading = undefined;
+    this.heading = undefined;
+    this.cat?.setHeading(undefined);
+    this.headingStatus = '';
+  }
+
+  private stopOrientation(): void {
+    window.removeEventListener('deviceorientation', this.onOrientation);
+    window.removeEventListener('deviceorientationabsolute', this.onOrientation);
+    window.screen.orientation?.removeEventListener('change', this.onScreenOrientation);
+    this.orientationListening = false;
+  }
 
   private readonly onOrientation = (event: DeviceOrientationEvent): void => {
     const compass = event as DeviceOrientationEvent & { webkitCompassHeading?: number; webkitCompassAccuracy?: number };
@@ -88,19 +114,19 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.cat?.setHeading(this.heading);
   }
 
-  private async startOrientation(requestPermission = false): Promise<void> {
-    if (this.orientationListening || this.orientationRequesting || typeof DeviceOrientationEvent === 'undefined') return;
+  async enableOrientation(): Promise<boolean> {
+    if (this.orientationListening) return true;
+    if (this.orientationRequesting || typeof DeviceOrientationEvent === 'undefined') return false;
     const orientation = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
       requestPermission?: (absolute?: boolean) => Promise<string>;
     };
-    if (orientation.requestPermission && !requestPermission) return;
     this.orientationRequesting = true;
     try {
       if (orientation.requestPermission && await orientation.requestPermission(true) !== 'granted') {
         this.headingStatus = '未開啟方向權限，黑貓會在移動時依 GPS 行進方向轉向。';
-        return;
+        return false;
       }
-      if (this.destroyed) return;
+      if (this.destroyed) return false;
       this.zone.runOutsideAngular(() => {
         window.addEventListener('deviceorientation', this.onOrientation);
         window.addEventListener('deviceorientationabsolute', this.onOrientation);
@@ -108,8 +134,10 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       });
       this.orientationListening = true;
       this.headingStatus = '';
+      return true;
     } catch {
       this.headingStatus = '暫時無法讀取手機方向，黑貓會在移動時依 GPS 行進方向轉向。';
+      return false;
     } finally {
       this.orientationRequesting = false;
     }
@@ -136,7 +164,6 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       next: data => { this.localFamily = data; this.normalizeStores(); },
       error: () => { this.dataError = '商家資料暫時無法載入，請稍後重新整理。'; }
     });
-    void this.startOrientation();
     await this.initialize();
   }
 
@@ -309,8 +336,6 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   locate(): void {
-    // Call before awaiting anything: Safari requires a direct user gesture.
-    void this.startOrientation(true);
     if (this.hasLocation()) { this.centerCat(); if (this.watchId !== undefined) return; }
     if (!navigator.geolocation) { this.status = '瀏覽器不支援定位，仍可拖曳地圖找店家。'; return; }
     if (this.locating) return;
@@ -433,9 +458,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.destroyed = true; clearTimeout(this.loadTimer); this.subscription?.unsubscribe(); this.observer?.disconnect();
     if (this.watchId !== undefined) navigator.geolocation.clearWatch(this.watchId);
-    window.removeEventListener('deviceorientation', this.onOrientation);
-    window.removeEventListener('deviceorientationabsolute', this.onOrientation);
-    window.screen.orientation?.removeEventListener('change', this.onScreenOrientation);
+    this.stopOrientation();
     this.markers.forEach(m => m.remove()); this.map?.remove();
   }
 }

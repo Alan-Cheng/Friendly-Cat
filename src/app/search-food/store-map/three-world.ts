@@ -105,7 +105,7 @@ export async function createTownLayer(longitude: number, latitude: number) {
   };
   return {
     layer,
-    setHeading(value: number) { heading = value; mapInstance?.triggerRepaint(); },
+    setHeading(value?: number) { heading = value; mapInstance?.triggerRepaint(); },
     setHighlight(id?: string) { highlightedId = id; mapInstance?.triggerRepaint(); },
     setProjectionListener(listener: typeof projectionListener) { projectionListener = listener; mapInstance?.triggerRepaint(); },
     setPosition(lng: number, lat: number) { cat.position.copy(localPoint(lng,lat)); cat.visible = true; },
