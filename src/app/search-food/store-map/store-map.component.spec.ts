@@ -102,4 +102,21 @@ describe('StoreMapComponent data and location', () => {
     expect(remove).toHaveBeenCalledWith('deviceorientationabsolute', (component as any).onOrientation);
   });
 
+  it('enables direction following from its own control and stops on the next click', async () => {
+    const setHeading = jasmine.createSpy('setHeading');
+    (component as any).cat = { setHeading };
+    expect(component.directionFollowing).toBeFalse();
+    await component.toggleDirectionFollowing();
+    expect(component.directionFollowing).toBeTrue();
+    const event = new DeviceOrientationEvent('deviceorientationabsolute', { alpha: 270, absolute: true });
+    window.dispatchEvent(event);
+    expect(setHeading).toHaveBeenCalledWith((90 + (window.screen.orientation?.angle ?? 0)) % 360);
+    await component.toggleDirectionFollowing();
+    expect(component.directionFollowing).toBeFalse();
+    expect(setHeading).toHaveBeenCalledWith(undefined);
+    setHeading.calls.reset();
+    window.dispatchEvent(event);
+    expect(setHeading).not.toHaveBeenCalled();
+  });
+
 });
