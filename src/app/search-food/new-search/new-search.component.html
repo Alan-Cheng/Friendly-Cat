@@ -42,7 +42,7 @@
     <div class="boot-path">friendlycat / neighborhood / world</div>
     <div class="boot-body">
       <div class="boot-cat" aria-hidden="true"><span class="boot-ear left"></span><span class="boot-ear right"></span><span class="boot-face"><i></i><i></i></span></div>
-      <p class="boot-description">友善黑貓 · 資料準備中<br>準備好後，就會自動帶你進入 2D 街景。</p>
+      <p class="boot-description">友善黑貓 · 資料準備中<br>準備好後，就會自動帶你進入地圖。</p>
       <ol class="boot-checks">
         <li [class.complete]="verificationState === 'verified'">
           <progress *ngIf="verificationState === 'checking'" class="boot-spinner" aria-label="正在驗證瀏覽器"></progress>
@@ -50,9 +50,9 @@
           {{ verificationState === 'verified' ? '瀏覽器驗證完成' : verificationState === 'failed' ? '瀏覽器驗證暫時失敗' : '正在驗證瀏覽器' }}
         </li>
         <li [class.complete]="worldReady">
-          <progress *ngIf="!worldReady" class="boot-spinner" aria-label="正在建立 2D 街景"></progress>
+          <progress *ngIf="!worldReady" class="boot-spinner" aria-label="正在建立地圖"></progress>
           <span *ngIf="worldReady" aria-hidden="true">✓</span>
-          {{ worldReady ? '街景已準備完成' : '正在建立 2D 街景' }}
+          {{ worldReady ? '地圖已準備完成' : '正在建立地圖' }}
         </li>
       </ol>
       <progress [value]="bootProgress" max="100" aria-label="進入世界準備進度"></progress>

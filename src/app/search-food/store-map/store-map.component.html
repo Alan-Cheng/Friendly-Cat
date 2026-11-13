@@ -1,10 +1,11 @@
 <section class="town" aria-labelledby="town-title" (keydown.escape)="closeCard()">
   <header class="town-header">
     <div class="world-wordmark"><span class="eyebrow">FRIENDLY CAT</span><h1 id="town-title">友善黑貓</h1></div>
-    <div class="world-actions"><ng-content select="[mapSearch]"></ng-content><button type="button" class="locate primary" (click)="locate()" [disabled]="locating" [attr.aria-label]="locating ? '定位中' : hasLocation() ? '回到黑貓' : '開啟我的定位'" [title]="hasLocation() ? '回到黑貓' : '開啟我的定位'"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="2.5"></circle><path d="M12 1v4m0 14v4M1 12h4m14 0h4"></path></svg></button></div>
+    <div class="world-actions"><ng-content select="[mapSearch]"></ng-content></div>
   </header>
   <div class="map-frame">
     <div #canvas class="map-canvas" [attr.aria-busy]="!ready && !failed"></div>
+    <button type="button" class="locate" #locationButton (click)="locate()" [disabled]="locating" [attr.aria-label]="locating ? '定位中' : hasLocation() ? '回到目前位置' : '開啟我的定位'" [title]="hasLocation() ? '回到目前位置' : '開啟我的定位'"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="2.5"></circle><path d="M12 1v4m0 14v4M1 12h4m14 0h4"></path></svg></button>
     <div class="map-toolbar" aria-label="地圖顯示選項">
       <div class="brand-filters" role="group" aria-label="商家品牌">
         <button type="button" [attr.aria-pressed]="filter === 'all'" (click)="setFilter('all')">全部店家</button>
@@ -53,9 +54,10 @@
       <li *ngFor="let store of visibleStores">
         <button type="button" (mouseenter)="highlightStore(store.id)" (mouseleave)="highlightStore()" (focus)="highlightStore(store.id)" (blur)="highlightStore()" [class.is-highlighted]="highlightedId === store.id" (click)="select(store)">
           <span class="directory-name-row">
+            <img class="directory-brand-logo" [src]="store.brand === '全家' ? familyMartIconUrl : sevenElevenIconUrl" alt="" width="24" height="24" decoding="async">
             <span class="directory-store-name">{{ store.name }}</span>
             <span class="directory-metrics">
-              <span class="directory-quantity" [class.is-unknown]="store.quantity === undefined">{{ store.quantity === undefined ? '—' : store.quantity + ' 件' }}</span>
+              <span class="directory-quantity" [class.is-unknown]="store.quantity === undefined" [class.is-empty]="store.quantity === 0" [attr.aria-label]="store.quantity === undefined ? '尚未取得庫存' : '剩餘 ' + store.quantity + ' 件'" [title]="store.quantity === undefined ? '尚未取得庫存' : '剩餘 ' + store.quantity + ' 件'">{{ store.quantity === undefined ? '—' : store.quantity }}</span>
               <span class="directory-distance" [class.is-unavailable]="!hasLocation()" [title]="hasLocation() ? '與目前位置的直線距離' : '開啟定位後顯示距離'">{{ distance(store) }}</span>
             </span>
           </span>

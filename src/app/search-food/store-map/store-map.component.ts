@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import type { Map, Marker, GeoJSONSource } from 'maplibre-gl';
 import { Subscription } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 export interface MapStore {
   id: string;
@@ -26,6 +27,7 @@ export interface MapStore {
 })
 export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('canvas', { static: true }) canvas!: ElementRef<HTMLDivElement>;
+  @ViewChild('locationButton', { static: true }) locationButton!: ElementRef<HTMLButtonElement>;
   @ViewChild('cardTitle') cardTitle?: ElementRef<HTMLElement>;
   @Input() familyStores: any[] = [];
   @Input() familyStock: any[] = [];
@@ -48,6 +50,8 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   failed = false;
   locating = false;
   is3D = false;
+  readonly familyMartIconUrl = environment.familyMartUrl.icon;
+  readonly sevenElevenIconUrl = environment.sevenElevenUrl.icon;
   status = '目前瀏覽台北街區，開啟定位讓黑貓找到你。';
   dataError = '';
   private map?: Map;
@@ -215,6 +219,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
           arrow.setAttribute('aria-hidden', 'true');
           compass.append(arrow);
           controls.append(compass);
+          controls.append(this.locationButton.nativeElement);
           compass.addEventListener('click', () => this.zone.run(() => this.toggleCompass()));
           const rotateArrow = () => { arrow.style.transform = `rotate(${-this.map!.getBearing()}deg)`; };
           this.map.on('rotate', rotateArrow);
@@ -312,11 +317,23 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       button.setAttribute('aria-label', `查看${store.name}商品${store.quantity !== undefined ? `，剩餘 ${store.quantity} 件` : ''}`);
       button.setAttribute('aria-pressed', String(this.selected?.id === store.id));
       const label = document.createElement('span'); label.className = 'shop-label';
-      const roof = document.createElement('span'); roof.className = 'shop-roof'; roof.textContent = store.brand === '全家' ? 'FamilyMart' : 'SevenEleven';
+      const roof = document.createElement('span'); roof.className = 'shop-roof';
+      const brandName = document.createElement('span'); brandName.className = 'shop-brand-name'; brandName.textContent = store.brand === '全家' ? '全家' : '7-11';
+      const divider = document.createElement('span'); divider.className = 'shop-brand-divider'; divider.setAttribute('aria-hidden', 'true');
+      const logo = document.createElement('img');
+      logo.className = 'shop-brand-icon';
+      logo.src = store.brand === '全家' ? environment.familyMartUrl.icon : environment.sevenElevenUrl.icon;
+      logo.alt = '';
+      logo.width = logo.height = 22;
+      logo.draggable = false;
+      logo.addEventListener('error', () => logo.remove(), { once: true });
+      roof.append(logo, divider, brandName);
       label.append(roof);
       {
         const badge = document.createElement('span'); badge.className = 'shop-stock-count';
-        badge.textContent = store.quantity === undefined ? '—' : `${store.quantity} 件`;
+        badge.classList.toggle('is-unknown', store.quantity === undefined);
+        badge.classList.toggle('is-empty', store.quantity === 0);
+        badge.textContent = store.quantity === undefined ? '—' : String(store.quantity);
         badge.title = store.quantity === undefined ? '尚未取得庫存' : '即期商品剩餘數量';
         label.append(badge);
       }
@@ -473,7 +490,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.compassView = undefined;
     this.setViewAngle(this.is3D ? 0 : 55, this.is3D ? 0 : -25);
   }
-  retry(): void { this.angleTarget = undefined; this.compassView = undefined; this.failed = false; this.map?.remove(); this.map = undefined; this.cat = undefined; this.observer?.disconnect(); clearTimeout(this.loadTimer); void this.initialize(); }
+  retry(): void { this.angleTarget = undefined; this.compassView = undefined; this.failed = false; this.canvas.nativeElement.parentElement?.append(this.locationButton.nativeElement); this.map?.remove(); this.map = undefined; this.cat = undefined; this.observer?.disconnect(); clearTimeout(this.loadTimer); void this.initialize(); }
   ngOnDestroy(): void {
     this.destroyed = true; clearTimeout(this.loadTimer); this.subscription?.unsubscribe(); this.observer?.disconnect();
     if (this.watchId !== undefined) navigator.geolocation.clearWatch(this.watchId);
