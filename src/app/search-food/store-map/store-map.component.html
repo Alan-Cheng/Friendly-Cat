@@ -26,7 +26,7 @@
         </svg>
         <span>方向跟隨</span>
       </button>
-      <button type="button" class="perspective" [attr.aria-pressed]="is3D" (click)="togglePerspective()" [disabled]="!ready">{{ is3D ? '切換 2D 地圖' : '回到 3D 街景' }}</button>
+      <button type="button" class="perspective" [attr.aria-pressed]="is3D" (click)="togglePerspective()" [disabled]="!ready">{{ is3D ? '切換 2D 地圖' : '切換 3D 街景' }}</button>
     </div>
     <div class="map-notice" *ngIf="!ready || failed">
       <strong>{{ failed ? '街區暫時無法開啟' : '正在鋪好街道…' }}</strong>

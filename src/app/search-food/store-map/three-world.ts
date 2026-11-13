@@ -110,7 +110,8 @@ export async function createTownLayer(longitude: number, latitude: number) {
       renderer.resetState(); renderer.clearDepth(); renderer.render(scene, camera);
       if (projectionListener) {
         const width = mapInstance.getCanvas().clientWidth, height = mapInstance.getCanvas().clientHeight;
-        const labelScale = Math.min(1.2, Math.pow(2, mapInstance.getZoom() - 17));
+        // Enlarge screen-space labels as the map zooms out so stock counts stay readable.
+        const labelScale = Math.max(1.2, Math.min(1.8, 1.2 + (17 - mapInstance.getZoom()) * .2));
         projectionListener(shops.children.map(shop => {
           const point = new THREE.Vector3(shop.position.x, 7.55 * shop.scale.x, shop.position.z).applyMatrix4(camera.projectionMatrix);
           return { id: shop.userData['storeId'], x: (point.x + 1) * width / 2, y: (1 - point.y) * height / 2, scale: labelScale * (shop.userData['storeId'] === highlightedId ? 1.3 : 1) };

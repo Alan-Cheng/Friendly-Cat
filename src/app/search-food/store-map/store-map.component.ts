@@ -47,7 +47,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   ready = false;
   failed = false;
   locating = false;
-  is3D = true;
+  is3D = false;
   status = '目前瀏覽台北街區，開啟定位讓黑貓找到你。';
   dataError = '';
   private map?: Map;
@@ -169,6 +169,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private async initialize(): Promise<void> {
     this.ready = false;
+    this.is3D = false;
     try {
       const lib = await import('maplibre-gl');
       if (this.destroyed) return;
@@ -178,7 +179,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
           container: this.canvas.nativeElement,
           style: 'https://tiles.openfreemap.org/styles/positron',
           center: this.hasLocation() ? [this.longitude!, this.latitude!] : [121.5654, 25.0330],
-          zoom: 16, pitch: 55, bearing: -25, maxPitch: 65, maxZoom: 19,
+          zoom: 16, pitch: 0, bearing: 0, maxPitch: 65, maxZoom: 19,
           attributionControl: { compact: true },
           canvasContextAttributes: { antialias: true }
         });
@@ -233,6 +234,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (this.map.getLayer('building')) this.map.setLayoutProperty('building', 'visibility', 'none');
     this.map.addLayer({
       id: 'cat-town-buildings', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'building', minzoom: 14,
+      layout: { visibility: this.is3D ? 'visible' : 'none' },
       paint: {
         'fill-extrusion-color': ['match', ['%', ['to-number', ['get', 'render_height'], 8], 4], 0, '#c8d6be', 1, '#e5d2b5', 2, '#c9d8df', '#ddd5c3'],
         'fill-extrusion-height': ['min', 38, ['max', 6, ['to-number', ['get', 'render_height'], 8]]],

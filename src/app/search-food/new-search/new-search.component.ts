@@ -55,7 +55,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       onPopoverRender: popover => popover.closeButton.setAttribute('aria-label', '略過導引'),
       onDestroyed: () => { try { localStorage.setItem('friendly-cat-tour-v1', 'seen'); } catch {} },
       steps: [
-        { popover: { title: '歡迎來到友善黑貓 3D 版', description: '拖曳探索街道、滾動滑鼠縮放。授權定位後，黑貓會站在你目前的位置。' } },
+        { popover: { title: '歡迎來到友善黑貓地圖版', description: '拖曳探索街道、滾動滑鼠縮放。授權定位後，黑貓會站在你目前的位置。' } },
         { element: () => document.querySelector('.cat-shop-marker') || document.querySelector('.map-canvas')!, popover: { title: '點一家小店，看看商品', description: '點擊小店，直接開啟該門市的商品視窗。全家標記上的件數是即期庫存，— 表示尚未取得。' } },
         { element: '.store-directory', popover: { title: '從清單找到商店', description: '展開街區店家清單，滑過店名，對應的小店會亮起並放大。用鍵盤聚焦也有相同效果。', side: 'top' } },
         { element: '.search-world', popover: { title: '找店家，從搜尋開始', description: '輸入店名或地址，選取結果即可移動到該門市並查看商品。', side: 'bottom' } },
