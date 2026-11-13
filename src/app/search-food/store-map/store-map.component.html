@@ -29,7 +29,7 @@
       <div class="card-actions"><button type="button" class="primary" [disabled]="querying || inventoryBlocked" (click)="requestProducts()">{{ querying ? '查詢中…' : '查看此店商品' }}</button><a [href]="navigationUrl(store)" target="_blank" rel="noopener noreferrer">前往導航 ↗</a></div>
     </article>
   </div>
-  <div class="map-status"><span class="status-dot" aria-hidden="true"></span><p role="status">{{ status }}</p><span class="store-count">{{ visibleStores.length }} 間店家{{ visibleStores.length === 60 ? '（顯示最近 60 間）' : '' }}</span></div>
+  <div class="map-status"><span class="status-dot" aria-hidden="true"></span><p role="status">{{ status }} {{ headingStatus }}</p><span class="store-count">{{ visibleStores.length }} 間店家{{ visibleStores.length === 60 ? '（顯示最近 60 間）' : '' }}</span></div>
   <details class="store-directory" [open]="failed">
     <summary><span>店家清單 <small>{{ visibleStores.length }} 間門市</small></span></summary>
     <p *ngIf="dataError">{{ dataError }}</p>

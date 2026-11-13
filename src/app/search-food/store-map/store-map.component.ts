@@ -60,6 +60,60 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private localFamily: any[] = [];
   private subscription?: Subscription;
   private watchId?: number;
+  private heading?: number;
+  private compassHeading?: number;
+  private orientationListening = false;
+  private orientationRequesting = false;
+  headingStatus = '';
+
+  private readonly onOrientation = (event: DeviceOrientationEvent): void => {
+    const compass = event as DeviceOrientationEvent & { webkitCompassHeading?: number; webkitCompassAccuracy?: number };
+    let heading: number | undefined;
+    if (typeof compass.webkitCompassHeading === 'number' && Number.isFinite(compass.webkitCompassHeading)
+      && (compass.webkitCompassAccuracy === undefined || compass.webkitCompassAccuracy >= 0)) {
+      heading = compass.webkitCompassHeading;
+    } else if (event.absolute && event.alpha !== null && Number.isFinite(event.alpha)) {
+      heading = 360 - event.alpha;
+    }
+    if (heading === undefined) return;
+    this.compassHeading = heading;
+    this.updateHeading(heading + (window.screen.orientation?.angle ?? 0));
+  };
+  private readonly onScreenOrientation = (): void => {
+    if (this.compassHeading !== undefined) this.updateHeading(this.compassHeading + (window.screen.orientation?.angle ?? 0));
+  };
+
+  private updateHeading(heading: number): void {
+    this.heading = ((heading % 360) + 360) % 360;
+    this.cat?.setHeading(this.heading);
+  }
+
+  private async startOrientation(requestPermission = false): Promise<void> {
+    if (this.orientationListening || this.orientationRequesting || typeof DeviceOrientationEvent === 'undefined') return;
+    const orientation = DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+      requestPermission?: (absolute?: boolean) => Promise<string>;
+    };
+    if (orientation.requestPermission && !requestPermission) return;
+    this.orientationRequesting = true;
+    try {
+      if (orientation.requestPermission && await orientation.requestPermission(true) !== 'granted') {
+        this.headingStatus = '未開啟方向權限，黑貓會在移動時依 GPS 行進方向轉向。';
+        return;
+      }
+      if (this.destroyed) return;
+      this.zone.runOutsideAngular(() => {
+        window.addEventListener('deviceorientation', this.onOrientation);
+        window.addEventListener('deviceorientationabsolute', this.onOrientation);
+        window.screen.orientation?.addEventListener('change', this.onScreenOrientation);
+      });
+      this.orientationListening = true;
+      this.headingStatus = '';
+    } catch {
+      this.headingStatus = '暫時無法讀取手機方向，黑貓會在移動時依 GPS 行進方向轉向。';
+    } finally {
+      this.orientationRequesting = false;
+    }
+  }
   private destroyed = false;
   private catLoading = false;
   private loadTimer?: ReturnType<typeof setTimeout>;
@@ -82,6 +136,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       next: data => { this.localFamily = data; this.normalizeStores(); },
       error: () => { this.dataError = '商家資料暫時無法載入，請稍後重新整理。'; }
     });
+    void this.startOrientation();
     await this.initialize();
   }
 
@@ -254,6 +309,8 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   locate(): void {
+    // Call before awaiting anything: Safari requires a direct user gesture.
+    void this.startOrientation(true);
     if (this.hasLocation()) { this.centerCat(); if (this.watchId !== undefined) return; }
     if (!navigator.geolocation) { this.status = '瀏覽器不支援定位，仍可拖曳地圖找店家。'; return; }
     if (this.locating) return;
@@ -263,6 +320,9 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       if (this.destroyed) return;
       const first = !this.hasLocation();
       this.latitude = position.coords.latitude; this.longitude = position.coords.longitude;
+      if (this.compassHeading === undefined && position.coords.heading !== null && Number.isFinite(position.coords.heading)) {
+        this.updateHeading(position.coords.heading);
+      }
       this.locating = false;
       this.status = `黑貓已找到你，定位誤差約 ${Math.round(position.coords.accuracy)} 公尺。`;
       this.locationChanged.emit({ latitude: this.latitude, longitude: this.longitude });
@@ -299,6 +359,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       const cat = await createTownLayer(center.lng, center.lat);
       if (this.destroyed || this.map !== targetMap) return;
       if (this.hasLocation()) cat.setPosition(this.longitude!, this.latitude!);
+      if (this.heading !== undefined) cat.setHeading(this.heading);
       cat.setStores(this.visibleStores);
       this.cat = cat;
       targetMap.addLayer(cat.layer);
@@ -372,6 +433,9 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.destroyed = true; clearTimeout(this.loadTimer); this.subscription?.unsubscribe(); this.observer?.disconnect();
     if (this.watchId !== undefined) navigator.geolocation.clearWatch(this.watchId);
+    window.removeEventListener('deviceorientation', this.onOrientation);
+    window.removeEventListener('deviceorientationabsolute', this.onOrientation);
+    window.screen.orientation?.removeEventListener('change', this.onScreenOrientation);
     this.markers.forEach(m => m.remove()); this.map?.remove();
   }
 }
