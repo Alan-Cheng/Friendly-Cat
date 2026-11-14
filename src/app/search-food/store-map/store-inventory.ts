@@ -11,6 +11,25 @@ export function matchFamilyStock(store: { storeCode?: string; name: string; lati
     .find(s => coordinateDistance(s, store) < .003 || !validCoordinates(s));
 }
 
+/** Build once per stock snapshot instead of scanning it for every directory entry. */
+export function createFamilyStockMatcher(stocks: any[]): (store: { storeCode?: string; name: string; latitude: number; longitude: number }) => any | undefined {
+  const byId = new Map<string, any>();
+  const byName = new Map<string, any[]>();
+  for (const stock of stocks) {
+    for (const id of [stock.oldPKey, stock.pkeynew, stock.storeCode]) {
+      if (id != null && !byId.has(String(id))) byId.set(String(id), stock);
+    }
+    const name = familyStoreName(stock.name || '');
+    const matches = byName.get(name) || [];
+    matches.push(stock);
+    byName.set(name, matches);
+  }
+  return store => {
+    if (store.storeCode && byId.has(store.storeCode)) return byId.get(store.storeCode);
+    return matchFamilyStock(store, byName.get(familyStoreName(store.name)) || []);
+  };
+}
+
 function validCoordinates(s: any): boolean { return Number.isFinite(Number(s.latitude)) && Number.isFinite(Number(s.longitude)) && Number(s.latitude) !== 0 && Number(s.longitude) !== 0; }
 function coordinateDistance(s: any, store: { latitude: number; longitude: number }): number {
   return validCoordinates(s) ? Math.hypot(Number(s.latitude) - store.latitude, Number(s.longitude) - store.longitude) : Infinity;

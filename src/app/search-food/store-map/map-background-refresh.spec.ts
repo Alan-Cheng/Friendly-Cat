@@ -103,7 +103,7 @@ describe('map marker reconciliation', () => {
     const removed = jasmine.createSpy('remove');
     class FakeMarker {
       private position = { lng: 0, lat: 0 };
-      constructor(private options: { element: HTMLElement }) {}
+      constructor(readonly options: { element: HTMLElement; subpixelPositioning?: boolean }) {}
       setLngLat([lng, lat]: number[]) { this.position = { lng, lat }; return this; }
       getLngLat() { return this.position; }
       getElement() { return this.options.element; }
@@ -116,6 +116,7 @@ describe('map marker reconciliation', () => {
     component.stores = [store];
     internal.renderStores();
     const marker = internal.markerById.get(store.id);
+    expect(marker.options.subpixelPositioning).toBeTrue();
     const button = marker.getElement(); button.focus();
     component.stores = [{ ...store, quantity: 3 }];
     internal.renderStores();

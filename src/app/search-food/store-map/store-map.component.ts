@@ -1,4 +1,4 @@
-import { matchFamilyStock, familyStockQuantity, sevenStockQuantity } from './store-inventory';
+import { createFamilyStockMatcher, familyStockQuantity, sevenStockQuantity } from './store-inventory';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgZone, OnChanges, SimpleChanges, OnDestroy, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -58,6 +58,8 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private map?: Map;
   private lib?: typeof import('maplibre-gl');
   private markerById = new globalThis.Map<string, Marker>();
+  private markerLabels = new WeakMap<HTMLElement, HTMLElement>();
+  private stockStores: MapStore[] = [];
   highlightedId?: string;
   private cat?: Awaited<ReturnType<typeof import('./three-world').createTownLayer>>;
   private observer?: ResizeObserver;
@@ -171,7 +173,8 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   constructor(private http: HttpClient, private zone: NgZone) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['familyStores'] || changes['sevenStores'] || changes['familyStock'] || changes['sevenStock'] || changes['inventory']) this.normalizeStores();
+    if (changes['familyStores'] || changes['sevenStores'] || changes['familyStock'] || changes['sevenStock']) this.normalizeStores();
+    else if (changes['inventory']) this.updateInventory();
     if ((changes['latitude'] || changes['longitude']) && this.hasLocation()) {
       void this.updateCat();
       if (changes['latitude']?.previousValue === undefined) this.centerCat();
@@ -274,12 +277,13 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private normalizeStores(): void {
+    const matchStock = createFamilyStockMatcher(this.familyStock);
     const family = (this.familyStores.length ? this.familyStores : this.localFamily).map(s => ({
       id: 'fm-' + s.pkeynew, storeCode: String(s.pkeynew), name: s.Name, address: s.addr || '', phone: s.Tel || '', brand: '全家' as const,
       latitude: Number(s.py_wgs84), longitude: Number(s.px_wgs84)
     }));
     const enrichedFamily = family.map(store => {
-      const stock = matchFamilyStock(store, this.familyStock);
+      const stock = matchStock(store);
       return { ...store, quantity: stock ? familyStockQuantity(stock) : undefined };
     });
     const seven = this.sevenStores.map(s => ({
@@ -288,10 +292,15 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }));
     const sevenById = new globalThis.Map(this.sevenStock.map(stock => [String(stock.StoreNo), stock]));
     const enrichedSeven = seven.map(store => ({ ...store, quantity: sevenStockQuantity(sevenById.get(store.storeCode)) }));
-    this.stores = [...enrichedFamily, ...enrichedSeven].map(store => {
+    this.stockStores = [...enrichedFamily, ...enrichedSeven].filter(s => Number.isFinite(s.latitude) && Number.isFinite(s.longitude) && Math.abs(s.latitude) <= 90 && Math.abs(s.longitude) <= 180 && s.latitude !== 0 && s.longitude !== 0);
+    this.updateInventory();
+  }
+
+  private updateInventory(): void {
+    this.stores = this.stockStores.map(store => {
       const state = this.inventory[store.id];
       return { ...store, quantity: typeof state === 'number' ? state : state ? undefined : store.quantity };
-    }).filter(s => Number.isFinite(s.latitude) && Number.isFinite(s.longitude) && Math.abs(s.latitude) <= 90 && Math.abs(s.longitude) <= 180 && s.latitude !== 0 && s.longitude !== 0);
+    });
     this.renderStores();
   }
 
@@ -307,7 +316,8 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     const center = this.map?.getCenter() || { lng: 121.5654, lat: 25.0330 };
     const bounds = this.ready && !this.failed ? this.map?.getBounds() : undefined;
     this.visibleStores = this.stores.filter(s => (this.filter === 'all' || s.brand === this.filter) && (!bounds || bounds.contains([s.longitude, s.latitude])))
-      .sort((a, b) => this.distanceFrom(a, center.lat, center.lng) - this.distanceFrom(b, center.lat, center.lng)).slice(0, 60);
+      .map(store => ({ store, distance: this.distanceFrom(store, center.lat, center.lng) }))
+      .sort((a, b) => a.distance - b.distance).slice(0, 60).map(entry => entry.store);
     this.cat?.setStores(this.visibleStores);
     if (!this.ready || !this.lib || !this.map) return;
     const visibleIds = new Set(this.visibleStores.map(store => store.id));
@@ -344,9 +354,10 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         label.append(badge);
       }
       button.append(label);
+      this.markerLabels.set(button, label);
       this.updateMarker(button, store);
       button.addEventListener('click', () => this.zone.run(() => this.select(this.stores.find(current => current.id === store.id) || store, button)));
-      const marker = new this.lib.Marker({ element: button, anchor: 'top' }).setLngLat([store.longitude, store.latitude]).addTo(this.map);
+      const marker = new this.lib.Marker({ element: button, anchor: 'top', subpixelPositioning: true }).setLngLat([store.longitude, store.latitude]).addTo(this.map);
       this.markerById.set(store.id, marker);
     }
   }
@@ -456,11 +467,14 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
           const marker = this.markerById.get(point.id);
           if (!marker) continue;
           const ground = targetMap.project(marker.getLngLat());
-          marker.getElement().style.width = `${Math.max(24, 48 * point.scale)}px`;
-          marker.getElement().style.height = `${Math.max(24, ground.y - point.y + 8 * point.scale)}px`;
-          marker.setOffset([point.x - ground.x, point.y - ground.y]);
-          const label = marker.getElement().querySelector<HTMLElement>('.shop-label');
-          if (label) label.style.transform = `translateX(-50%) scale(${point.scale})`;
+          const x = point.x - ground.x, y = point.y - ground.y;
+          const offset = marker.getOffset();
+          if (Math.abs(offset.x - x) > .01 || Math.abs(offset.y - y) > .01) marker.setOffset([x, y]);
+          // Only the label receives pointer events. A changing marker body size
+          // adds layout work without changing the label's top anchor or hit area.
+          const label = this.markerLabels.get(marker.getElement());
+          const transform = `translateX(-50%) scale(${point.scale})`;
+          if (label && label.style.transform !== transform) label.style.transform = transform;
         }
       });
       targetMap.triggerRepaint();

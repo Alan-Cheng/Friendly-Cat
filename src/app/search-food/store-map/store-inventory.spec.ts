@@ -1,4 +1,4 @@
-import { familyStockQuantity, matchFamilyStock, sevenStockQuantity } from './store-inventory';
+import { createFamilyStockMatcher, familyStockQuantity, matchFamilyStock, sevenStockQuantity } from './store-inventory';
 
 describe('FamilyMart map inventory', () => {
   const store = { storeCode: 'new-123', name: '全家台北１０１店', latitude: 25.033, longitude: 121.565 };
@@ -12,6 +12,19 @@ describe('FamilyMart map inventory', () => {
   it('prefers a matching ID and does not confuse neighboring stores', () => {
     const stock = { oldPKey: 'new-123', name: '台北101', info: [] };
     expect(matchFamilyStock(store, [{ oldPKey: 'other', name: '其他店' }, stock])).toBe(stock);
+  });
+  it('keeps indexed lookup consistent for duplicate IDs, normalized names and distant stores', () => {
+    const stocks = [
+      { oldPKey: 'new-123', name: '別店', latitude: 24, longitude: 120 },
+      { storeCode: 'new-123', name: '台北101', latitude: 25.033, longitude: 121.565 },
+      { name: '台北101', latitude: 24, longitude: 120 },
+      { name: '台北101', latitude: 25.0331, longitude: 121.5651 },
+      { name: '沒有座標' }
+    ];
+    const match = createFamilyStockMatcher(stocks);
+    for (const candidate of [store, { ...store, storeCode: 'unknown' }, { ...store, name: '全家沒有座標店', storeCode: '' }, { ...store, latitude: 22, storeCode: '' }]) {
+      expect(match(candidate)).toBe(matchFamilyStock(candidate, stocks));
+    }
   });
   it('sums numeric category totals once rather than double-counting children', () => {
     expect(familyStockQuantity({ info: [{ qty: '5', categories: [{ qty: 5, products: [{ qty: 5 }] }] }, { qty: 2 }] })).toBe(7);

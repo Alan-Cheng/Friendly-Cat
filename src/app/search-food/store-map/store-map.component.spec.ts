@@ -91,6 +91,20 @@ describe('StoreMapComponent data and location', () => {
     expect(component.selected).toBeUndefined();
   });
 
+  it('updates inventory without normalizing the directory again and restores snapshot stock after an override is removed', () => {
+    component.familyStores = [family];
+    component.familyStock = [{ oldPKey: '01', info: [{ qty: 7 }] }];
+    update();
+    const normalize = spyOn(component as any, 'normalizeStores').and.callThrough();
+    component.inventory = { 'fm-01': 3 };
+    component.ngOnChanges({ inventory: new SimpleChange({}, component.inventory, false) });
+    expect(component.visibleStores[0].quantity).toBe(3);
+    component.inventory = {};
+    component.ngOnChanges({ inventory: new SimpleChange({}, {}, false) });
+    expect(component.visibleStores[0].quantity).toBe(7);
+    expect(normalize).not.toHaveBeenCalled();
+  });
+
   it('emits selected shop coordinates for inventory lookup without requesting GPS', () => {
     component.familyStores = [family]; update(); component.selected = component.stores[0];
     const emit = spyOn(component.queryStore, 'emit'); component.requestProducts();

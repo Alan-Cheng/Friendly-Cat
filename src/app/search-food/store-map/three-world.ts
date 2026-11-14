@@ -40,8 +40,11 @@ export async function createTownLayer(longitude: number, latitude: number) {
   directionFan.visible = false;
   scene.add(directionFan);
   let catLatitude = latitude;
+  // Keep model transforms for projection, but render repeated parts in batches.
   const shops = new THREE.Group();
-  scene.add(shops);
+  const shopBatches = new THREE.Group();
+  scene.add(shopBatches);
+  const batches = new Map<string, InstanceType<typeof THREE.InstancedMesh>>();
   const shopMaterials: InstanceType<typeof THREE.Material>[] = [];
   const cream = new THREE.MeshStandardMaterial({ color: '#fff3db', roughness: .85 });
   const glass = new THREE.MeshStandardMaterial({ color: '#7fabb0', roughness: .3 });
@@ -67,6 +70,57 @@ export async function createTownLayer(longitude: number, latitude: number) {
   let renderer: InstanceType<typeof THREE.WebGLRenderer>;
   let mapInstance: import('maplibre-gl').Map;
 
+  function updateShops() {
+    for (const batch of batches.values()) batch.count = 0;
+    for (const shop of shops.children) {
+      const active = shop.userData['storeId'] === highlightedId;
+      shop.scale.setScalar(active ? 3.25 : 2.5);
+      shop.updateMatrixWorld(true);
+      for (const object of shop.children) {
+        if (!(object instanceof THREE.Mesh)) continue;
+        if (object.userData['glow'] && !active) continue;
+        const base = object.userData['baseMaterial'];
+        if (active && base && !highlightedMaterials.has(base)) {
+          const bright = base.clone(); bright.emissive.set('#ffd887'); bright.emissiveIntensity = .45;
+          highlightedMaterials.set(base, bright); shopMaterials.push(bright);
+        }
+        const material = base ? (active ? highlightedMaterials.get(base)! : base) : object.material;
+        const key = `${object.geometry.uuid}-${material.uuid}`;
+        let batch = batches.get(key);
+        const capacity = Math.max(8, shops.children.length * 8);
+        if (!batch || batch.instanceMatrix.count < capacity) {
+          const previous = batch;
+          batch = new THREE.InstancedMesh(object.geometry, material, capacity);
+          batch.count = 0;
+          if (previous) {
+            for (let i = 0; i < previous.count; i++) {
+              previous.getMatrixAt(i, instanceMatrix);
+              batch.setMatrixAt(i, instanceMatrix);
+            }
+            batch.count = previous.count;
+            shopBatches.remove(previous);
+            previous.dispose();
+          }
+          batches.set(key, batch);
+          shopBatches.add(batch);
+        }
+        batch.setMatrixAt(batch.count++, object.matrixWorld);
+      }
+    }
+    for (const batch of batches.values()) {
+      batch.visible = batch.count > 0;
+      if (!batch.visible) continue;
+      batch.instanceMatrix.needsUpdate = true;
+      batch.computeBoundingSphere();
+    }
+    mapInstance?.triggerRepaint();
+  }
+  const instanceMatrix = new THREE.Matrix4();
+  const model = new THREE.Matrix4().makeTranslation(origin.x, origin.y, origin.z)
+    .scale(new THREE.Vector3(meter, -meter, meter))
+    .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+  const projectedPoint = new THREE.Vector3();
+
   const layer: CustomLayerInterface = {
     id: 'friendly-town-world', type: 'custom', renderingMode: '3d',
     onAdd(map, gl) {
@@ -75,7 +129,6 @@ export async function createTownLayer(longitude: number, latitude: number) {
       renderer.autoClear = false;
     },
     render(gl, args) {
-      const scale = meter;
       cat.scale.setScalar(13);
       // Lift the face toward the overhead camera, returning to its normal pose in 3D.
       catHead.rotation.x = -Math.PI / 4 * Math.max(0, Math.min(1, 1 - mapInstance.getPitch() / 55));
@@ -99,25 +152,7 @@ export async function createTownLayer(longitude: number, latitude: number) {
           / (512 * Math.pow(2, mapInstance.getZoom()));
         directionFan.scale.setScalar(48 * metersPerPixel);
       }
-      for (const shop of shops.children) {
-        const active = shop.userData['storeId'] === highlightedId;
-        shop.scale.setScalar(active ? 3.25 : 2.5);
-        shop.traverse(object => {
-          if (!(object instanceof THREE.Mesh)) return;
-          if (object.userData['glow']) { object.visible = active; return; }
-          const base = object.userData['baseMaterial'];
-          if (!base) return;
-          if (active && !highlightedMaterials.has(base)) {
-            const bright = base.clone(); bright.emissive.set('#ffd887'); bright.emissiveIntensity = .45;
-            highlightedMaterials.set(base, bright); shopMaterials.push(bright);
-          }
-          object.material = active ? highlightedMaterials.get(base) : base;
-        });
-      }
-      const model = new THREE.Matrix4().makeTranslation(origin.x, origin.y, origin.z)
-        .scale(new THREE.Vector3(scale, -scale, scale))
-        .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
-      camera.projectionMatrix = new THREE.Matrix4().fromArray(args.defaultProjectionData.mainMatrix).multiply(model);
+      camera.projectionMatrix.fromArray(args.defaultProjectionData.mainMatrix).multiply(model);
       // The model faces +Z (south); compass headings turn clockwise from north.
       // Both map perspectives share this world-space direction.
       cat.rotation.y = displayedHeading === undefined ? -mapInstance.getBearing() * Math.PI / 180
@@ -129,7 +164,7 @@ export async function createTownLayer(longitude: number, latitude: number) {
         // Keep distant badges compact while preserving a readable minimum size.
         const labelScale = Math.max(.8, Math.min(1.05, .94 + (mapInstance.getZoom() - 16) * .055));
         projectionListener(shops.children.map(shop => {
-          const point = new THREE.Vector3(shop.position.x, 7.55 * shop.scale.x, shop.position.z).applyMatrix4(camera.projectionMatrix);
+          const point = projectedPoint.set(shop.position.x, 7.55 * shop.scale.x, shop.position.z).applyMatrix4(camera.projectionMatrix);
           return { id: shop.userData['storeId'], x: (point.x + 1) * width / 2, y: (1 - point.y) * height / 2, scale: labelScale * (shop.userData['storeId'] === highlightedId ? 1.3 : 1) };
         }));
       }
@@ -148,6 +183,8 @@ export async function createTownLayer(longitude: number, latitude: number) {
         }
       });
       geometries.add(glowGeometry);
+      geometries.add(boxGeometry);
+      batches.forEach(batch => batch.dispose());
       geometries.forEach(geometry => geometry.dispose());
       materials.forEach(material => material.dispose());
       textures.add(fanTexture);
@@ -158,13 +195,29 @@ export async function createTownLayer(longitude: number, latitude: number) {
   return {
     layer,
     setHeading(value?: number) { heading = value; mapInstance?.triggerRepaint(); },
-    setHighlight(id?: string) { highlightedId = id; mapInstance?.triggerRepaint(); },
+    setHighlight(id?: string) { if (highlightedId === id) return; highlightedId = id; updateShops(); },
     setProjectionListener(listener: typeof projectionListener) { projectionListener = listener; mapInstance?.triggerRepaint(); },
     setPosition(lng: number, lat: number) { catLatitude = lat; cat.position.copy(localPoint(lng,lat)); cat.visible = true; mapInstance?.triggerRepaint(); },
     setStores(stores: { id: string; latitude: number; longitude: number; brand: string }[]) {
-      shops.clear();
+      const incoming = new Set(stores.map(store => store.id));
+      const existing = new Map(shops.children.map(shop => [shop.userData['storeId'] as string, shop]));
+      let changed = false;
+      for (const shop of [...shops.children]) {
+        if (!incoming.has(shop.userData['storeId'])) { shops.remove(shop); changed = true; }
+      }
       for (const store of stores) {
+        const previous = existing.get(store.id);
+        if (previous && previous.userData['brand'] === store.brand) {
+          if (previous.userData['longitude'] !== store.longitude || previous.userData['latitude'] !== store.latitude) {
+            previous.position.copy(localPoint(store.longitude, store.latitude));
+            previous.userData['longitude'] = store.longitude; previous.userData['latitude'] = store.latitude;
+            changed = true;
+          }
+          continue;
+        }
+        if (previous) shops.remove(previous);
         const shop = new THREE.Group(); shop.userData['storeId'] = store.id; shop.position.copy(localPoint(store.longitude, store.latitude));
+        shop.userData['brand'] = store.brand; shop.userData['longitude'] = store.longitude; shop.userData['latitude'] = store.latitude;
         const green = store.brand === '全家';
         box(shop, cream, 0, 3.3, 0, 10, 6.6, 7);
         box(shop, glass, -2.5, 2.9, 3.56, 3, 4.5, .12);
@@ -176,8 +229,9 @@ export async function createTownLayer(longitude: number, latitude: number) {
         box(shop, frame, 0, .3, .6, 11.5, .6, 8.6);
         const glow = new THREE.Mesh(glowGeometry, glowMaterial); glow.rotation.x = -Math.PI / 2; glow.position.y = .08; glow.userData['glow'] = true; glow.visible = false; shop.add(glow);
         shops.add(shop);
+        changed = true;
       }
-      mapInstance?.triggerRepaint();
+      if (changed) updateShops();
     }
   };
 }
