@@ -3,6 +3,7 @@
 .text-with-shadow { display: none; }
 .sidebar { position: fixed; inset: 0 auto 0 0; width: min(380px, calc(100vw - 32px)); max-width: none; max-height: none; height: 100dvh; box-sizing: border-box; padding: 0; margin: 0; border: 0; border-right: 1px solid #e2e5e3; border-radius: 0; color: #303632; background: #fff; box-shadow: 0 22px 80px #20382840; overflow: hidden; }
 .sidebar[open] { display: flex; flex-direction: column; }
+.sidebar.tour-sidebar[open] { z-index: 20; animation: none; }
 .sidebar::backdrop { background: #20242250; backdrop-filter: blur(4px); overflow: hidden; overscroll-behavior: contain; }
 .sidebar:modal { overscroll-behavior: contain; }
 .sidebar-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(6px + env(safe-area-inset-top)) 12px 6px calc(20px + env(safe-area-inset-left)); background: #dce5d4; border-bottom: 1px solid #c6d3bb; flex-shrink: 0; }

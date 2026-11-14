@@ -30,8 +30,8 @@
       <button type="button" class="perspective" [attr.aria-pressed]="is3D" (click)="togglePerspective()" [disabled]="!ready">{{ is3D ? '切換 2D 地圖' : '切換 3D 地圖' }}</button>
     </div>
     <div class="map-notice" *ngIf="!ready || failed">
-      <strong>{{ failed ? '街區暫時無法開啟' : '正在鋪好街道…' }}</strong>
-      <p>{{ failed ? '你仍然可以從街區清單查看商家。' : '載入免費地圖與附近店家' }}</p>
+      <strong>{{ failed ? '地圖暫時無法開啟' : '正在鋪好街道…' }}</strong>
+      <p>{{ failed ? '你仍然可以從商店清單查看商家。' : '載入免費地圖與附近店家' }}</p>
       <button type="button" *ngIf="failed" (click)="retry()">重新載入地圖</button>
     </div>
     <!-- <span class="map-hint" *ngIf="ready && !selected">點小店看商品 · 標記為剩餘件數（— 尚未取得）</span> -->
@@ -45,11 +45,11 @@
       <div class="card-actions"><button type="button" class="primary" [disabled]="querying || inventoryBlocked" (click)="requestProducts()">{{ querying ? '查詢中…' : '查看此店商品' }}</button><a [href]="navigationUrl(store)" target="_blank" rel="noopener noreferrer">前往導航 ↗</a></div>
     </article>
   </div>
-  <div class="map-status"><span class="status-dot" aria-hidden="true"></span><p role="status">{{ status }} {{ headingStatus }}</p><span class="store-count">{{ visibleStores.length }} 間店家{{ visibleStores.length === 60 ? '（顯示最近 60 間）' : '' }}</span></div>
+  <div class="map-status"><span class="status-dot" aria-hidden="true"></span><p role="status">{{ overviewMode ? '放大地圖，即可查看附近店家與庫存。' : status }} {{ headingStatus }}</p><span class="store-count">{{ overviewMode ? '區域總覽' : visibleStores.length + ' 間店家' }}{{ visibleStores.length === 60 ? '（顯示最近 60 間）' : '' }}</span></div>
   <details class="store-directory" [open]="failed">
-    <summary><span>店家清單 <small>{{ visibleStores.length }} 間門市</small></span></summary>
+    <summary><span>店家清單 <small>{{ overviewMode ? '放大查看' : visibleStores.length + ' 間門市' }}</small></span></summary>
     <p *ngIf="dataError">{{ dataError }}</p>
-    <p *ngIf="!visibleStores.length">這個範圍尚無符合的店家，請移動或縮小地圖。</p>
+    <p *ngIf="!visibleStores.length">{{ overviewMode ? '目前為區域總覽，請放大地圖查看店家。' : '這個範圍尚無符合的店家，請移動或縮小地圖。' }}</p>
     <ul>
       <li *ngFor="let store of visibleStores">
         <button type="button" (mouseenter)="highlightStore(store.id)" (mouseleave)="highlightStore()" (focus)="highlightStore(store.id)" (blur)="highlightStore()" [class.is-highlighted]="highlightedId === store.id" (click)="select(store)">

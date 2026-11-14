@@ -111,7 +111,7 @@ describe('map marker reconciliation', () => {
       remove() { removed(); this.options.element.remove(); }
     }
     internal.lib = { Marker: FakeMarker };
-    internal.map = { getCenter: () => ({ lng: center.longitude, lat: center.latitude }), getBounds: () => bounds, remove: () => {} };
+    internal.map = { getZoom: () => 16, getCenter: () => ({ lng: center.longitude, lat: center.latitude }), getBounds: () => bounds, remove: () => {} };
     component.ready = true;
     component.stores = [store];
     internal.renderStores();

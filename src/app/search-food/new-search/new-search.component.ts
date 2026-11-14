@@ -1,4 +1,5 @@
 import type { Driver } from 'driver.js';
+import { SiderComponent } from '../../components/sider/sider.component';
 import { matchFamilyStock, familyStockQuantity, sevenStockQuantity } from '../store-map/store-inventory';
 import { BrowserVerificationState, ProxyTokenService } from '../../services/proxy-token.service';
 import { StoreMapComponent } from '../store-map/store-map.component';
@@ -41,12 +42,20 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private tour?: Driver;
   private tourTimer?: ReturnType<typeof setTimeout>;
   private componentDestroyed = false;
+  @ViewChild(SiderComponent) sidebar?: SiderComponent;
+
+  private tourSidebarElement(selector: string): Element {
+    this.sidebar?.openForTour();
+    return document.querySelector(selector)!;
+  }
 
   async startTour(force = false): Promise<void> {
     try { if (!force && localStorage.getItem('friendly-cat-tour-v1')) return; } catch {}
     const { driver } = await import('driver.js');
     if (this.componentDestroyed) return;
     this.tour?.destroy(); this.closeSearchWindow(); this.productWindow.nativeElement.close();
+    await this.sidebar?.closeSidebar();
+    if (this.componentDestroyed) return;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.tour = driver({
       animate: !reducedMotion, showProgress: true, progressText: '{{current}} / {{total}}',
@@ -54,13 +63,15 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       overlayColor: '#263b31', overlayOpacity: .45, stagePadding: 10, stageRadius: 12,
       popoverClass: 'cat-tour-popover', disableActiveInteraction: true,
       onPopoverRender: popover => popover.closeButton.setAttribute('aria-label', '略過導引'),
-      onDestroyed: () => { try { localStorage.setItem('friendly-cat-tour-v1', 'seen'); } catch {} },
+      onHighlightStarted: (_element, _step, { index }) => { if ((index ?? 0) < 4) this.sidebar?.closeForTour(); },
+      onDestroyed: () => { this.sidebar?.closeForTour(); try { localStorage.setItem('friendly-cat-tour-v1', 'seen'); } catch {} },
       steps: [
         { popover: { title: '歡迎來到友善黑貓地圖版', description: '拖曳探索街道、滾動滑鼠縮放。授權定位後，黑貓會站在你目前的位置。' } },
         { element: () => document.querySelector('.cat-shop-marker') || document.querySelector('.map-canvas')!, popover: { title: '點一家小店，看看商品', description: '點擊小店，直接開啟該門市的商品視窗。全家標記上的件數是即期庫存，— 表示尚未取得。' } },
-        { element: '.store-directory', popover: { title: '從清單找到商店', description: '展開街區店家清單，滑過店名，對應的小店會亮起並放大。用鍵盤聚焦也有相同效果。', side: 'top' } },
+        { element: '.store-directory', popover: { title: '從清單找到商店', description: '展開店家清單，滑過店名，對應的小店會亮起並放大。用鍵盤聚焦也有相同效果。', side: 'top' } },
         { element: '.search-world', popover: { title: '找店家，從搜尋開始', description: '輸入店名或地址，選取結果即可移動到該門市並查看商品。', side: 'bottom' } },
-        { element: 'app-sider .toolbar', popover: { title: '', description: '在這裡登入、查看收藏與搜尋食物；想再看一次導引，也能從這裡重新開啟。', side: 'right' } }
+        { element: () => this.tourSidebarElement('app-sider .sidebar-body'), popover: { title: '會員、收藏與食物搜尋', description: '點選左上角選單，就能登入、查看收藏與搜尋食物。選單底部的「網站導覽」可隨時重新開啟這段介紹。', side: 'right' } },
+        { element: () => this.tourSidebarElement('app-sider .version-link'), popover: { title: '切換回舊版頁面', description: '這裡就是「舊版頁面」入口。導覽結束後，點選左上角選單，再點這個連結即可切換。想回地圖版時，在相同選單中點選「地圖頁面」。', side: 'right' } }
       ]
     });
     this.tour.drive();

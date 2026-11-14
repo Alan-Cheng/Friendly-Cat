@@ -34,6 +34,26 @@ export class SiderComponent {
   // 側邊欄狀態
   sidebarOpen = false;
   sidebarClosing = false;
+  tourMode = false;
+
+  openForTour(): void {
+    const drawer = this.sidebarWindow.nativeElement;
+    if (drawer.open) return;
+    this.tourMode = true;
+    this.sidebarOpen = true;
+    drawer.classList.add('tour-sidebar');
+    // The tour owns focus and its overlay. A modal drawer would make the
+    // tour controls outside it inert and cover them with the native top layer.
+    drawer.show();
+  }
+
+  closeForTour(): void {
+    if (!this.tourMode) return;
+    this.sidebarWindow.nativeElement.close();
+    this.sidebarWindow.nativeElement.classList.remove('tour-sidebar');
+    this.tourMode = false;
+    this.sidebarOpen = false;
+  }
   
   // 食物搜尋相關
   foodSearchTerm = '';

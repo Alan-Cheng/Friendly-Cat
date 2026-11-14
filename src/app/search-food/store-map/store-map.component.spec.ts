@@ -105,6 +105,83 @@ describe('StoreMapComponent data and location', () => {
     expect(normalize).not.toHaveBeenCalled();
   });
 
+  it('suspends store details and nearby queries at country scale and restores them after zooming in', () => {
+    component.familyStores = [family]; update();
+    let zoom = 7;
+    const internal = component as any;
+    const removeMarker = jasmine.createSpy('remove');
+    const setStores = jasmine.createSpy('setStores');
+    internal.map = {
+      getZoom: () => zoom,
+      getCenter: () => ({ lat: 25.033, lng: 121.5654 }),
+      getBounds: () => ({ contains: () => true }), remove: () => {}
+    };
+    internal.cat = { setStores };
+    internal.markerById.set('fm-01', { remove: removeMarker });
+    component.ready = true;
+    const emit = spyOn(component.areaChanged, 'emit');
+    internal.renderStores();
+    component.reportViewport();
+    expect(component.overviewMode).toBeTrue();
+    expect(component.visibleStores).toEqual([]);
+    expect(internal.markerById.size).toBe(0);
+    expect(removeMarker).toHaveBeenCalledTimes(1);
+    expect(setStores).toHaveBeenCalledWith([]);
+    expect(emit).not.toHaveBeenCalled();
+    zoom = 12;
+    internal.renderStores(); component.reportViewport();
+    expect(component.overviewMode).toBeFalse();
+    expect(component.visibleStores.length).toBe(1);
+    expect(emit).toHaveBeenCalledOnceWith({ latitude: 25.033, longitude: 121.5654 });
+  });
+
+  it('flies to the current location at the default zoom and honors reduced motion', () => {
+    const internal = component as any;
+    const flyTo = jasmine.createSpy('flyTo');
+    internal.map = { flyTo, getZoom: () => 14, remove: () => {} };
+    internal.watchId = 1;
+    component.latitude = 25.033;
+    component.longitude = 121.5654;
+    internal.reducedMotion = false;
+    component.locate();
+    expect(flyTo).toHaveBeenCalledOnceWith({ center: [121.5654, 25.033], zoom: 17, curve: 1.42, duration: 1600 });
+    internal.reducedMotion = true;
+    component.locate();
+    expect(flyTo.calls.mostRecent().args[0].duration).toBe(0);
+  });
+
+  it('pulls back before returning to zoom 17 even when already at the current location', () => {
+    const internal = component as any;
+    let zoom = 17;
+    let onEnd!: () => void;
+    const flyTo = jasmine.createSpy('flyTo');
+    const easeTo = jasmine.createSpy('easeTo');
+    const off = jasmine.createSpy('off');
+    internal.map = { getZoom: () => zoom, stop: () => {}, on: (_type: string, callback: () => void) => { onEnd = callback; }, off, easeTo, flyTo, remove: () => {} };
+    internal.watchId = 1; internal.reducedMotion = false;
+    component.latitude = 25.033; component.longitude = 121.5654;
+    component.locate();
+    expect(easeTo).toHaveBeenCalledOnceWith({ zoom: 15.5, duration: 450 });
+    expect(flyTo).not.toHaveBeenCalled();
+    zoom = 15.5; onEnd();
+    expect(flyTo).toHaveBeenCalledOnceWith({ center: [121.5654, 25.033], zoom: 17, curve: 1.42, duration: 1150 });
+    expect(off).toHaveBeenCalledWith('moveend', onEnd);
+    expect(internal.locationFlight).toBeUndefined();
+  });
+
+  it('does not resume the location flight after the pullback is interrupted', () => {
+    const internal = component as any;
+    let onEnd!: () => void;
+    const flyTo = jasmine.createSpy('flyTo');
+    internal.map = { getZoom: () => 17, stop: () => {}, on: (_type: string, callback: () => void) => { onEnd = callback; }, off: () => {}, easeTo: () => {}, flyTo, remove: () => {} };
+    internal.watchId = 1; internal.reducedMotion = false;
+    component.latitude = 25.033; component.longitude = 121.5654;
+    component.locate();
+    onEnd();
+    expect(flyTo).not.toHaveBeenCalled();
+    expect(internal.locationFlight).toBeUndefined();
+  });
+
   it('emits selected shop coordinates for inventory lookup without requesting GPS', () => {
     component.familyStores = [family]; update(); component.selected = component.stores[0];
     const emit = spyOn(component.queryStore, 'emit'); component.requestProducts();

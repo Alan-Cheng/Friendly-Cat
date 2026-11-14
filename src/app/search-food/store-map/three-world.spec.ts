@@ -11,7 +11,8 @@ describe('town WebGL rendering', () => {
     const draw = spyOn(gl, 'drawElementsInstanced').and.callThrough();
     const repaint = jasmine.createSpy('triggerRepaint');
     const longitude = 121.5654, latitude = 25.033;
-    const map = { getCanvas: () => canvas, getPitch: () => 0, getBearing: () => 0, getZoom: () => 16, triggerRepaint: repaint };
+    let zoom = 16;
+    const map = { getCanvas: () => canvas, getPitch: () => 0, getBearing: () => 0, getZoom: () => zoom, triggerRepaint: repaint };
     const town = await createTownLayer(longitude, latitude);
     const origin = MercatorCoordinate.fromLngLat([longitude, latitude]);
     const matrix = new THREE.Matrix4().makeScale(100000, 100000, 100000)
@@ -32,6 +33,14 @@ describe('town WebGL rendering', () => {
       expect(draw.calls.count()).toBeGreaterThan(0);
       expect(draw.calls.count()).toBeLessThanOrEqual(6);
       expect(draw.calls.allArgs().reduce((sum, args) => sum + args[4], 0)).toBe(480);
+      zoom = 7;
+      draw.calls.reset();
+      projected = [];
+      render();
+      expect(draw).not.toHaveBeenCalled();
+      expect(projected).toEqual([]);
+      zoom = 16;
+      render();
       const roof = { ...projected.find(point => point.id === '0')! };
       repaint.calls.reset();
       town.setStores(stores.map(store => ({ ...store, quantity: 9 })).reverse());

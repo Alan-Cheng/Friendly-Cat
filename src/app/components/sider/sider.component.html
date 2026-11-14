@@ -2,16 +2,16 @@
   <button mat-icon-button (click)="toggleSidebar()" aria-label="開啟會員與收藏選單" [attr.aria-expanded]="sidebarOpen" aria-controls="world-sidebar"><mat-icon>menu</mat-icon></button>
   <span class="text-with-shadow">友善黑貓 Friendly Cat</span>
 </mat-toolbar>
-<dialog #sidebarWindow id="world-sidebar" class="sidebar" [class.is-closing]="sidebarClosing" (cancel)="onSidebarCancel($event)" aria-labelledby="sidebar-title" closedby="any" (close)="sidebarOpen = false">
+<dialog #sidebarWindow id="world-sidebar" class="sidebar" [class.is-closing]="sidebarClosing" [class.tour-sidebar]="tourMode" (cancel)="onSidebarCancel($event)" aria-labelledby="sidebar-title" closedby="any" (close)="sidebarOpen = false">
   <header class="sidebar-header"><div><h2 id="sidebar-title" tabindex="-1" autofocus>FRIENDLY CAT</h2></div><button type="button" (click)="closeSidebar()" class="close-btn" aria-label="關閉會員與收藏選單">×</button></header>
   <div class="sidebar-body">
     <p class="sidebar-intro">{{ user ? user.displayName + '，今天想去哪一間？' : '登入後，把喜歡的街角收藏起來。' }}</p>
     <section class="search-section" aria-labelledby="sidebar-search-title">
       <h3 id="sidebar-search-title">搜尋食物</h3>
-      <label for="sidebar-food-input">在目前街區的門市商品中尋找</label>
+      <label for="sidebar-food-input">在目前範圍的門市商品中尋找</label>
       <div class="search-input-wrapper"><input id="sidebar-food-input" type="search" [(ngModel)]="foodSearchTerm" (keyup.enter)="onSearchClick()" (input)="onSearchInputChange()" [placeholder]="getSearchPlaceholder()" [disabled]="!hasStoreData || inventoryState === 'loading'" class="search-input"><button type="button" class="search-button" (click)="onSearchClick()" [disabled]="!hasStoreData || inventoryState === 'loading'" aria-label="搜尋食物"><mat-icon>search</mat-icon></button></div>
-      <p class="field-hint" *ngIf="inventoryState === 'loading'" role="status">正在載入目前街區的門市商品…</p>
-      <p class="field-hint" *ngIf="inventoryState === 'ready' && !hasStoreData">目前街區沒有可搜尋的即期商品。</p>
+      <p class="field-hint" *ngIf="inventoryState === 'loading'" role="status">正在載入目前範圍的門市商品…</p>
+      <p class="field-hint" *ngIf="inventoryState === 'ready' && !hasStoreData">目前範圍沒有可搜尋的即期商品。</p>
       <p class="field-hint" *ngIf="inventoryState === 'error'">商品服務暫時無法回應，移動地圖後會重新查詢。</p>
       <p class="field-hint" *ngIf="inventoryState === 'idle'">正在準備附近門市資料。</p>
       <div class="search-results" *ngIf="foodSearchResults.length"><p class="result-count">找到 {{ foodSearchResults.length }} 個結果</p><ul><li *ngFor="let result of foodSearchResults"><button type="button" class="result-item" (click)="openFoodResult(result)"><span><strong>{{ result.foodName }}</strong><small>{{ result.storeName }}</small></span><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button></li></ul></div>

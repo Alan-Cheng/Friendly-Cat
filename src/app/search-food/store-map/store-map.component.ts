@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import type { Map, Marker, GeoJSONSource } from 'maplibre-gl';
 import { Subscription } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { STORE_DETAIL_MIN_ZOOM } from './map-detail';
 
 export interface MapStore {
   id: string;
@@ -51,9 +52,10 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   failed = false;
   locating = false;
   is3D = false;
+  overviewMode = false;
   readonly familyMartIconUrl = environment.familyMartUrl.icon;
   readonly sevenElevenIconUrl = environment.sevenElevenUrl.icon;
-  status = '目前瀏覽台北街區，開啟定位讓黑貓找到你。';
+  status = '目前瀏覽台北地圖，開啟定位讓黑貓找到你。';
   dataError = '';
   private map?: Map;
   private lib?: typeof import('maplibre-gl');
@@ -168,6 +170,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private catLoading = false;
   private loadTimer?: ReturnType<typeof setTimeout>;
   private returnFocus?: HTMLElement;
+  private locationFlight?: { map: Map; onEnd: () => void };
   private readonly reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   constructor(private http: HttpClient, private zone: NgZone) {}
@@ -231,6 +234,11 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         this.map.addControl(new lib.ScaleControl({ unit: 'metric' }), 'bottom-left');
         this.map.getCanvas().setAttribute('aria-label', '附近商家地圖，可用方向鍵移動，使用加減鍵縮放');
         this.map.on('load', () => this.zone.run(() => this.onLoad()));
+        this.map.on('zoom', () => {
+          if ((this.map!.getZoom() < STORE_DETAIL_MIN_ZOOM) !== this.overviewMode) {
+            this.zone.run(() => this.renderStores());
+          }
+        });
         this.map.on('moveend', () => this.zone.run(() => { this.angleTarget = undefined; this.renderStores(); this.reportViewport(); }));
         this.map.on('error', () => this.zone.run(() => {
           if (!this.ready) { this.failed = true; this.worldReady.emit(); }
@@ -305,7 +313,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   reportViewport(): void {
-    if (!this.map || !this.ready || this.inventoryBlocked) return;
+    if (!this.map || !this.ready || this.inventoryBlocked || this.overviewMode || this.locationFlight) return;
     const center = this.map.getCenter();
     this.areaChanged.emit({ latitude: center.lat, longitude: center.lng });
   }
@@ -313,6 +321,14 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   setFilter(value: string): void { this.filter = value; this.renderStores(); }
 
   private renderStores(): void {
+    this.overviewMode = !!(this.ready && !this.failed && this.map && this.map.getZoom() < STORE_DETAIL_MIN_ZOOM);
+    if (this.overviewMode) {
+      this.visibleStores = [];
+      this.cat?.setStores([]);
+      this.markerById.forEach(marker => marker.remove());
+      this.markerById.clear();
+      return;
+    }
     const center = this.map?.getCenter() || { lng: 121.5654, lat: 25.0330 };
     const bounds = this.ready && !this.failed ? this.map?.getBounds() : undefined;
     this.visibleStores = this.stores.filter(s => (this.filter === 'all' || s.brand === this.filter) && (!bounds || bounds.contains([s.longitude, s.latitude])))
@@ -496,7 +512,34 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private centerCat(): void {
-    if (this.hasLocation()) this.map?.easeTo({ center: [this.longitude!, this.latitude!], zoom: 17, duration: this.reducedMotion ? 0 : 800 });
+    if (!this.hasLocation() || !this.map) return;
+    this.cancelLocationFlight();
+    const map = this.map;
+    const center: [number, number] = [this.longitude!, this.latitude!];
+    if (this.reducedMotion || map.getZoom() < 15) {
+      map.flyTo({ center, zoom: 17, curve: 1.42, duration: this.reducedMotion ? 0 : 1600 });
+      return;
+    }
+    // flyTo alone has no zoom arc when the start and target nearly coincide.
+    // Give nearby recentering a visible pullback before the final approach.
+    map.stop();
+    const pullbackZoom = Math.min(map.getZoom(), 17) - 1.5;
+    const onEnd = () => {
+      this.cancelLocationFlight();
+      // moveend also fires when the user interrupts the pullback. Only finish
+      // a completed pullback, so cancelling does not pull them back again.
+      if (this.destroyed || this.map !== map || Math.abs(map.getZoom() - pullbackZoom) > .001) return;
+      map.flyTo({ center, zoom: 17, curve: 1.42, duration: 1150 });
+    };
+    this.locationFlight = { map, onEnd };
+    map.on('moveend', onEnd);
+    map.easeTo({ zoom: pullbackZoom, duration: 450 });
+  }
+
+  private cancelLocationFlight(): void {
+    if (!this.locationFlight) return;
+    this.locationFlight.map.off('moveend', this.locationFlight.onEnd);
+    this.locationFlight = undefined;
   }
   private compassView?: { pitch: number; bearing: number };
   private angleTarget?: { pitch: number; bearing: number };
@@ -530,8 +573,9 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.compassView = undefined;
     this.setViewAngle(this.is3D ? 0 : 55, this.is3D ? 0 : -25);
   }
-  retry(): void { this.angleTarget = undefined; this.compassView = undefined; this.failed = false; this.canvas.nativeElement.parentElement?.append(this.locationButton.nativeElement); this.markerById.forEach(marker => marker.remove()); this.markerById.clear(); this.map?.remove(); this.map = undefined; this.cat = undefined; this.observer?.disconnect(); clearTimeout(this.loadTimer); void this.initialize(); }
+  retry(): void { this.cancelLocationFlight(); this.angleTarget = undefined; this.compassView = undefined; this.failed = false; this.canvas.nativeElement.parentElement?.append(this.locationButton.nativeElement); this.markerById.forEach(marker => marker.remove()); this.markerById.clear(); this.map?.remove(); this.map = undefined; this.cat = undefined; this.observer?.disconnect(); clearTimeout(this.loadTimer); void this.initialize(); }
   ngOnDestroy(): void {
+    this.cancelLocationFlight();
     this.destroyed = true; clearTimeout(this.loadTimer); this.subscription?.unsubscribe(); this.observer?.disconnect();
     if (this.watchId !== undefined) navigator.geolocation.clearWatch(this.watchId);
     this.stopOrientation();

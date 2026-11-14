@@ -1,5 +1,6 @@
 import { createBlackCatModel } from './black-cat-model';
 import type { CustomLayerInterface } from 'maplibre-gl';
+import { STORE_DETAIL_MIN_ZOOM } from './map-detail';
 
 /** Procedural black cat and convenience stores rendered over real geographic coordinates. */
 export async function createTownLayer(longitude: number, latitude: number) {
@@ -129,6 +130,11 @@ export async function createTownLayer(longitude: number, latitude: number) {
       renderer.autoClear = false;
     },
     render(gl, args) {
+      // Skip custom WebGL work and HTML projection at regional/country scale.
+      if (mapInstance.getZoom() < STORE_DETAIL_MIN_ZOOM) {
+        lastFrameTime = undefined;
+        return;
+      }
       cat.scale.setScalar(13);
       // Lift the face toward the overhead camera, returning to its normal pose in 3D.
       catHead.rotation.x = -Math.PI / 4 * Math.max(0, Math.min(1, 1 - mapInstance.getPitch() / 55));
