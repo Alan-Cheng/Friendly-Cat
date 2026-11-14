@@ -4,6 +4,7 @@ import { BrowserVerificationState, ProxyTokenService } from '../../services/prox
 import { StoreMapComponent } from '../store-map/store-map.component';
 import { Subscription, timeout } from 'rxjs';
 import { MapStore } from '../store-map/store-map.component';
+import { MapAreaCache, withinMapArea, MapCenter } from '../store-map/map-area-cache';
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormGroup, FormControl } from '@angular/forms';
@@ -21,7 +22,7 @@ import { StoreDataService } from 'src/app/services/stores-data.service';
 
 import { environment } from 'src/environments/environment';
 
-import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, filter, finalize, EMPTY } from 'rxjs';
 
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
@@ -129,15 +130,17 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.mapInventory = next;
   }
 
-  private completeMapInventory(stores: MapStore[], revision: number, family: any, seven: any): void {
+  private completeMapInventory(stores: MapStore[], revision: number, family: any, seven: any, preserveExisting = false): void {
     this.updateMapInventory(stores, revision, store => {
+      const previous = this.mapInventory[store.id];
+      const unavailable = preserveExisting ? (typeof previous === 'number' ? previous : store.quantity ?? 'error') : 'error';
       if (store.brand === '全家') {
-        if (family?.code !== 1 || !Array.isArray(family.data)) return 'error';
+        if (family?.code !== 1 || !Array.isArray(family.data)) return unavailable;
         const stock = matchFamilyStock(store, family.data);
         return stock ? familyStockQuantity(stock) : 0;
       }
       const stocks = seven?.element?.StoreStockItemList;
-      if (!Array.isArray(stocks)) return 'error';
+      if (!Array.isArray(stocks)) return unavailable;
       return sevenStockQuantity(stocks.find((stock: StoreStockItem) => String(stock.StoreNo) === store.storeCode)) ?? 0;
     });
   }
@@ -168,6 +171,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
   private mapArea$ = new Subject<{ latitude: number; longitude: number }>();
   private mapStockSubscription?: Subscription;
+  private readonly mapAreaCache = new MapAreaCache();
+  private pendingMapArea?: { center: MapCenter; storeIds: Set<string> };
 
   onMapAreaChanged(center: { latitude: number; longitude: number }): void {
     if (this.hasEnteredWorld) this.mapArea$.next(center);
@@ -246,12 +251,20 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.mapStockSubscription = this.mapArea$.pipe(
       debounceTime(450),
-      distinctUntilChanged((a, b) => Math.abs(a.latitude - b.latitude) < .0008 && Math.abs(a.longitude - b.longitude) < .0008),
+      filter(center => !this.pendingMapArea || !withinMapArea(this.pendingMapArea.center, center)
+        || (this.worldMap?.visibleStores ?? []).some(store => !this.pendingMapArea!.storeIds.has(store.id))),
       switchMap(center => {
-        this.storeDataService.setInventoryState('loading');
-        const revision = ++this.stockRevision;
         const stores = [...(this.worldMap?.visibleStores ?? [])];
-        this.updateMapInventory(stores, revision, () => 'loading');
+        const cached = this.mapAreaCache.find(center, stores);
+        if (cached) {
+          this.storeDataService.setStores(cached);
+          this.storeDataService.setIsUserLocationSearch(true);
+          return EMPTY;
+        }
+        if (!this.storeDataService.getStores().length) this.storeDataService.setInventoryState('loading');
+        const revision = ++this.stockRevision;
+        const pending = { center, storeIds: new Set(stores.map(store => store.id)) };
+        this.pendingMapArea = pending;
         const location = { Latitude: center.latitude, Longitude: center.longitude };
         return forkJoin({
           family: this.familyMartService.getNearByStoreList(location).pipe(timeout(20000), catchError(() => of(null))),
@@ -260,7 +273,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             timeout(20000), catchError(() => of(null))
           )
         }).pipe(tap(response => {
-          this.completeMapInventory(stores, revision, response.family, response.seven);
+          this.completeMapInventory(stores, revision, response.family, response.seven, true);
           if (response.family?.code === 1 && Array.isArray(response.family.data)) this.mergeFamilyMapStock(response.family.data, revision);
           const stocks = response.seven?.element?.StoreStockItemList;
           if (Array.isArray(stocks)) this.mergeSevenMapStock(stocks, revision);
@@ -271,13 +284,15 @@ export class NewSearchComponent implements OnInit, OnDestroy {
               ...(Array.isArray(stocks) ? stocks.filter((stock: StoreStockItem) => (sevenStockQuantity(stock) ?? 0) > 0).map((stock: StoreStockItem) => ({ ...stock, label: '7-11', storeName: `7-11${stock.StoreName}門市`, distance: stock.Distance })) : []),
               ...(response.family?.code === 1 && Array.isArray(response.family.data) ? response.family.data.filter((stock: StoreModel) => familyStockQuantity(stock) > 0).map((stock: StoreModel) => ({ ...stock, label: '全家', storeName: stock.name })) : [])
             ];
+            if (Array.isArray(stocks) && response.family?.code === 1 && Array.isArray(response.family.data)) {
+              this.mapAreaCache.remember(center, stores, searchable);
+            }
             this.storeDataService.setStores(searchable);
             this.storeDataService.setIsUserLocationSearch(true);
           } else {
-            this.storeDataService.setStores([]);
             this.storeDataService.setInventoryState('error');
           }
-        }));
+        }), finalize(() => { if (this.pendingMapArea === pending) this.pendingMapArea = undefined; }));
       })
     ).subscribe();
     this.verificationSubscription = this.proxyTokenService.verificationState$.subscribe(state => {

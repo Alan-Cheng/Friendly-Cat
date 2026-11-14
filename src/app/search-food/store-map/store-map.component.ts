@@ -57,7 +57,6 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   dataError = '';
   private map?: Map;
   private lib?: typeof import('maplibre-gl');
-  private markers: Marker[] = [];
   private markerById = new globalThis.Map<string, Marker>();
   highlightedId?: string;
   private cat?: Awaited<ReturnType<typeof import('./three-world').createTownLayer>>;
@@ -305,29 +304,31 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   setFilter(value: string): void { this.filter = value; this.renderStores(); }
 
   private renderStores(): void {
-    this.markers.forEach(m => m.remove());
-    this.markers = [];
-    this.markerById.clear();
     const center = this.map?.getCenter() || { lng: 121.5654, lat: 25.0330 };
     const bounds = this.ready && !this.failed ? this.map?.getBounds() : undefined;
     this.visibleStores = this.stores.filter(s => (this.filter === 'all' || s.brand === this.filter) && (!bounds || bounds.contains([s.longitude, s.latitude])))
       .sort((a, b) => this.distanceFrom(a, center.lat, center.lng) - this.distanceFrom(b, center.lat, center.lng)).slice(0, 60);
     this.cat?.setStores(this.visibleStores);
     if (!this.ready || !this.lib || !this.map) return;
+    const visibleIds = new Set(this.visibleStores.map(store => store.id));
+    this.markerById.forEach((marker, id) => {
+      if (!visibleIds.has(id)) { marker.remove(); this.markerById.delete(id); }
+    });
     for (const store of this.visibleStores) {
+      const existing = this.markerById.get(store.id);
+      if (existing) {
+        this.updateMarker(existing.getElement(), store);
+        const position = existing.getLngLat();
+        if (position.lng !== store.longitude || position.lat !== store.latitude) existing.setLngLat([store.longitude, store.latitude]);
+        continue;
+      }
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'cat-shop-marker ' + (store.brand === '全家' ? 'family' : 'seven');
-      const loading = store.quantity === undefined && this.inventory[store.id] !== 'error';
-      button.setAttribute('aria-busy', String(loading));
-      button.setAttribute('aria-label', `查看${store.name}商品${loading ? '，庫存載入中' : store.quantity !== undefined ? `，剩餘 ${store.quantity} 件` : ''}`);
-      button.setAttribute('aria-pressed', String(this.selected?.id === store.id));
       const label = document.createElement('span'); label.className = 'shop-label';
       const roof = document.createElement('span'); roof.className = 'shop-roof';
       const storeName = document.createElement('span');
       storeName.className = 'shop-store-name';
-      storeName.textContent = store.name.replace(store.brand === '全家' ? /^(?:全家便利商店|全家|FamilyMart)\s*/i : /^(?:7-ELEVEN|7-11|711)\s*/i, '').trim() || store.name;
-      button.title = store.name;
       const divider = document.createElement('span'); divider.className = 'shop-brand-divider'; divider.setAttribute('aria-hidden', 'true');
       const logo = document.createElement('img');
       logo.className = 'shop-brand-icon';
@@ -340,18 +341,33 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       label.append(roof);
       {
         const badge = document.createElement('span'); badge.className = 'shop-stock-count';
-        badge.classList.toggle('is-unknown', store.quantity === undefined);
-        badge.classList.toggle('is-empty', store.quantity === 0);
-        badge.classList.toggle('is-loading', loading);
-        badge.textContent = loading ? '' : store.quantity === undefined ? '—' : String(store.quantity);
-        badge.title = loading ? '庫存載入中' : store.quantity === undefined ? '庫存暫時無法載入' : '即期商品剩餘數量';
         label.append(badge);
       }
       button.append(label);
-      button.addEventListener('click', () => this.zone.run(() => this.select(store, button)));
+      this.updateMarker(button, store);
+      button.addEventListener('click', () => this.zone.run(() => this.select(this.stores.find(current => current.id === store.id) || store, button)));
       const marker = new this.lib.Marker({ element: button, anchor: 'top' }).setLngLat([store.longitude, store.latitude]).addTo(this.map);
-      this.markers.push(marker); this.markerById.set(store.id, marker);
+      this.markerById.set(store.id, marker);
     }
+  }
+
+  private updateMarker(button: HTMLElement, store: MapStore): void {
+    const loading = store.quantity === undefined && this.inventory[store.id] !== 'error';
+    button.setAttribute('aria-busy', String(loading));
+    button.setAttribute('aria-label', `查看${store.name}商品${loading ? '，庫存載入中' : store.quantity !== undefined ? `，剩餘 ${store.quantity} 件` : ''}`);
+    button.setAttribute('aria-pressed', String(this.selected?.id === store.id));
+    button.classList.toggle('highlighted', this.highlightedId === store.id);
+    button.title = store.name;
+    const name = button.querySelector<HTMLElement>('.shop-store-name')!;
+    const text = store.name.replace(store.brand === '全家' ? /^(?:全家便利商店|全家|FamilyMart)\s*/i : /^(?:7-ELEVEN|7-11|711)\s*/i, '').trim() || store.name;
+    if (name.textContent !== text) name.textContent = text;
+    const badge = button.querySelector<HTMLElement>('.shop-stock-count')!;
+    badge.classList.toggle('is-unknown', store.quantity === undefined);
+    badge.classList.toggle('is-empty', store.quantity === 0);
+    badge.classList.toggle('is-loading', loading);
+    const count = loading ? '' : store.quantity === undefined ? '—' : String(store.quantity);
+    if (badge.textContent !== count) badge.textContent = count;
+    badge.title = loading ? '庫存載入中' : store.quantity === undefined ? '庫存暫時無法載入' : '即期商品剩餘數量';
   }
 
   highlightStore(id?: string): void {
@@ -500,11 +516,11 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.compassView = undefined;
     this.setViewAngle(this.is3D ? 0 : 55, this.is3D ? 0 : -25);
   }
-  retry(): void { this.angleTarget = undefined; this.compassView = undefined; this.failed = false; this.canvas.nativeElement.parentElement?.append(this.locationButton.nativeElement); this.map?.remove(); this.map = undefined; this.cat = undefined; this.observer?.disconnect(); clearTimeout(this.loadTimer); void this.initialize(); }
+  retry(): void { this.angleTarget = undefined; this.compassView = undefined; this.failed = false; this.canvas.nativeElement.parentElement?.append(this.locationButton.nativeElement); this.markerById.forEach(marker => marker.remove()); this.markerById.clear(); this.map?.remove(); this.map = undefined; this.cat = undefined; this.observer?.disconnect(); clearTimeout(this.loadTimer); void this.initialize(); }
   ngOnDestroy(): void {
     this.destroyed = true; clearTimeout(this.loadTimer); this.subscription?.unsubscribe(); this.observer?.disconnect();
     if (this.watchId !== undefined) navigator.geolocation.clearWatch(this.watchId);
     this.stopOrientation();
-    this.markers.forEach(m => m.remove()); this.map?.remove();
+    this.markerById.forEach(marker => marker.remove()); this.markerById.clear(); this.map?.remove();
   }
 }

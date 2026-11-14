@@ -41,7 +41,7 @@
     <header class="boot-titlebar"><h2 id="boot-title">友善黑貓</h2></header>
     <div class="boot-body">
       <h3>{{ verificationState === 'failed' ? '暫時無法進入地圖' : '正在準備地圖' }}</h3>
-      <p class="boot-description">載入地圖與附近門市，完成後會自動進入。</p>
+      <p class="boot-description">載入地圖與附近門市，完成後會自動進入。<br>地圖將顯示店家與即期折扣商品。</p>
       <ol class="boot-checks">
         <li [class.complete]="verificationState === 'verified'">
           <progress *ngIf="verificationState === 'checking'" class="boot-spinner" aria-label="正在驗證瀏覽器"></progress>
