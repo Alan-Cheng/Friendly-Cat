@@ -33,6 +33,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() familyStock: any[] = [];
   @Input() sevenStores: any[] = [];
   @Input() sevenStock: any[] = [];
+  @Input() inventory: Record<string, number | 'loading' | 'error'> = {};
   @Input() querying = false;
   @Input() inventoryBlocked = false;
   @Input() latitude?: number;
@@ -171,7 +172,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   constructor(private http: HttpClient, private zone: NgZone) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['familyStores'] || changes['sevenStores'] || changes['familyStock'] || changes['sevenStock']) this.normalizeStores();
+    if (changes['familyStores'] || changes['sevenStores'] || changes['familyStock'] || changes['sevenStock'] || changes['inventory']) this.normalizeStores();
     if ((changes['latitude'] || changes['longitude']) && this.hasLocation()) {
       void this.updateCat();
       if (changes['latitude']?.previousValue === undefined) this.centerCat();
@@ -288,7 +289,10 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }));
     const sevenById = new globalThis.Map(this.sevenStock.map(stock => [String(stock.StoreNo), stock]));
     const enrichedSeven = seven.map(store => ({ ...store, quantity: sevenStockQuantity(sevenById.get(store.storeCode)) }));
-    this.stores = [...enrichedFamily, ...enrichedSeven].filter(s => Number.isFinite(s.latitude) && Number.isFinite(s.longitude) && Math.abs(s.latitude) <= 90 && Math.abs(s.longitude) <= 180 && s.latitude !== 0 && s.longitude !== 0);
+    this.stores = [...enrichedFamily, ...enrichedSeven].map(store => {
+      const state = this.inventory[store.id];
+      return { ...store, quantity: typeof state === 'number' ? state : state ? undefined : store.quantity };
+    }).filter(s => Number.isFinite(s.latitude) && Number.isFinite(s.longitude) && Math.abs(s.latitude) <= 90 && Math.abs(s.longitude) <= 180 && s.latitude !== 0 && s.longitude !== 0);
     this.renderStores();
   }
 
@@ -314,7 +318,9 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'cat-shop-marker ' + (store.brand === '全家' ? 'family' : 'seven');
-      button.setAttribute('aria-label', `查看${store.name}商品${store.quantity !== undefined ? `，剩餘 ${store.quantity} 件` : ''}`);
+      const loading = store.quantity === undefined && this.inventory[store.id] !== 'error';
+      button.setAttribute('aria-busy', String(loading));
+      button.setAttribute('aria-label', `查看${store.name}商品${loading ? '，庫存載入中' : store.quantity !== undefined ? `，剩餘 ${store.quantity} 件` : ''}`);
       button.setAttribute('aria-pressed', String(this.selected?.id === store.id));
       const label = document.createElement('span'); label.className = 'shop-label';
       const roof = document.createElement('span'); roof.className = 'shop-roof';
@@ -333,8 +339,9 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         const badge = document.createElement('span'); badge.className = 'shop-stock-count';
         badge.classList.toggle('is-unknown', store.quantity === undefined);
         badge.classList.toggle('is-empty', store.quantity === 0);
-        badge.textContent = store.quantity === undefined ? '—' : String(store.quantity);
-        badge.title = store.quantity === undefined ? '尚未取得庫存' : '即期商品剩餘數量';
+        badge.classList.toggle('is-loading', loading);
+        badge.textContent = loading ? '' : store.quantity === undefined ? '—' : String(store.quantity);
+        badge.title = loading ? '庫存載入中' : store.quantity === undefined ? '庫存暫時無法載入' : '即期商品剩餘數量';
         label.append(badge);
       }
       button.append(label);

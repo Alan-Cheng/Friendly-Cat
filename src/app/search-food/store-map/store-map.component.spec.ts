@@ -67,6 +67,21 @@ describe('StoreMapComponent data and location', () => {
     expect(component.stores[0].quantity).toBe(0);
   });
 
+  it('shows zero for stores with no inventory after a response and clears cached counts while loading', () => {
+    component.familyStores = [family];
+    component.sevenStores = [{ serial: '02', name: '信義', lat: 25.033, lng: 121.566 }];
+    component.familyStock = [{ oldPKey: '01', info: [{ qty: 7 }] }];
+    component.inventory = { 'fm-01': 'loading', '711-02': 'loading' };
+    update();
+    expect(component.stores.map(store => store.quantity)).toEqual([undefined, undefined]);
+    component.inventory = { 'fm-01': 0, '711-02': 0 };
+    component.ngOnChanges({ inventory: new SimpleChange({}, component.inventory, false) });
+    expect(component.stores.map(store => store.quantity)).toEqual([0, 0]);
+    component.inventory = { 'fm-01': 5, '711-02': 12 };
+    component.ngOnChanges({ inventory: new SimpleChange({}, component.inventory, false) });
+    expect(component.stores.map(store => store.quantity)).toEqual([5, 12]);
+  });
+
   it('opens products immediately when a map shop is selected', () => {
     component.familyStores = [family]; update();
     const emit = spyOn(component.queryStore, 'emit');

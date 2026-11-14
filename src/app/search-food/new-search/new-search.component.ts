@@ -116,6 +116,32 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   mapSelectedStore?: MapStore;
   familyMapStock: StoreModel[] = [];
   sevenMapStock: StoreStockItem[] = [];
+  mapInventory: Record<string, number | 'loading' | 'error'> = {};
+  private mapInventoryVersions = new Map<string, number>();
+
+  private updateMapInventory(stores: MapStore[], revision: number, value: (store: MapStore) => number | 'loading' | 'error'): void {
+    const next = { ...this.mapInventory };
+    for (const store of stores) {
+      if (revision < (this.mapInventoryVersions.get(store.id) ?? -1)) continue;
+      this.mapInventoryVersions.set(store.id, revision);
+      next[store.id] = value(store);
+    }
+    this.mapInventory = next;
+  }
+
+  private completeMapInventory(stores: MapStore[], revision: number, family: any, seven: any): void {
+    this.updateMapInventory(stores, revision, store => {
+      if (store.brand === '全家') {
+        if (family?.code !== 1 || !Array.isArray(family.data)) return 'error';
+        const stock = matchFamilyStock(store, family.data);
+        return stock ? familyStockQuantity(stock) : 0;
+      }
+      const stocks = seven?.element?.StoreStockItemList;
+      if (!Array.isArray(stocks)) return 'error';
+      return sevenStockQuantity(stocks.find((stock: StoreStockItem) => String(stock.StoreNo) === store.storeCode)) ?? 0;
+    });
+  }
+
   private stockRevision = 0;
   private sevenStockVersions = new Map<string, number>();
   private familyStockVersions = new Map<string, number>();
@@ -224,6 +250,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       switchMap(center => {
         this.storeDataService.setInventoryState('loading');
         const revision = ++this.stockRevision;
+        const stores = [...(this.worldMap?.visibleStores ?? [])];
+        this.updateMapInventory(stores, revision, () => 'loading');
         const location = { Latitude: center.latitude, Longitude: center.longitude };
         return forkJoin({
           family: this.familyMartService.getNearByStoreList(location).pipe(timeout(20000), catchError(() => of(null))),
@@ -232,6 +260,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             timeout(20000), catchError(() => of(null))
           )
         }).pipe(tap(response => {
+          this.completeMapInventory(stores, revision, response.family, response.seven);
           if (response.family?.code === 1 && Array.isArray(response.family.data)) this.mergeFamilyMapStock(response.family.data, revision);
           const stocks = response.seven?.element?.StoreStockItemList;
           if (Array.isArray(stocks)) this.mergeSevenMapStock(stocks, revision);
@@ -279,6 +308,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
     const code = store.storeCode || this.worldMap?.stores.find(s => s.brand === store.brand && s.latitude === store.latitude && s.longitude === store.longitude)?.storeCode;
     this.mapQueryPending = true;
+    this.updateMapInventory([store], revision, () => 'loading');
     this.inventoryStatus = '正在查詢 ' + store.name + ' 的即期商品…';
     const location = { Latitude: store.latitude, Longitude: store.longitude };
     const request$ = store.brand === '7-11'
@@ -295,19 +325,20 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.mapInventorySubscription = request$.pipe(timeout(25000)).subscribe({
       next: response => {
         if (store.brand === '7-11') {
-          const stock = response?.element?.StoreStockItem;
-          if (!response?.isSuccess || !stock || (stock.StoreNo && String(stock.StoreNo) !== code)) {
-            this.finishMapInventoryError(); return;
+          const stock = response?.element?.StoreStockItem ?? { StoreNo: code, RemainingQty: 0 };
+          if (!response?.isSuccess || (stock.StoreNo && String(stock.StoreNo) !== code)) {
+            this.finishMapInventoryError(store, revision); return;
           }
-          const remaining = sevenStockQuantity(stock);
+          const remaining = sevenStockQuantity(stock) ?? 0;
           const detailStock = { ...stock, StoreNo: String(stock.StoreNo || code) };
           this.mergeSevenMapStock([detailStock], revision);
-          if (remaining === undefined) { this.finishMapInventoryError(); return; }
+          this.updateMapInventory([store], revision, () => remaining);
           this.totalStoresShowList = remaining > 0 ? [{ ...detailStock, StoreName: stock.StoreName || store.name.replace(/^7-ELEVEN\s*/, '').replace(/門市$/, ''), RemainingQty: remaining, stockItemsLoaded: true, CategoryStockItems: stock.CategoryStockItems || [], storeName: store.name, label: '7-11', distance: 0, remainingQty: remaining }] : [];
         } else {
-          if (response?.code !== 1 || !Array.isArray(response.data)) { this.finishMapInventoryError(); return; }
+          if (response?.code !== 1 || !Array.isArray(response.data)) { this.finishMapInventoryError(store, revision); return; }
           this.mergeFamilyMapStock(response.data, revision);
           const stock = matchFamilyStock({ ...store, storeCode: code }, response.data);
+          this.updateMapInventory([store], revision, () => stock ? familyStockQuantity(stock) : 0);
           this.totalStoresShowList = stock && familyStockQuantity(stock) > 0 ? [{ ...stock, name: stock.name || store.name, storeName: stock.name || store.name, label: '全家', distance: 0 }] : [];
         }
         this.mapQueryPending = false;
@@ -317,11 +348,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         this.storeDataService.setStores([...others, ...this.totalStoresShowList]);
         this.inventoryStatus = this.totalStoresShowList.length ? '已更新此門市商品，實際庫存以店內為準。' : '這間店目前沒有可顯示的即期商品。';
       },
-      error: () => this.finishMapInventoryError()
+      error: () => this.finishMapInventoryError(store, revision)
     });
   }
 
-  private finishMapInventoryError(): void {
+  private finishMapInventoryError(store: MapStore, revision: number): void {
+    this.updateMapInventory([store], revision, () => 'error');
     this.mapQueryPending = false;
     this.inventoryStatus = '這間店的商品暫時無法載入，請稍後重試。';
   }

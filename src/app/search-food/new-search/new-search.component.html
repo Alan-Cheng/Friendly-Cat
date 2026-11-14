@@ -4,7 +4,7 @@
   (foodSearchResult)="onFoodSearchResult($event)"></app-sider>
 
 
-<app-store-map [familyStores]="dropDownFamilyMartList" [familyStock]="familyMapStock" [sevenStores]="all711Stores" [sevenStock]="sevenMapStock"
+<app-store-map [familyStores]="dropDownFamilyMartList" [familyStock]="familyMapStock" [inventory]="mapInventory" [sevenStores]="all711Stores" [sevenStock]="sevenMapStock"
   [latitude]="latitude" [longitude]="longitude" [querying]="mapQueryPending" [inventoryBlocked]="(loadingService.verificationLoading$ | async) === true" (queryStore)="onMapStoreQuery($event)"
   (locationChanged)="onMapLocationChanged($event)" (areaChanged)="onMapAreaChanged($event)" (worldReady)="onWorldReady()" (openSearch)="openSearchWindow()">
   <section mapSearch class="map-search-panel" [class.expanded]="searchExpanded" (keydown.escape)="closeSearchWindow()">

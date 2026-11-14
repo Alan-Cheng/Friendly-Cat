@@ -62,8 +62,9 @@ body { overflow: hidden; }
 
 
 
+/* Only the visible label receives pointer events; the projected marker body must not cover other labels. */
 /* Compact brand badges: vector logo, divider, name and stock capsule. */
-.cat-shop-marker { width: 44px; height: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; overflow: visible; cursor: pointer; }
+.cat-shop-marker { width: 44px; height: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; overflow: visible; cursor: pointer; pointer-events: none; }
 .cat-shop-marker .shop-label { position: absolute; left: 50%; bottom: 100%; display: flex; align-items: center; gap: 9px; width: max-content; min-width: 120px; box-sizing: border-box; padding: 5px 8px; border: 1.5px solid #ffffffd9; border-radius: 8px; transform: translateX(-50%); transform-origin: center bottom; pointer-events: auto; box-shadow: 0 2px 7px #263b311c; }
 .cat-shop-marker.family .shop-label { background: linear-gradient(110deg, #c6ead5f2 0%, #c5e8e8f2 45%, #bee4f4f2 100%); }
 /* Logo color areas are approximately 29% orange, 22% green and 49% red. */
@@ -73,8 +74,11 @@ body { overflow: hidden; }
 .cat-shop-marker .shop-brand-icon { display: block; flex: 0 0 22px; width: 22px; height: 22px; object-fit: contain; border-radius: 4px; background: #fff; pointer-events: none; }
 .cat-shop-marker.seven .shop-brand-icon { background: transparent; border-radius: 0; }
 .cat-shop-marker .shop-brand-divider { width: 1px; height: 18px; background: #5d7b6a26; }
-.cat-shop-marker .shop-stock-count { display: flex; align-items: center; justify-content: center; min-width: 34px; height: 24px; box-sizing: border-box; margin: 0; padding: 0 8px; border: 0; border-radius: 14px; background: #245f46; color: #fff; font: 700 13px/1 Arial, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: center; }
-.cat-shop-marker .shop-stock-count.is-empty, .cat-shop-marker .shop-stock-count.is-unknown { background: #f4f6f9; color: #7a838b; font-weight: 600; }
+.cat-shop-marker .shop-stock-count { display: flex; align-items: center; justify-content: center; min-width: 34px; height: 24px; box-sizing: border-box; margin: 0; padding: 0 8px; border: 0; border-radius: 14px; background: #fff; color: #263b31; font: 700 13px/1 Arial, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: center; }
+.cat-shop-marker .shop-stock-count.is-empty, .cat-shop-marker .shop-stock-count.is-unknown { background: #fff; color: #7a838b; font-weight: 600; }
 .cat-shop-marker.highlighted .shop-label { outline: 2px solid var(--cat-primary); outline-offset: 2px; }
 .cat-shop-marker:focus-visible { outline: none; }
 .cat-shop-marker:focus-visible .shop-label { outline: 2px solid var(--cat-primary); outline-offset: 3px; }
+
+.cat-shop-marker .shop-stock-count.is-loading::after { content: ''; width: 12px; height: 12px; border: 2px solid #7a838b40; border-top-color: #245f46; border-radius: 50%; animation: shop-stock-spin .8s linear infinite; }
+@keyframes shop-stock-spin { to { transform: rotate(360deg); } }
