@@ -80,6 +80,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   @ViewChild('mapSearchInput', { static: true }) mapSearchInput!: ElementRef<HTMLInputElement>;
   searchExpanded = false;
   searchSubmitted = false;
+  private searchComposing = false;
+  private searchTimer?: ReturnType<typeof setTimeout>;
   @HostListener('document:pointerdown', ['$event'])
   dismissMapSearch(event: PointerEvent): void {
     if (!(event.target instanceof Element) || event.target.closest('.map-search-panel, .locate')) return;
@@ -111,7 +113,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     void this.proxyTokenService.ensure().catch(() => {}).finally(() => this.verificationRetrying = false);
   }
   openSearchWindow(): void { this.searchExpanded = true; this.mapSearchInput.nativeElement.focus(); }
-  closeSearchWindow(): void { this.searchExpanded = false; }
+  closeSearchWindow(): void { clearTimeout(this.searchTimer); this.searchExpanded = false; }
   refreshProducts(): void {
     if (this.mapQueryPending) return;
     if (this.mapSelectedStore) this.onMapStoreQuery(this.mapSelectedStore);
@@ -122,7 +124,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.closeSearchWindow();
     if (!this.productWindow.nativeElement.open) this.productWindow.nativeElement.showModal();
   }
-  ngOnDestroy(): void { this.componentDestroyed = true; this.tour?.destroy(); clearTimeout(this.tourTimer); this.mapStockSubscription?.unsubscribe(); this.mapArea$.complete(); this.mapInventorySubscription?.unsubscribe(); this.verificationSubscription?.unsubscribe(); document.body.classList.remove('cat-world-entered'); }
+  ngOnDestroy(): void { clearTimeout(this.searchTimer); this.componentDestroyed = true; this.tour?.destroy(); clearTimeout(this.tourTimer); this.mapStockSubscription?.unsubscribe(); this.mapArea$.complete(); this.mapInventorySubscription?.unsubscribe(); this.verificationSubscription?.unsubscribe(); document.body.classList.remove('cat-world-entered'); }
 
   user: any = null;
   mapSelectedStore?: MapStore;
@@ -310,8 +312,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       this.verificationState = state;
       this.tryEnterWorld();
     });
-    // 移除自動搜尋，改為手動觸發（Enter 或按鈕）
-    // this.searchInput$ 不再自動訂閱
     this.init();
   }
 
@@ -546,16 +546,43 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   onInput(event: Event): void {
-    // 只更新 searchTerm，不觸發搜尋
-    const input = (event.target as HTMLInputElement).value;
-    this.searchTerm = input;
     this.searchExpanded = true;
     this.searchSubmitted = false;
-    // 清空下拉選單，等待使用者按下 Enter 或查詢按鈕
+    this.unifiedDropDownList = [];
+    clearTimeout(this.searchTimer);
+    if (this.searchComposing || (event as InputEvent).isComposing) return;
+    this.searchTerm = (event.target as HTMLInputElement).value;
+    this.scheduleSearch();
+  }
+
+  onSearchCompositionStart(): void {
+    this.searchComposing = true;
+    clearTimeout(this.searchTimer);
+    this.searchSubmitted = false;
     this.unifiedDropDownList = [];
   }
 
+  onSearchCompositionEnd(event: CompositionEvent): void {
+    this.searchComposing = false;
+    // Angular can deliver its buffered ngModel update after compositionend.
+    this.searchTerm = (event.target as HTMLInputElement).value;
+    this.scheduleSearch();
+  }
+
+  private scheduleSearch(): void {
+    clearTimeout(this.searchTimer);
+    if (Array.from(this.searchTerm.trim()).length < 2) return;
+    this.searchTimer = setTimeout(() => this.performSearch(), 180);
+  }
+
+  onSearchPanelKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') this.onKeyDown(event);
+  }
+
   onKeyDown(event: KeyboardEvent): void {
+    // Let the IME confirm/cancel candidates. Safari can report false for
+    // isComposing on its confirming Enter, so retain the 229 fallback.
+    if (this.searchComposing || event.isComposing || event.keyCode === 229) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       this.closeSearchWindow();
@@ -564,7 +591,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     // 按下 Enter 鍵時觸發搜尋
     if (event.key === 'Enter') {
       event.preventDefault();
-      if (event.isComposing || event.keyCode === 229) return;
       this.performSearch();
     }
   }
@@ -628,152 +654,36 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  // 使用本地 JSON 資料和拼音比對進行搜尋
+  // Search the local directory without a blocking loading overlay.
   handleSearch(input: string): void {
-    if (input.length >= 0) {
-      this.loadingService.show("正在為您搜尋店家");
-      this.unifiedDropDownList = [];
-
-      // Search remains available without GPS; existing coordinates are used only for sorting.
-      const getLocationAndSearch = () => of(null);
-
-      getLocationAndSearch().subscribe(() => {
-        // 篩選全家商店（使用拼音比對）
-        const filteredDropDownFamilyMartList = this.dropDownFamilyMartList
-          .map(item => ({
-            ...item,
-            Name: item.Name.replace('全家', '')  // 去除 "全家" 字串
-          }))
-          .filter(item => {
-            if (input.length === 0) return true;
-            return this.matchesSearchTerm(item.Name, item.Name_pinyin || '', input) ||
-                   this.matchesSearchTerm(item.addr, item.addr_pinyin || '', input);
-          });
-
-        // 篩選 7-11 商店（使用拼音比對）
-        const filteredDropDown711List = this.all711Stores
-          .map(item => ({
-            ...item,
-            name: item.name || '',
-            addr: item.addr || ''
-          }))
-          .filter(item => {
-            if (input.length === 0) return true;
-            return this.matchesSearchTerm(item.name, item.name_pinyin || '', input) ||
-                   this.matchesSearchTerm(item.addr, item.addr_pinyin || '', input);
-          });
-
-        // 統一兩個列表的名稱欄位
-        const normalizedFamilyMartList = filteredDropDownFamilyMartList.map(item => ({
-          name: item.Name,
-          addr: item.addr,
-          label: '全家',
-          longitude: parseFloat(item.px_wgs84),
-          latitude: parseFloat(item.py_wgs84)
-        }));
-
-        const normalized711List = filteredDropDown711List.map(item => ({
-          name: item.name,
-          addr: item.addr,
-          label: '7-11',
-          longitude: parseFloat(item.lng),
-          latitude: parseFloat(item.lat)
-        }));
-
-        // 合併列表並去重（使用 Set 優化，從 O(n²) 降到 O(n)）
-        const storeKeySet = new Set<string>();
-        this.unifiedDropDownList = [];
-        
-        // 使用 Set 來追蹤已加入的商店（key = name + addr）
-        const addToUnifiedList = (item: any) => {
-          const key = `${item.name}|${item.addr}`;
-          if (!storeKeySet.has(key)) {
-            storeKeySet.add(key);
-            this.unifiedDropDownList.push(item);
-          }
-        };
-        
-        // 先加入 7-11，再加入全家
-        normalized711List.forEach(addToUnifiedList);
-        normalizedFamilyMartList.forEach(addToUnifiedList);
-
-        // 如果有位置資訊，按距離排序，並優先顯示名稱匹配的結果
-        if (this.latitude && this.longitude && input.length > 0) {
-          // 建立映射以便快速查找
-          const familyMartMap = new Map(filteredDropDownFamilyMartList.map(fm => [`${fm.Name}|${fm.addr}`, fm]));
-          const sevenElevenMap = new Map(filteredDropDown711List.map(se => [`${se.name}|${se.addr}`, se]));
-
-          const nameGroup = this.unifiedDropDownList
-            .filter(item => {
-              const key = `${item.name}|${item.addr}`;
-              const familyMartItem = familyMartMap.get(key);
-              const sevenElevenItem = sevenElevenMap.get(key);
-              
-              if (familyMartItem) {
-                return this.matchesSearchTerm(familyMartItem.Name, familyMartItem.Name_pinyin || '', input);
-              }
-              if (sevenElevenItem) {
-                return this.matchesSearchTerm(sevenElevenItem.name, sevenElevenItem.name_pinyin || '', input);
-              }
-              return false;
-            })
-            .sort((a, b) => {
-              const distanceA = getDistance(
-                { latitude: this.latitude, longitude: this.longitude },
-                { latitude: a.latitude, longitude: a.longitude }
-              );
-              const distanceB = getDistance(
-                { latitude: this.latitude, longitude: this.longitude },
-                { latitude: b.latitude, longitude: b.longitude }
-              );
-              return distanceA - distanceB;
-            });
-
-          const addrGroup = this.unifiedDropDownList
-            .filter(item => !nameGroup.includes(item))
-            .sort((a, b) => {
-              const distanceA = getDistance(
-                { latitude: this.latitude, longitude: this.longitude },
-                { latitude: a.latitude, longitude: a.longitude }
-              );
-              const distanceB = getDistance(
-                { latitude: this.latitude, longitude: this.longitude },
-                { latitude: b.latitude, longitude: b.longitude }
-              );
-              return distanceA - distanceB;
-            });
-
-          this.unifiedDropDownList = [...nameGroup, ...addrGroup];
-        } else if (this.latitude && this.longitude) {
-          // 如果沒有搜尋詞，直接按距離排序
-          this.unifiedDropDownList.sort((a, b) => {
-            const distanceA = getDistance(
-              { latitude: this.latitude, longitude: this.longitude },
-              { latitude: a.latitude, longitude: a.longitude }
-            );
-            const distanceB = getDistance(
-              { latitude: this.latitude, longitude: this.longitude },
-              { latitude: b.latitude, longitude: b.longitude }
-            );
-            return distanceA - distanceB;
-          });
-        }
-
-        if (this.unifiedDropDownList.length === 0) {
-          this.loadingService.show("好像找不到店家耶～請重新搜尋");
-          setTimeout(() => {
-            this.loadingService.hide();
-          }, 2000);
-        } else {
-          this.loadingService.hide();
-        }
-      }, (error) => {
-        console.error('取得位置錯誤:', error);
-        this.loadingService.hide();
-      });
-    } else {
-      this.unifiedDropDownList = [];
+    if (Array.from(input.trim()).length < 2) { this.unifiedDropDownList = []; return; }
+    const hasLocation = Number.isFinite(this.latitude) && Number.isFinite(this.longitude);
+    const matches: { name: string; addr: string; label: string; longitude: number; latitude: number; nameMatch: boolean; distance: number }[] = [];
+    const seen = new Set<string>();
+    const add = (rawName: string, namePinyin: string, addr: string, addrPinyin: string, label: string, latitude: number, longitude: number) => {
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+      const name = rawName.replace(/^(?:全家(?:便利商店)?|FamilyMart|7-ELEVEN|7-11|711)\s*/i, '').trim();
+      const nameMatch = this.matchesSearchTerm(name, namePinyin, input);
+      if (!nameMatch && !this.matchesSearchTerm(addr, addrPinyin, input)) return;
+      const key = `${label}|${name}|${addr}|${latitude}|${longitude}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const distance = hasLocation ? getDistance({ latitude: this.latitude, longitude: this.longitude }, { latitude, longitude }) : 0;
+      matches.push({ name, addr, label, latitude, longitude, nameMatch, distance });
+    };
+    for (const store of this.all711Stores) {
+      add(store.name || '', store.name_pinyin || '', store.addr || '', store.addr_pinyin || '', '7-11', Number(store.lat), Number(store.lng));
     }
+    for (const store of this.dropDownFamilyMartList) {
+      add(store.Name || '', store.Name_pinyin || '', store.addr || '', store.addr_pinyin || '', '全家', Number(store.py_wgs84), Number(store.px_wgs84));
+    }
+    matches.sort((a, b) => Number(b.nameMatch) - Number(a.nameMatch) || a.distance - b.distance);
+    // Broad address queries can match thousands of stores; bound DOM work per keystroke.
+    this.unifiedDropDownList = matches.slice(0, 50);
+  }
+
+  trackSearchResult(_index: number, store: any): string {
+    return `${store.label}|${store.name}|${store.addr}|${store.latitude}|${store.longitude}`;
   }
 
   onSearchStoreSelect(store: any): void {
@@ -798,20 +708,19 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.performSearch();
   }
 
-  // 執行搜尋（統一入口）
+  // Both live input and explicit submit use the same two-character threshold.
   performSearch(): void {
-    if (this.loadingService.isVerifying) {
+    clearTimeout(this.searchTimer);
+    if (this.componentDestroyed || this.searchComposing || this.loadingService.isVerifying) return;
+    const query = this.searchTerm.trim();
+    if (Array.from(query).length < 2) {
+      this.searchSubmitted = false;
+      this.unifiedDropDownList = [];
       return;
     }
-
-    if (this.searchTerm && this.searchTerm.trim().length > 0) {
-      this.searchExpanded = true;
-      this.searchSubmitted = true;
-      this.handleSearch(this.searchTerm.trim());
-    } else {
-      // 如果搜尋詞為空，清空結果
-      this.unifiedDropDownList = [];
-    }
+    this.searchExpanded = true;
+    this.searchSubmitted = true;
+    this.handleSearch(query);
   }
 
   onUseCurrentLocation(): void {

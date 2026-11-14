@@ -88,7 +88,9 @@ progress.boot-spinner.inventory-spinner { margin: 0 8px 16px; }
 .map-search-hint { padding: 8px 20px 24px; margin: 0; font-size: 13px; line-height: 1.7; color: #70757a; }
 .map-search-dropdown ul { list-style: none; padding: 0 0 8px; margin: 0; max-height: min(55dvh, 440px); overflow-y: auto; overscroll-behavior: contain; }
 .map-search-dropdown li button { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 68px; padding: 12px 20px; border: 0; background: #fff; color: #3c4043; text-align: left; cursor: pointer; }
-.map-result-icon { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; background: #f1f3f4; font-size: 22px; }
+.map-result-logo { display: block; flex: 0 0 32px; width: 32px; height: 32px; object-fit: contain; }
+.map-result-text { min-width: 0; }
+.map-search-limit { margin: 0; padding: 8px 20px; color: #5f6368; font-size: 12px; line-height: 1.7; }
 .map-search-dropdown strong, .map-search-dropdown small { display: block; line-height: 1.5; overflow-wrap: anywhere; }
 .map-search-dropdown strong { font-size: 14px; font-weight: 500; }
 .map-search-dropdown small { margin-top: 3px; font-size: 12px; color: #70757a; }

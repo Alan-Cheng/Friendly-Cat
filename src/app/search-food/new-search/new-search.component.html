@@ -7,16 +7,17 @@
 <app-store-map [familyStores]="dropDownFamilyMartList" [familyStock]="familyMapStock" [inventory]="mapInventory" [sevenStores]="all711Stores" [sevenStock]="sevenMapStock"
   [latitude]="latitude" [longitude]="longitude" [querying]="mapQueryPending" [inventoryBlocked]="(loadingService.verificationLoading$ | async) === true" (queryStore)="onMapStoreQuery($event)"
   (locationChanged)="onMapLocationChanged($event)" (areaChanged)="onMapAreaChanged($event)" (worldReady)="onWorldReady()" (openSearch)="openSearchWindow()">
-  <section mapSearch class="map-search-panel" [class.expanded]="searchExpanded" (keydown.escape)="closeSearchWindow()">
+  <section mapSearch class="map-search-panel" [class.expanded]="searchExpanded" (keydown)="onSearchPanelKeyDown($event)">
     <form class="map-search-row search-world" (ngSubmit)="onSubmit()">
       <label class="map-search-label" for="map-store-search">搜尋店家或地址</label>
-      <input #mapSearchInput id="map-store-search" type="search" name="mapStoreSearch" [(ngModel)]="searchTerm" (focus)="searchExpanded = true" (input)="onInput($event)" (keydown)="onKeyDown($event)" [attr.aria-expanded]="searchExpanded" aria-controls="map-search-results" autocomplete="off" enterkeyhint="search" placeholder="搜尋店家或地址" [disabled]="(loadingService.verificationLoading$ | async) === true">
+      <input #mapSearchInput id="map-store-search" type="search" name="mapStoreSearch" [(ngModel)]="searchTerm" (focus)="searchExpanded = true" (input)="onInput($event)" (compositionstart)="onSearchCompositionStart()" (compositionend)="onSearchCompositionEnd($event)" (keydown)="onKeyDown($event)" [attr.aria-expanded]="searchExpanded" aria-controls="map-search-results" [attr.aria-describedby]="searchExpanded && !unifiedDropDownList.length ? 'map-search-hint' : null" autocomplete="off" enterkeyhint="search" placeholder="搜尋店家或地址" [disabled]="(loadingService.verificationLoading$ | async) === true">
       <button type="submit" aria-label="搜尋店家"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg></button>
     </form>
     <div *ngIf="searchExpanded" id="map-search-results" class="map-search-dropdown">
       <div class="map-search-heading"><span>{{ unifiedDropDownList.length ? '搜尋結果' : '搜尋店家' }}</span><button type="button" (click)="closeSearchWindow()" aria-label="收合搜尋結果">×</button></div>
-      <p *ngIf="!unifiedDropDownList.length" class="map-search-hint" role="status">{{ searchSubmitted ? '找不到符合的店家，請試試其他店名或地址。' : '輸入店名或地址' }}</p>
-      <ul *ngIf="unifiedDropDownList.length" aria-label="商家搜尋結果"><li *ngFor="let store of unifiedDropDownList"><button type="button" (click)="onSearchStoreSelect(store)"><span class="map-result-icon" aria-hidden="true">⌖</span><span><strong>{{ store.name }}</strong><small>{{ store.label }} · {{ store.addr }}</small></span></button></li></ul>
+      <p id="map-search-hint" class="map-search-hint" role="status" *ngIf="!unifiedDropDownList.length">{{ searchSubmitted ? '找不到符合的店家，請試試其他店名或地址。' : '輸入至少兩個字，即可搜尋店名或地址。' }}</p>
+      <p *ngIf="unifiedDropDownList.length === 50" class="map-search-limit" role="status">顯示前 50 筆結果，輸入更完整的店名或地址可縮小範圍。</p>
+      <ul *ngIf="unifiedDropDownList.length" aria-label="商家搜尋結果"><li *ngFor="let store of unifiedDropDownList; trackBy: trackSearchResult"><button type="button" (click)="onSearchStoreSelect(store)"><img class="map-result-logo" [src]="store.label === '全家' ? familyMartIconUrl : sevenElevenIconUrl" [alt]="store.label === '全家' ? '全家' : '7-ELEVEN'" width="32" height="32" decoding="async"><span class="map-result-text"><strong>{{ store.name }}{{ store.label === '7-11' && !store.name.endsWith('門市') ? '門市' : '' }}</strong><small>{{ store.addr }}</small></span></button></li></ul>
     </div>
   </section>
 </app-store-map>
