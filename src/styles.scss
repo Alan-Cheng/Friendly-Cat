@@ -89,6 +89,8 @@ body { overflow: hidden; }
 /* Logo color areas are approximately 29% orange, 22% green and 49% red. */
 .cat-shop-marker.seven .shop-label { background: linear-gradient(110deg, #ffdabff2 0%, #c4dcd3f2 45%, #fac3caf2 100%); }
 .cat-shop-marker .shop-roof { display: flex; align-items: center; gap: 7px; color: #263b31; font: 700 11px/1.2 Arial, sans-serif; white-space: nowrap; }
+.cat-shop-marker .shop-store-name { display: block; max-inline-size: 8em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-shop-marker:hover .shop-store-name, .cat-shop-marker:focus-visible .shop-store-name { max-inline-size: min(16em, calc(100dvw - 140px)); white-space: normal; overflow-wrap: anywhere; }
 .cat-shop-marker.seven .shop-roof { color: #633d32; }
 .cat-shop-marker .shop-brand-icon { display: block; flex: 0 0 22px; width: 22px; height: 22px; object-fit: contain; border-radius: 4px; background: #fff; pointer-events: none; }
 .cat-shop-marker.seven .shop-brand-icon { background: transparent; border-radius: 0; }

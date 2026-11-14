@@ -1,5 +1,5 @@
 <div class="product-details" *ngIf="subCategories.length">
-  <div class="product-loading" *ngIf="isLoading"><mat-progress-spinner mode="indeterminate" diameter="28"></mat-progress-spinner><span>正在載入商品資訊…</span></div>
+  <div class="product-loading" *ngIf="isLoading" role="status"><mat-progress-spinner mode="indeterminate" diameter="20" aria-label="載入商品資訊"></mat-progress-spinner><span>正在載入商品資訊…</span></div>
   <ng-container *ngIf="!isLoading && category.Name">
     <ng-container *ngFor="let subCategory of subCategories">
       <section class="product-group" *ngIf="itemsBySubCategory[subCategory.Name]?.length">
@@ -12,7 +12,7 @@
                 <div class="product-copy"><h5>{{ item.ItemName }}</h5><div class="product-tags"><span *ngIf="detail.new === 'True'">新品</span><span *ngIf="detail.special_sale === 'True'">特價中</span></div>
                   <ng-container *ngIf="detail.image !== 'assets/此商品暫無圖片.png'; else unavailableSeven">
                     <p class="product-price"><span>價格 NT$</span> <del>{{ detail.originalPrice }}</del><span aria-hidden="true">→</span><strong>{{ detail.discountedPrice | round:-1 }}</strong></p>
-                    <p class="product-description">{{ detail.content | emptyInfo }}</p><p class="product-calories">{{ detail.kcal | emptyInfo }} kcal</p>
+                    <p class="product-description">{{ detail.content | emptyInfo }}</p><p class="product-calories" *ngIf="hasCalories(detail.kcal)">{{ detail.kcal }} kcal</p>
                   </ng-container>
                   <ng-template #unavailableSeven><p class="product-description">暫無此商品資訊</p></ng-template>
                 </div>

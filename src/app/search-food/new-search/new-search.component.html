@@ -26,7 +26,7 @@
   <div class="window-titlebar"><h2 id="product-window-title">{{ mapSelectedStore ? mapSelectedStore.name + '的商品' : '附近的友善食光' }}</h2><div class="window-controls"><button type="button" (click)="refreshProducts()" [disabled]="mapQueryPending" aria-label="重新整理商品" title="重新整理商品">↻</button><button type="button" (click)="productWindow.close()" aria-label="關閉商品視窗">×</button></div></div>
   <div class="window-body">
 <p class="inventory-message" *ngIf="mapQueryPending || totalStoresShowList.length === 0 || inventoryStatus.includes('無法')" role="status">{{ inventoryStatus }}</p>
-<progress *ngIf="mapQueryPending" aria-label="載入門市商品"></progress>
+<progress *ngIf="mapQueryPending" class="boot-spinner inventory-spinner" aria-label="載入門市商品"></progress>
 <div id="map-product-results" tabindex="-1" [attr.aria-busy]="mapQueryPending">
   <ng-container *ngIf="isLocationSearchMode; then locationSearchMode; else storeSearchMode"></ng-container>
 </div>
@@ -38,11 +38,10 @@
 
 <div class="world-boot" *ngIf="!hasEnteredWorld">
   <section class="boot-window" aria-labelledby="boot-title">
-    <div class="boot-titlebar"><span>FRIENDLY CAT.EXE</span><span aria-hidden="true">— □ ×</span></div>
-    <div class="boot-path">friendlycat / neighborhood / world</div>
+    <header class="boot-titlebar"><h2 id="boot-title">友善黑貓</h2></header>
     <div class="boot-body">
-      <div class="boot-cat" aria-hidden="true"><span class="boot-ear left"></span><span class="boot-ear right"></span><span class="boot-face"><i></i><i></i></span></div>
-      <p class="boot-description">友善黑貓 · 資料準備中<br>準備好後，就會自動帶你進入地圖。</p>
+      <h3>{{ verificationState === 'failed' ? '暫時無法進入地圖' : '正在準備地圖' }}</h3>
+      <p class="boot-description">載入地圖與附近門市，完成後會自動進入。</p>
       <ol class="boot-checks">
         <li [class.complete]="verificationState === 'verified'">
           <progress *ngIf="verificationState === 'checking'" class="boot-spinner" aria-label="正在驗證瀏覽器"></progress>

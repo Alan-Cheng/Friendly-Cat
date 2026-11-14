@@ -61,7 +61,7 @@
                       </span>
                     </div>
                     <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ getFoodDetail711(item).content | emptyInfo}}</p>
-                    <p class="text-xs sm:text-sm text-gray-500 mb-1">卡路里(kcal): {{ getFoodDetail711(item).kcal | emptyInfo}}</p>
+                    <p class="text-xs sm:text-sm text-gray-500 mb-1" *ngIf="hasCalories(getFoodDetail711(item).kcal)">卡路里(kcal): {{ getFoodDetail711(item).kcal }}</p>
                   </div>
                   <!-- 商品沒資訊的話 -->
                   <div *ngIf="getFoodDetail711(item).image === 'assets/此商品暫無圖片.png'">

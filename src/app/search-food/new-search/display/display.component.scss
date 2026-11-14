@@ -1,5 +1,6 @@
 :host { display: block; color: #24494b; }
-.product-loading { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 150px; color: #6c8581; font-size: 13px; }
+.product-loading { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 120px; background: #fff; color: #68716b; font-size: 13px; }
+.product-loading mat-progress-spinner { --mdc-circular-progress-active-indicator-color: var(--cat-primary); }
 .product-group { padding: 25px 0 0; }
 .product-group h4 { margin: 0 0 4px; color: #5e7b72; font-size: 11px; font-weight: 500; letter-spacing: .05em; }
 .product-list { list-style: none; padding: 0; margin: 0; }

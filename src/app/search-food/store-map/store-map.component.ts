@@ -324,7 +324,10 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       button.setAttribute('aria-pressed', String(this.selected?.id === store.id));
       const label = document.createElement('span'); label.className = 'shop-label';
       const roof = document.createElement('span'); roof.className = 'shop-roof';
-      const brandName = document.createElement('span'); brandName.className = 'shop-brand-name'; brandName.textContent = store.brand === '全家' ? '全家' : '7-11';
+      const storeName = document.createElement('span');
+      storeName.className = 'shop-store-name';
+      storeName.textContent = store.name.replace(store.brand === '全家' ? /^(?:全家便利商店|全家|FamilyMart)\s*/i : /^(?:7-ELEVEN|7-11|711)\s*/i, '').trim() || store.name;
+      button.title = store.name;
       const divider = document.createElement('span'); divider.className = 'shop-brand-divider'; divider.setAttribute('aria-hidden', 'true');
       const logo = document.createElement('img');
       logo.className = 'shop-brand-icon';
@@ -333,7 +336,7 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       logo.width = logo.height = 22;
       logo.draggable = false;
       logo.addEventListener('error', () => logo.remove(), { once: true });
-      roof.append(logo, divider, brandName);
+      roof.append(logo, divider, storeName);
       label.append(roof);
       {
         const badge = document.createElement('span'); badge.className = 'shop-stock-count';

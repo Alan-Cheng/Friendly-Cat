@@ -32,6 +32,10 @@ export class DisplayComponent implements OnChanges, OnInit {
 
   ngOnInit() {}
 
+  hasCalories(value: string | null | undefined): boolean {
+    return value != null && value.trim() !== '' && Number.isFinite(Number(value));
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     // 若組件輸入有變化時，重新載入子商品列表
     if (changes['category'] || changes['store']) {
