@@ -1,21 +1,32 @@
-<section class="auth-shell">
-  <header class="auth-header"><div><span class="auth-eyebrow">FRIENDLY CAT / YOUR ACCOUNT</span><h2 mat-dialog-title>{{ isRegister ? '建立你的帳號' : '歡迎回到街區' }}</h2></div><button type="button" class="auth-close" (click)="close(false)" aria-label="關閉登入視窗">×</button></header>
-  <mat-dialog-content class="auth-body">
-    <p class="auth-intro">{{ isRegister ? '把喜歡的門市，留在自己的街區手帳裡。' : '登入後，收藏常去的門市，找到今天的友善時光。' }}</p>
+<section class="auth-shell" [class.is-register]="isRegister">
+  <header class="auth-header">
+    <h2 mat-dialog-title>{{ isRegister ? '建立友善黑貓帳號' : '登入友善黑貓' }}</h2>
+    <button type="button" class="auth-close" (click)="close(false)" aria-label="關閉登入視窗"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+  </header>
+  <div class="auth-body">
+    <p class="auth-intro">{{ isRegister ? '建立帳號，收藏你常去的門市。' : '登入帳號，查看與管理收藏的門市。' }}</p>
     <form [formGroup]="authForm" (ngSubmit)="submitForm()">
-      <div class="auth-field"><label for="email">電子郵件</label><input id="email" name="email" spellcheck="false" type="email" formControlName="email" autocomplete="username" inputmode="email" placeholder="you@example.com" required><small *ngIf="f['email'].errors?.['required'] && f['email'].touched">請輸入電子郵件</small><small *ngIf="f['email'].errors?.['email'] && f['email'].touched">請輸入有效的電子郵件</small></div>
-      <div class="auth-field"><label for="password">密碼</label><input id="password" name="password" type="password" formControlName="password" [attr.autocomplete]="isRegister ? 'new-password' : 'current-password'" placeholder="至少 6 個字元" required><small *ngIf="f['password'].errors?.['required'] && f['password'].touched">請輸入密碼</small><small *ngIf="f['password'].errors?.['minlength'] && f['password'].touched">密碼至少需要 6 個字元</small></div>
+      <div class="auth-field">
+        <label for="email">電子郵件</label>
+        <input id="email" name="email" spellcheck="false" type="email" formControlName="email" autocomplete="username" inputmode="email" placeholder="輸入電子郵件地址" required [attr.aria-invalid]="f['email'].touched && f['email'].invalid" aria-describedby="email-error">
+        <small id="email-error" *ngIf="f['email'].invalid && f['email'].touched">{{ f['email'].errors?.['required'] ? '請輸入電子郵件' : '請輸入有效的電子郵件' }}</small>
+      </div>
+      <div class="auth-field">
+        <div class="auth-label-row"><label for="password">密碼</label><button type="button" class="auth-forgot" *ngIf="!isRegister" (click)="forgotPassword()">忘記密碼？</button></div>
+        <input id="password" name="password" type="password" formControlName="password" [attr.autocomplete]="isRegister ? 'new-password' : 'current-password'" [placeholder]="isRegister ? '至少 6 個字元' : '輸入你的密碼'" required [attr.aria-invalid]="f['password'].touched && f['password'].invalid" [attr.aria-describedby]="isRegister ? 'password-hint password-error' : 'password-error'">
+        <span id="password-hint" class="auth-hint" *ngIf="isRegister">密碼至少需要 6 個字元。</span>
+        <small id="password-error" *ngIf="f['password'].invalid && f['password'].touched">{{ f['password'].errors?.['required'] ? '請輸入密碼' : '密碼至少需要 6 個字元' }}</small>
+      </div>
       <ng-container *ngIf="isRegister">
-        <div class="auth-field"><label for="rePassword">確認密碼</label><input id="rePassword" name="rePassword" type="password" formControlName="rePassword" autocomplete="new-password" placeholder="再次輸入密碼" required><small *ngIf="f['rePassword'].errors?.['required'] && f['rePassword'].touched">請再次輸入密碼</small><small *ngIf="authForm.errors?.['passwordsMismatch'] && f['rePassword'].touched">兩次輸入的密碼不一致</small></div>
-        <div class="auth-field"><label for="displayName">怎麼稱呼你</label><input id="displayName" type="text" formControlName="displayName" autocomplete="nickname" placeholder="你的暱稱"><small *ngIf="authForm.errors?.['displayNameRequired'] && f['displayName'].touched">請輸入暱稱</small></div>
+        <div class="auth-field"><label for="rePassword">確認密碼</label><input id="rePassword" name="rePassword" type="password" formControlName="rePassword" autocomplete="new-password" placeholder="再次輸入密碼" required [attr.aria-invalid]="f['rePassword'].touched && (f['rePassword'].invalid || authForm.hasError('passwordsMismatch'))" aria-describedby="confirmation-error"><small id="confirmation-error" *ngIf="f['rePassword'].touched && (f['rePassword'].invalid || authForm.hasError('passwordsMismatch'))">{{ f['rePassword'].errors?.['required'] ? '請再次輸入密碼' : '兩次輸入的密碼不一致' }}</small></div>
+        <div class="auth-field"><label for="displayName">暱稱</label><input id="displayName" name="displayName" type="text" formControlName="displayName" autocomplete="nickname" placeholder="你的暱稱" required [attr.aria-invalid]="f['displayName'].touched && authForm.hasError('displayNameRequired')" aria-describedby="nickname-error"><small id="nickname-error" *ngIf="authForm.errors?.['displayNameRequired'] && f['displayName'].touched">請輸入暱稱</small></div>
       </ng-container>
       <p class="auth-error" *ngIf="errorMessage" role="alert">{{ errorMessage }}</p>
-      <button type="submit" class="auth-primary">{{ isRegister ? '建立帳號' : '登入帳號' }} <span aria-hidden="true">↗</span></button>
+      <button type="submit" class="auth-primary">{{ isRegister ? '建立帳號' : '登入' }}</button>
       <button type="button" class="auth-resend" *ngIf="!isRegister && errorMessage.includes('信箱尚未驗證')" (click)="resendVerificationEmail()">重新寄送驗證信</button>
     </form>
-    <button type="button" class="auth-forgot" *ngIf="!isRegister" (click)="forgotPassword()">忘記密碼？</button>
-    <div class="auth-divider"><span>或</span></div>
-    <button type="button" class="auth-google" (click)="loginWithGoogle()"><img src="assets/google.png" alt="" width="20" height="20">使用 Google 登入</button>
-    <p class="auth-switch">{{ isRegister ? '已經有帳號？' : '第一次來到街區？' }} <button type="button" (click)="toggleRegister()">{{ isRegister ? '回到登入' : '建立帳號' }}</button></p>
-  </mat-dialog-content>
+    <div class="auth-divider"><span>或使用其他方式</span></div>
+    <button type="button" class="auth-google" (click)="loginWithGoogle()"><img src="assets/google.png" alt="" width="18" height="18">使用 Google 登入</button>
+    <p class="auth-switch">{{ isRegister ? '已經有帳號？' : '還沒有帳號？' }} <button type="button" (click)="toggleRegister()">{{ isRegister ? '登入' : '建立帳號' }}</button></p>
+  </div>
 </section>

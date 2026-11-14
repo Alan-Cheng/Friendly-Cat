@@ -21,6 +21,7 @@ export class LoginPageComponent {
     public dialog: MatDialog,
   ) {
     this.dialogRef.addPanelClass('world-auth-panel');
+    this.dialogRef.updateSize('min(25rem, calc(100dvw - 2rem))', 'auto');
     // 初始化表單
     this.authForm = this.fb.group(
       {
