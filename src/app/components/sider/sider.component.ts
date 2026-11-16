@@ -91,7 +91,7 @@ export class SiderComponent {
     if (!drawer.open) drawer.showModal();
     // The view changes inside an already open dialog, so announce its new context.
     requestAnimationFrame(() => {
-      if (drawer.open && this.detailMode) drawer.querySelector<HTMLElement>('.place-back')?.focus();
+      if (drawer.open && this.detailMode) drawer.querySelector<HTMLElement>('#product-window-title')?.focus({ preventScroll: true });
     });
   }
 
