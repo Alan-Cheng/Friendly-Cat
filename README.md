@@ -63,19 +63,25 @@
 
 ## 技術工具
 
+套件版本範圍依 `package.json`，執行環境依 GitHub Actions 設定。
 
-
->| 技術  | 版本 |
->| ------------- |:-------------:|
->| Angular       | ^14.2.0      |
->| Node.js       | 18.20.4      |
->| TypeScript    | ~4.7.2       |
->| Tailwindcss   | ^2.2.19      |
->| Python        | 3.12.4       |
->| Firebase Authentication      | --           |
->| Firebase Storage        | --       |
->| Cloudflare Worker        | --       |
->| Chatbot(OpenRouter-DeepSeek V3)      | --       |
+| 技術 | 版本 | 用途 |
+| --- | --- | --- |
+| Angular | ^18.2.13 | 前端框架 |
+| Angular Material / CDK | ^18.2.14 | 介面元件 |
+| TypeScript | ^5.5.0 | 前端開發 |
+| Tailwind CSS | ^2.2.19 | 樣式工具 |
+| RxJS | ~7.8.0 | 非同步資料流 |
+| MapLibre GL JS | ^5.24.1 | 互動地圖 |
+| Three.js | ^0.170.0 | 3D 店家與黑貓模型 |
+| OpenFreeMap | — | 地圖底圖 |
+| Driver.js | ^1.12.1 | 操作導覽 |
+| Fuse.js / pinyin-pro | ^7.0.0 / ^3.27.0 | 模糊與同音搜尋 |
+| Firebase / AngularFire | ^11.1.0 / ^18.0.1 | 會員驗證、Firestore 收藏與 Realtime Database |
+| Cloudflare Workers / KV / Turnstile | — | 7-ELEVEN API 代理與瀏覽器驗證 |
+| Node.js | 18（CI） | 前端建置 |
+| Python | 3.12（CI） | 門市與商品資料爬蟲 |
+| GitHub Actions / GitHub Pages / Cloudflare Pages | — | 自動更新、建置與部署 |
 
 ---
 
