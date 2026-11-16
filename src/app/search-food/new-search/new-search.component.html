@@ -7,7 +7,7 @@
   <header class="place-header">
     <div class="place-heading">
       <img *ngIf="mapSelectedStore" class="place-brand-logo" [src]="mapSelectedStore.brand === '7-11' ? sevenElevenIconUrl : familyMartIconUrl" [alt]="mapSelectedStore.brand" width="40" height="40">
-      <div class="place-title"><p class="place-eyebrow">{{ mapSelectedStore ? '便利商店 · ' + (mapSelectedStore.brand === '7-11' ? '7-ELEVEN' : '全家 FamilyMart') : '附近門市' }}</p><h2 id="product-window-title" tabindex="-1">{{ mapSelectedStore ? mapSelectedStore.name : '附近的友善食光' }}</h2></div>
+      <div class="place-title"><h2 id="product-window-title">{{ mapSelectedStore ? mapSelectedStore.name : '附近的友善食光' }}</h2></div>
     </div>
 
   </header>

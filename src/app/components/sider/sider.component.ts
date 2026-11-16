@@ -89,10 +89,6 @@ export class SiderComponent {
     this.sidebarOpen = true;
     const drawer = this.sidebarWindow.nativeElement;
     if (!drawer.open) drawer.showModal();
-    // The view changes inside an already open dialog, so announce its new context.
-    requestAnimationFrame(() => {
-      if (drawer.open && this.detailMode) drawer.querySelector<HTMLElement>('#product-window-title')?.focus({ preventScroll: true });
-    });
   }
 
   showMenu(): void {
