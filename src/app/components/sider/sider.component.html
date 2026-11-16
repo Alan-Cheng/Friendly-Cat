@@ -1,9 +1,9 @@
 <mat-toolbar class="toolbar" [class.world-toolbar]="worldMode">
-  <button mat-icon-button (click)="toggleSidebar()" aria-label="開啟會員與收藏選單" [attr.aria-expanded]="sidebarOpen" aria-controls="world-sidebar"><mat-icon>menu</mat-icon></button>
+  <button mat-icon-button (click)="toggleSidebar()" [attr.aria-label]="sidebarOpen && !detailMode ? '收合會員與收藏選單' : '展開會員與收藏選單'" [attr.aria-expanded]="sidebarOpen && !detailMode" aria-controls="world-sidebar"><mat-icon>menu</mat-icon></button>
   <span class="text-with-shadow">友善黑貓 Friendly Cat</span>
 </mat-toolbar>
-<dialog #sidebarWindow id="world-sidebar" class="sidebar" [class.is-closing]="sidebarClosing" [class.tour-sidebar]="tourMode" (cancel)="onSidebarCancel($event)" [attr.aria-labelledby]="detailMode ? 'product-window-title' : 'sidebar-title'" closedby="any" (close)="onPanelClosed()">
-  <div class="sidebar-menu" [hidden]="detailMode">
+<dialog #sidebarWindow id="world-sidebar" class="sidebar" [class.is-closing]="sidebarClosing" [class.tour-sidebar]="tourMode" (cancel)="onSidebarCancel($event)" aria-labelledby="sidebar-title" closedby="any" (close)="onPanelClosed(sidebarWindow)" (pointerdown)="onPanelPointerDown($event)" (click)="onPanelClick($event)" (touchstart)="onPanelTouchStart($event, false)" (touchend)="onPanelTouchEnd($event, false)" (touchcancel)="cancelPanelTouch()">
+  <div class="sidebar-menu">
   <header class="sidebar-header"><div><h2 id="sidebar-title" tabindex="-1" autofocus>FRIENDLY CAT</h2></div><button type="button" (click)="closeSidebar()" class="close-btn" aria-label="關閉會員與收藏選單">×</button></header>
   <div class="sidebar-body">
     <p class="sidebar-intro">{{ user ? user.displayName + '，今天想找什麼？' : '登入後，把喜歡的商店收藏起來。' }}</p>
@@ -31,5 +31,8 @@
     <button type="button" class="login-btn" (click)="openAccount()">{{ user ? '登出帳號' : '登入／建立帳號' }}</button>
   </footer>
   </div>
-  <div class="sidebar-details" [hidden]="!detailMode"><ng-content select="[storeDetail]"></ng-content></div>
+</dialog>
+<dialog #detailsWindow id="store-details" class="sidebar store-details" [class.is-closing]="sidebarClosing" aria-labelledby="product-window-title" closedby="any" (cancel)="onSidebarCancel($event)" (close)="onPanelClosed(detailsWindow)" (pointerdown)="onPanelPointerDown($event)" (click)="onPanelClick($event)" (touchstart)="onPanelTouchStart($event, true)" (touchend)="onPanelTouchEnd($event, true)" (touchcancel)="cancelPanelTouch()">
+  <div class="sheet-handle" aria-hidden="true"></div>
+  <div class="sidebar-details"><ng-content select="[storeDetail]"></ng-content></div>
 </dialog>

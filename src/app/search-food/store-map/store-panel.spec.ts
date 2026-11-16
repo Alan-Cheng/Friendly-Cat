@@ -43,7 +43,7 @@ describe('store detail panel', () => {
     component.mapSelectedStore = { id: 'fm-01', name: '全家台北店', brand: '全家', address: '台北市信義路', phone: '', latitude: 25.033, longitude: 121.5654 };
     fixture.detectChanges();
     component.openProductWindow();
-    return { fixture, component, panel: component.sidebar!.sidebarWindow.nativeElement };
+    return { fixture, component, panel: component.sidebar!.detailsWindow.nativeElement };
   }
 
   it('retains store information and navigation while inventory is loading, empty or unavailable', () => {
@@ -83,7 +83,7 @@ describe('store detail panel', () => {
     expect(panel.querySelector('.product-copy h5')!.textContent).toBe('鮭魚飯糰');
     expect(panel.querySelector('.product-stock')!.textContent).toContain('3');
   });
-  it('returns to the menu in the same open panel and reopens details for another favorite', () => {
+  it('returns to the separate menu panel and reopens details for another favorite', () => {
     const { fixture, component, panel } = createPanel();
     const query = spyOn(component, 'onMapStoreQuery').and.callFake(store => {
       component.mapSelectedStore = store;
@@ -97,15 +97,16 @@ describe('store detail panel', () => {
     component.user = { displayName: '測試使用者' };
     panel.querySelector<HTMLButtonElement>('.place-back')!.click();
     fixture.detectChanges();
-    expect(panel.open).toBeTrue();
+    expect(panel.open).toBeFalse();
+    expect(component.sidebar!.sidebarWindow.nativeElement.open).toBeTrue();
     expect(component.sidebar!.detailMode).toBeFalse();
-    panel.querySelector<HTMLButtonElement>('.store-item')!.click();
+    component.sidebar!.sidebarWindow.nativeElement.querySelector<HTMLButtonElement>('.store-item')!.click();
     fixture.detectChanges();
     expect(query).toHaveBeenCalledOnceWith(second);
     expect(focusCoordinates).toHaveBeenCalledOnceWith(second.longitude, second.latitude);
     expect(panel.querySelector('#product-window-title')!.textContent).toContain('7-ELEVEN 信義門市');
     expect(component.sidebar!.detailMode).toBeTrue();
-    expect(fixture.nativeElement.querySelectorAll('dialog').length).toBe(1);
+    expect(fixture.nativeElement.querySelectorAll('dialog').length).toBe(2);
   });
 
 });

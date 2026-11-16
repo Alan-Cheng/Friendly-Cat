@@ -190,3 +190,28 @@ li span, li small { display: block; } li small { color: #687568; margin-top: 4px
 .locate svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 /* Keep location available while the map controls are initializing or unavailable. */
 .map-frame > .locate { position: fixed; right: max(18px, calc(env(safe-area-inset-right) + 6px)); bottom: max(112px, calc(env(safe-area-inset-bottom) + 96px)); border-radius: 0 0 10px 10px; background: #fff; }
+
+.directory-trigger { position: absolute; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 12px 18px; text-align: left; color: #3c4043; font-size: 14px; font-weight: 600; }
+.directory-trigger small { color: #70757a; font-size: 12px; font-weight: 400; }
+.directory-trigger > span { margin-left: auto; }
+.directory-panel, .directory-panel[open] { position: fixed; inset: auto auto max(36px, calc(env(safe-area-inset-bottom) + 24px)) 12px; margin: 0; padding: 0; box-sizing: border-box; color: #3c4043; max-height: calc(100dvh - 100px); }
+.directory-panel[open] { display: flex; flex-direction: column; }
+.directory-panel::backdrop { background: #2021241a; }
+.directory-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; flex-shrink: 0; }
+.directory-header h2 { font-size: 16px; margin: 0; }
+.directory-header small { color: #70757a; font-size: 12px; font-weight: 400; }
+.directory-header button { width: 44px; background: transparent; color: inherit; font-size: 26px; }
+.directory-panel > p { padding: 12px 18px; }
+.directory-panel ul { min-height: 0; overscroll-behavior: contain; }
+.directory-handle { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .directory-panel[open] { animation: directory-enter .28s ease-out; }
+  @keyframes directory-enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+}
+@media (max-width: 600px) {
+  .directory-panel, .directory-panel[open] { inset: auto 0 0; width: 100%; height: 88dvh; max-height: calc(100dvh - env(safe-area-inset-top) - 12px); border: 0; border-radius: 24px 24px 0 0; }
+  .directory-header button { display: none; }
+  .directory-panel ul { flex: 1; max-height: none; padding-bottom: env(safe-area-inset-bottom); }
+  .directory-handle { display: block; flex: 0 0 5px; width: 36px; margin: 10px auto 4px; border-radius: 3px; background: #dadce0; }
+  @media (prefers-reduced-motion: no-preference) { .directory-panel[open] { animation-name: directory-enter-mobile; } @keyframes directory-enter-mobile { from { transform: translateY(100%); } to { transform: translateY(0); } } }
+}

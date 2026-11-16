@@ -18,6 +18,7 @@ import { getDistance } from 'geolib';
 })
 export class SiderComponent {
   @ViewChild('sidebarWindow', { static: true }) sidebarWindow!: ElementRef<HTMLDialogElement>;
+  @ViewChild('detailsWindow', { static: true }) detailsWindow!: ElementRef<HTMLDialogElement>;
   @Output() tutorialRequested = new EventEmitter<void>();
   @Input() worldMode = false;
   @Input() user: any;
@@ -85,13 +86,15 @@ export class SiderComponent {
   }
 
   openStoreDetails(): void {
+    this.sidebarWindow.nativeElement.close();
     this.detailMode = true;
     this.sidebarOpen = true;
-    const drawer = this.sidebarWindow.nativeElement;
+    const drawer = this.detailsWindow.nativeElement;
     if (!drawer.open) drawer.showModal();
   }
 
   showMenu(): void {
+    this.detailsWindow.nativeElement.close();
     this.detailMode = false;
     this.sidebarOpen = true;
     const drawer = this.sidebarWindow.nativeElement;
@@ -101,21 +104,72 @@ export class SiderComponent {
     });
   }
 
-  onPanelClosed(): void { this.sidebarOpen = false; this.detailMode = false; }
+  onPanelClosed(panel: HTMLDialogElement): void {
+    // A close event can arrive after the other panel has already opened.
+    if (panel.open) return;
+    this.detailMode = this.detailsWindow.nativeElement.open;
+    this.sidebarOpen = this.detailMode || this.sidebarWindow.nativeElement.open;
+  }
+
+  private outsidePointer = false;
+  private touchStart?: { x: number; y: number; id: number };
+
+  private isOutside(event: MouseEvent): boolean {
+    const rect = (event.currentTarget as HTMLDialogElement).getBoundingClientRect();
+    return event.clientX < rect.left || event.clientX > rect.right
+      || event.clientY < rect.top || event.clientY > rect.bottom;
+  }
+
+  onPanelPointerDown(event: PointerEvent): void { this.outsidePointer = this.isOutside(event); }
+  // Coordinate fallback also covers browsers without dialog.closedBy (Safari).
+  onPanelClick(event: MouseEvent): void {
+    if (this.outsidePointer && this.isOutside(event)) void this.closeSidebar();
+    this.outsidePointer = false;
+  }
+
+  cancelPanelTouch(): void { this.touchStart = undefined; }
+
+  onPanelTouchStart(event: TouchEvent, details: boolean): void {
+    this.touchStart = undefined;
+    if (event.touches.length !== 1 || !window.matchMedia('(max-width: 600px)').matches) return;
+    const target = event.target as HTMLElement;
+    if (target === event.currentTarget || target.closest('input, textarea, select')) return;
+    // A downward swipe dismisses only when the touched scroll area is at its top.
+    if (details) {
+      for (let node: HTMLElement | null = target; node && node !== event.currentTarget; node = node.parentElement) {
+        if (node.scrollTop > 0) return;
+      }
+    }
+    const touch = event.touches[0];
+    this.touchStart = { x: touch.clientX, y: touch.clientY, id: touch.identifier };
+  }
+
+  onPanelTouchEnd(event: TouchEvent, details: boolean): void {
+    const start = this.touchStart;
+    this.touchStart = undefined;
+    if (!start || event.touches.length) return;
+    const touch = Array.from(event.changedTouches).find(item => item.identifier === start.id);
+    if (!touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (details ? dy > 72 && dy > Math.abs(dx) * 1.5 : dx < -72 && -dx > Math.abs(dy) * 1.5) {
+      void this.closeSidebar();
+    }
+  }
 
   toggleSidebar(): void {
-    if (this.sidebarWindow.nativeElement.open) void this.closeSidebar();
+    if (this.sidebarOpen) void this.closeSidebar();
     else this.showMenu();
   }
 
   // 關閉側邊欄
   async closeSidebar(): Promise<void> {
-    const drawer = this.sidebarWindow.nativeElement;
+    const drawer = this.detailMode ? this.detailsWindow.nativeElement : this.sidebarWindow.nativeElement;
     if (!drawer.open || this.sidebarClosing) return;
     this.sidebarClosing = true;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const currentTransform = getComputedStyle(drawer).transform;
-    const exitTransform = window.matchMedia('(max-width: 600px)').matches ? 'translateY(100%)' : 'translateX(-100%)';
+    const exitTransform = this.detailMode && window.matchMedia('(max-width: 600px)').matches ? 'translateY(100%)' : 'translateX(-100%)';
     drawer.getAnimations().forEach(animation => animation.cancel());
     const animation = drawer.animate(
       reducedMotion ? [{ opacity: 1 }, { opacity: 0 }]

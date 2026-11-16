@@ -180,3 +180,8 @@ progress.boot-spinner.inventory-spinner { margin: 0 8px 16px; }
 .map-search-dropdown li button:active, .map-search-row button:active, .map-search-heading button:active { background: var(--cat-pressed); }
 
 .map-search-dropdown { border-radius: 0 0 16px 16px; overflow: hidden; }
+
+@media (max-width: 600px) {
+  .place-panel-nav { display: none; }
+  .place-header { padding-top: 12px; }
+}

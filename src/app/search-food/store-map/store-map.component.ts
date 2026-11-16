@@ -30,6 +30,56 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('canvas', { static: true }) canvas!: ElementRef<HTMLDivElement>;
   @ViewChild('locationButton', { static: true }) locationButton!: ElementRef<HTMLButtonElement>;
   @ViewChild('cardTitle') cardTitle?: ElementRef<HTMLElement>;
+  @ViewChild('directoryWindow', { static: true }) directoryWindow!: ElementRef<HTMLDialogElement>;
+  directoryOpen = false;
+  directoryTouch?: { x: number; y: number };
+  private directoryClosing = false;
+
+  openDirectory(): void {
+    this.directoryWindow.nativeElement.showModal();
+    this.directoryOpen = true;
+  }
+
+  async closeDirectory(): Promise<void> {
+    const panel = this.directoryWindow.nativeElement;
+    if (!panel.open || this.directoryClosing) return;
+    this.directoryClosing = true;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mobile = window.matchMedia('(max-width: 600px)').matches;
+    const animation = panel.animate(reduced ? [{ opacity: 1 }, { opacity: 0 }]
+      : [{ transform: getComputedStyle(panel).transform }, { transform: mobile ? 'translateY(100%)' : 'translateY(16px)', opacity: 0 }],
+      { duration: reduced ? 100 : 200, fill: 'forwards', easing: 'ease-in' });
+    try { await animation.finished; } catch { /* Complete dismissal after interrupted animation. */ }
+    finally { panel.close(); animation.cancel(); this.directoryOpen = false; this.directoryClosing = false; }
+  }
+
+  onDirectoryCancel(event: Event): void { event.preventDefault(); void this.closeDirectory(); }
+  onDirectoryClick(event: MouseEvent): void {
+    if (event.target !== event.currentTarget) return;
+    const rect = this.directoryWindow.nativeElement.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) void this.closeDirectory();
+  }
+  onDirectoryTouchStart(event: TouchEvent): void {
+    this.directoryTouch = undefined;
+    if (event.touches.length !== 1 || !window.matchMedia('(max-width: 600px)').matches || event.target === event.currentTarget) return;
+    for (let node = event.target as HTMLElement | null; node && node !== event.currentTarget; node = node.parentElement) {
+      if (node.scrollTop > 0) return;
+    }
+    this.directoryTouch = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+  }
+  onDirectoryTouchEnd(event: TouchEvent): void {
+    const start = this.directoryTouch;
+    this.directoryTouch = undefined;
+    if (!start || event.touches.length || event.changedTouches.length !== 1) return;
+    const dx = event.changedTouches[0].clientX - start.x;
+    const dy = event.changedTouches[0].clientY - start.y;
+    if (dy > 72 && dy > Math.abs(dx) * 1.5) void this.closeDirectory();
+  }
+  async selectDirectoryStore(store: MapStore): Promise<void> {
+    await this.closeDirectory();
+    this.select(store);
+  }
+
   @Input() familyStores: any[] = [];
   @Input() familyStock: any[] = [];
   @Input() sevenStores: any[] = [];

@@ -1,4 +1,4 @@
-import { SimpleChange, NgZone } from '@angular/core';
+import { SimpleChange, NgZone, ElementRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { StoreMapComponent, MapStore } from './store-map.component';
 
@@ -16,6 +16,36 @@ describe('StoreMapComponent data and location', () => {
     else Reflect.deleteProperty(DeviceOrientationEvent, 'requestPermission');
   });
   function update() { component.ngOnChanges({ familyStores: new SimpleChange([], component.familyStores, true), sevenStores: new SimpleChange([], component.sevenStores, true) }); }
+
+  it('closes the directory before emitting a selected store', async () => {
+    const panel = document.createElement('dialog');
+    document.body.appendChild(panel);
+    component.directoryWindow = new ElementRef(panel);
+    component.familyStores = [family]; update();
+    try {
+      component.openDirectory();
+      expect(panel.matches(':modal')).toBeTrue();
+      const emit = spyOn(component.queryStore, 'emit').and.callFake(() => expect(panel.open).toBeFalse());
+      await component.selectDirectoryStore(component.stores[0]);
+      expect(emit).toHaveBeenCalledWith(component.stores[0]);
+    } finally { panel.remove(); }
+  });
+
+  it('dismisses a mobile directory swipe only at the top of its list', () => {
+    spyOn(window, 'matchMedia').and.returnValue({ matches: true } as MediaQueryList);
+    const close = spyOn(component, 'closeDirectory').and.resolveTo();
+    const panel = document.createElement('dialog');
+    const list = document.createElement('ul'); panel.appendChild(list);
+    const swipe = () => {
+      component.onDirectoryTouchStart({ target: list, currentTarget: panel, touches: [{ clientX: 100, clientY: 100 }] } as unknown as TouchEvent);
+      component.onDirectoryTouchEnd({ touches: [], changedTouches: [{ clientX: 100, clientY: 220 }] } as unknown as TouchEvent);
+    };
+    swipe();
+    expect(close).toHaveBeenCalledTimes(1);
+    Object.defineProperty(list, 'scrollTop', { value: 50 });
+    swipe();
+    expect(close).toHaveBeenCalledTimes(1);
+  });
 
   it('normalizes each brand using its actual directory schema', () => {
     component.familyStores = [family];

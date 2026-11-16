@@ -46,13 +46,15 @@
     </article>
   </div>
   <div class="map-status"><span class="status-dot" aria-hidden="true"></span><p role="status">{{ overviewMode ? '放大地圖，即可查看附近店家與庫存。' : status }} {{ headingStatus }}</p><span class="store-count">{{ overviewMode ? '區域總覽' : visibleStores.length + ' 間店家' }}{{ visibleStores.length === 60 ? '（顯示最近 60 間）' : '' }}</span></div>
-  <details class="store-directory" [open]="failed">
-    <summary><span>店家清單 <small>{{ overviewMode ? '放大查看' : visibleStores.length + ' 間門市' }}</small></span></summary>
+  <button type="button" class="store-directory directory-trigger" (click)="openDirectory()" aria-haspopup="dialog" aria-controls="store-directory-panel" [attr.aria-expanded]="directoryOpen">店家清單 <small>{{ overviewMode ? '放大查看' : visibleStores.length + ' 間門市' }}</small><span aria-hidden="true">⌃</span></button>
+  <dialog #directoryWindow id="store-directory-panel" class="store-directory directory-panel" aria-labelledby="directory-title" closedby="any" (cancel)="onDirectoryCancel($event)" (click)="onDirectoryClick($event)" (close)="directoryOpen = false" (touchstart)="onDirectoryTouchStart($event)" (touchend)="onDirectoryTouchEnd($event)" (touchcancel)="directoryTouch = undefined">
+    <div class="directory-handle" aria-hidden="true"></div>
+    <header class="directory-header"><h2 id="directory-title">店家清單 <small>{{ visibleStores.length }} 間門市</small></h2><button type="button" (click)="closeDirectory()" aria-label="關閉店家清單" autofocus>×</button></header>
     <p *ngIf="dataError">{{ dataError }}</p>
     <p *ngIf="!visibleStores.length">{{ overviewMode ? '目前為區域總覽，請放大地圖查看店家。' : '這個範圍尚無符合的店家，請移動或縮小地圖。' }}</p>
     <ul>
       <li *ngFor="let store of visibleStores">
-        <button type="button" (mouseenter)="highlightStore(store.id)" (mouseleave)="highlightStore()" (focus)="highlightStore(store.id)" (blur)="highlightStore()" [class.is-highlighted]="highlightedId === store.id" (click)="select(store)">
+        <button type="button" (mouseenter)="highlightStore(store.id)" (mouseleave)="highlightStore()" (focus)="highlightStore(store.id)" (blur)="highlightStore()" [class.is-highlighted]="highlightedId === store.id" (click)="selectDirectoryStore(store)">
           <span class="directory-name-row">
             <img class="directory-brand-logo" [src]="store.brand === '全家' ? familyMartIconUrl : sevenElevenIconUrl" alt="" width="24" height="24" decoding="async">
             <span class="directory-store-name">{{ store.name }}</span>
@@ -65,5 +67,5 @@
         </button>
       </li>
     </ul>
-  </details>
+  </dialog>
 </section>
