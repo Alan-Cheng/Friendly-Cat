@@ -35,10 +35,12 @@ export class SiderComponent {
   sidebarOpen = false;
   sidebarClosing = false;
   tourMode = false;
+  detailMode = false;
 
   openForTour(): void {
     const drawer = this.sidebarWindow.nativeElement;
     if (drawer.open) return;
+    this.detailMode = false;
     this.tourMode = true;
     this.sidebarOpen = true;
     drawer.classList.add('tour-sidebar');
@@ -82,10 +84,32 @@ export class SiderComponent {
     });
   }
 
-  // 切換側邊欄
-  toggleSidebar() {
-    if (this.sidebarWindow.nativeElement.open) this.closeSidebar();
-    else { this.sidebarOpen = true; this.sidebarWindow.nativeElement.showModal(); }
+  openStoreDetails(): void {
+    this.detailMode = true;
+    this.sidebarOpen = true;
+    const drawer = this.sidebarWindow.nativeElement;
+    if (!drawer.open) drawer.showModal();
+    // The view changes inside an already open dialog, so announce its new context.
+    requestAnimationFrame(() => {
+      if (drawer.open && this.detailMode) drawer.querySelector<HTMLElement>('.place-back')?.focus();
+    });
+  }
+
+  showMenu(): void {
+    this.detailMode = false;
+    this.sidebarOpen = true;
+    const drawer = this.sidebarWindow.nativeElement;
+    if (!drawer.open) drawer.showModal();
+    requestAnimationFrame(() => {
+      if (drawer.open && !this.detailMode) drawer.querySelector<HTMLElement>('#sidebar-title')?.focus();
+    });
+  }
+
+  onPanelClosed(): void { this.sidebarOpen = false; this.detailMode = false; }
+
+  toggleSidebar(): void {
+    if (this.sidebarWindow.nativeElement.open) void this.closeSidebar();
+    else this.showMenu();
   }
 
   // 關閉側邊欄
@@ -95,10 +119,11 @@ export class SiderComponent {
     this.sidebarClosing = true;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const currentTransform = getComputedStyle(drawer).transform;
+    const exitTransform = window.matchMedia('(max-width: 600px)').matches ? 'translateY(100%)' : 'translateX(-100%)';
     drawer.getAnimations().forEach(animation => animation.cancel());
     const animation = drawer.animate(
       reducedMotion ? [{ opacity: 1 }, { opacity: 0 }]
-        : [{ transform: currentTransform }, { transform: 'translateX(-100%)' }],
+        : [{ transform: currentTransform }, { transform: exitTransform }],
       { duration: reducedMotion ? 100 : 200, easing: 'cubic-bezier(.4, 0, 1, 1)', fill: 'forwards' }
     );
     try { await animation.finished; } catch { /* Finish closing if the animation is interrupted. */ }
@@ -114,7 +139,19 @@ export class SiderComponent {
   async openTutorial(): Promise<void> { await this.closeSidebar(); this.tutorialRequested.emit(); }
   async openAccount(): Promise<void> { await this.closeSidebar(); this.loginOrlogout(); }
   async openFoodResult(result: any): Promise<void> { await this.closeSidebar(); this.onFoodResultClick(result); }
-  async openFavoriteStore(store: any): Promise<void> { await this.closeSidebar(); this.onSearchStore(store); }
+  isSevenElevenFavorite(store: any): boolean {
+    if (store.label) return store.label === '7-11';
+    return !!store.store711Name || /^(?:7-ELEVEN|7-11|711)/i.test(store.storeName || '');
+  }
+
+  favoriteStoreName(store: any): string {
+    return (store.storeName || '').replace(/^(?:全家(?:便利商店)?|FamilyMart|7-ELEVEN|7-11|711)\s*/i, '').trim();
+  }
+
+  async openFavoriteStore(store: any): Promise<void> {
+    if (!this.worldMode) await this.closeSidebar();
+    this.onSearchStore(store);
+  }
   async openVersion(event: MouseEvent): Promise<void> {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();

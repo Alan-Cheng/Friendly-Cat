@@ -508,14 +508,18 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   focusCoordinates(longitude: number, latitude: number): void {
-    this.map?.easeTo({ center: [longitude, latitude], zoom: 17, duration: this.reducedMotion ? 0 : 700 });
+    if (!this.map || !Number.isFinite(longitude) || !Number.isFinite(latitude)) return;
+    this.flyToCoordinates([longitude, latitude]);
   }
 
   private centerCat(): void {
     if (!this.hasLocation() || !this.map) return;
+    this.flyToCoordinates([this.longitude!, this.latitude!]);
+  }
+
+  private flyToCoordinates(center: [number, number]): void {
     this.cancelLocationFlight();
-    const map = this.map;
-    const center: [number, number] = [this.longitude!, this.latitude!];
+    const map = this.map!;
     if (this.reducedMotion || map.getZoom() < 15) {
       map.flyTo({ center, zoom: 17, curve: 1.42, duration: this.reducedMotion ? 0 : 1600 });
       return;

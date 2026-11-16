@@ -1,7 +1,43 @@
 <div class="world-surface" [attr.inert]="!hasEnteredWorld ? '' : null">
 <app-sider (tutorialRequested)="startTour(true)" [worldMode]="true" [user]="user" [favoriteStores]="favoriteStores" (userUpdated)="onUserUpdated($event)"
   (favoriteStoresUpdated)="onFavoriteStoresUpdated($event)" (searchStore)="onFavoriteStoreSearch($event)"
-  (foodSearchResult)="onFoodSearchResult($event)"></app-sider>
+  (foodSearchResult)="onFoodSearchResult($event)">
+<section storeDetail class="product-window" aria-labelledby="product-window-title">
+  <div class="place-panel-nav"><button type="button" class="place-back" (click)="backToSidebar()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg><span>返回選單</span></button><button type="button" class="place-close" (click)="closeProductWindow()" aria-label="關閉店家資訊"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div>
+  <header class="place-header">
+    <div class="place-heading">
+      <img *ngIf="mapSelectedStore" class="place-brand-logo" [src]="mapSelectedStore.brand === '7-11' ? sevenElevenIconUrl : familyMartIconUrl" [alt]="mapSelectedStore.brand" width="40" height="40">
+      <div class="place-title"><p class="place-eyebrow">{{ mapSelectedStore ? '便利商店 · ' + (mapSelectedStore.brand === '7-11' ? '7-ELEVEN' : '全家 FamilyMart') : '附近門市' }}</p><h2 id="product-window-title">{{ mapSelectedStore ? mapSelectedStore.name : '附近的友善食光' }}</h2></div>
+    </div>
+
+  </header>
+  <div class="window-body">
+    <section class="place-overview" *ngIf="mapSelectedStore as place" aria-label="門市資訊">
+      <div class="place-actions">
+        <a class="place-action primary-action" [href]="'https://www.google.com/maps/dir/?api=1&destination=' + place.latitude + ',' + place.longitude" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 9-9 9-9-9Z"/><path d="M8 15v-4h7m-3-3 3 3-3 3"/></svg><span>前往導航</span></a>
+        <ng-container *ngIf="totalStoresShowList[0] as stock"><button *ngIf="user" type="button" class="place-action" (click)="toggleFavorite(stock)" [attr.aria-pressed]="isFavorite(stock)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v17l-6-4-6 4Z"/></svg><span>{{ isFavorite(stock) ? '已收藏' : '收藏門市' }}</span></button></ng-container>
+        <button type="button" class="place-action" (click)="refreshProducts()" [disabled]="mapQueryPending"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2 6M20 4v7h-7"/></svg><span>更新庫存</span></button>
+      </div>
+      <div class="place-facts">
+        <p><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><span>{{ place.address || '暫無地址資訊' }}</span></p>
+        <a *ngIf="place.phone" [href]="'tel:' + place.phone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 3 4 1 1 5-3 2a15 15 0 0 0 6 6l2-3 5 1 1 4c-1 5-10 1-14-3S1 4 5 3Z"/></svg><span>{{ place.phone }}</span></a>
+      </div>
+    </section>
+    <div class="inventory-section-heading"><div><h3>即期商品</h3><p>依分類查看門市剩餘庫存</p></div><span class="inventory-total" *ngIf="selectedStoreQuantity !== undefined">{{ selectedStoreQuantity }} 件</span><button *ngIf="!mapSelectedStore" type="button" class="nearby-refresh" (click)="refreshProducts()" [disabled]="mapQueryPending" aria-label="更新附近門市庫存">↻</button></div>
+    <div class="inventory-state" *ngIf="mapQueryPending || totalStoresShowList.length === 0 || inventoryStatus.includes('無法')" [class.is-loading]="mapQueryPending">
+      <progress *ngIf="mapQueryPending" class="boot-spinner inventory-spinner" aria-label="載入門市商品"></progress>
+      <svg *ngIf="!mapQueryPending" class="inventory-state-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v12H4ZM3 4h18v4H3Zm6 8h6"/></svg>
+      <p class="inventory-message" role="status">{{ inventoryStatus }}</p>
+      <button type="button" *ngIf="!mapQueryPending && inventoryStatus.includes('無法')" class="inventory-retry" (click)="refreshProducts()">重新載入商品</button>
+    </div>
+    <div id="map-product-results" tabindex="-1" [attr.aria-busy]="mapQueryPending">
+      <ng-container *ngIf="isLocationSearchMode; then locationSearchMode; else storeSearchMode"></ng-container>
+    </div>
+  </div>
+  <footer class="inventory-footer"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg><span>庫存隨時變動，實際數量以門市為準。</span></footer>
+</section>
+
+</app-sider>
 
 
 <app-store-map [familyStores]="dropDownFamilyMartList" [familyStock]="familyMapStock" [inventory]="mapInventory" [sevenStores]="all711Stores" [sevenStock]="sevenMapStock"
@@ -23,19 +59,6 @@
 </app-store-map>
 </div>
 
-<dialog #productWindow class="world-window product-window" aria-labelledby="product-window-title" closedby="any">
-  <div class="window-titlebar"><h2 id="product-window-title">{{ mapSelectedStore ? mapSelectedStore.name + '的商品' : '附近的友善食光' }}</h2><div class="window-controls"><button type="button" (click)="refreshProducts()" [disabled]="mapQueryPending" aria-label="重新整理商品" title="重新整理商品">↻</button><button type="button" (click)="productWindow.close()" aria-label="關閉商品視窗">×</button></div></div>
-  <div class="window-body">
-<p class="inventory-message" *ngIf="mapQueryPending || totalStoresShowList.length === 0 || inventoryStatus.includes('無法')" role="status">{{ inventoryStatus }}</p>
-<progress *ngIf="mapQueryPending" class="boot-spinner inventory-spinner" aria-label="載入門市商品"></progress>
-<div id="map-product-results" tabindex="-1" [attr.aria-busy]="mapQueryPending">
-  <ng-container *ngIf="isLocationSearchMode; then locationSearchMode; else storeSearchMode"></ng-container>
-</div>
-
-
-  </div>
-  <footer class="inventory-footer">實際庫存以店內為準。</footer>
-</dialog>
 
 <div class="world-boot" *ngIf="!hasEnteredWorld">
   <section class="boot-window" aria-labelledby="boot-title">
@@ -67,7 +90,7 @@
 <ng-template #storeSearchMode><ng-container *ngTemplateOutlet="storeResults"></ng-container></ng-template>
 <ng-template #storeResults>
   <article *ngFor="let store of totalStoresShowList; trackBy: trackByStore" class="inventory-store">
-    <header class="store-heading">
+    <header class="store-heading" *ngIf="!mapSelectedStore">
       <img [src]="store.label === '7-11' ? sevenElevenIconUrl : familyMartIconUrl" class="store-brand-logo" [alt]="store.label">
       <div class="store-identity"><span class="store-brand-name">{{ store.label === '7-11' ? 'SEVEN ELEVEN' : 'FAMILYMART' }}</span><h3>{{ store.storeName || store.StoreName || store.name }}</h3><p *ngIf="store.distance > 0" class="store-distance">距離約 {{ store.distance | round:1 }}</p></div>
       <a class="store-map-link" [href]="'https://www.google.com/maps/search/' + (store.storeName || store.StoreName || store.name)" target="_blank" rel="noopener noreferrer" aria-label="在 Google Maps 查看門市"><img src="assets/GoogleMap_icon.png" alt="Google Maps" class="store-map-logo"></a>

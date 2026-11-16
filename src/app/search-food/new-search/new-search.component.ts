@@ -53,7 +53,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     try { if (!force && localStorage.getItem('friendly-cat-tour-v1')) return; } catch {}
     const { driver } = await import('driver.js');
     if (this.componentDestroyed) return;
-    this.tour?.destroy(); this.closeSearchWindow(); this.productWindow.nativeElement.close();
+    this.tour?.destroy(); this.closeSearchWindow();
     await this.sidebar?.closeSidebar();
     if (this.componentDestroyed) return;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -69,7 +69,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         { popover: { title: '歡迎來到友善黑貓地圖版', description: '拖曳探索街道、滾動滑鼠縮放。授權定位後，黑貓會站在你目前的位置。' } },
         { element: () => document.querySelector('.cat-shop-marker') || document.querySelector('.map-canvas')!, popover: { title: '點一家小店，看看商品', description: '點擊小店，直接開啟該門市的商品視窗。全家標記上的件數是即期庫存，— 表示尚未取得。' } },
         { element: '.store-directory', popover: { title: '從清單找到商店', description: '展開店家清單，滑過店名，對應的小店會亮起並放大。用鍵盤聚焦也有相同效果。', side: 'top' } },
-        { element: '.search-world', popover: { title: '找店家，從搜尋開始', description: '輸入店名或地址，選取結果即可移動到該門市並查看商品。', side: 'bottom' } },
+        { element: '.search-world', popover: { title: '找店家，從搜尋開始', description: '輸入店名或地址，選取結果即可移動到該門市，再點選地圖上的店家查看商品。', side: 'bottom' } },
         { element: () => this.tourSidebarElement('app-sider .sidebar-body'), popover: { title: '會員、收藏與食物搜尋', description: '點選左上角選單，就能登入、查看收藏與搜尋食物。選單底部的「網站導覽」可隨時重新開啟這段介紹。', side: 'right' } },
         { element: () => this.tourSidebarElement('app-sider .version-link'), popover: { title: '切換回舊版頁面', description: '這裡就是「舊版頁面」入口。導覽結束後，點選左上角選單，再點這個連結即可切換。想回地圖版時，在相同選單中點選「地圖頁面」。', side: 'right' } }
       ]
@@ -87,7 +87,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (!(event.target instanceof Element) || event.target.closest('.map-search-panel, .locate')) return;
     this.closeSearchWindow();
   }
-  @ViewChild('productWindow', { static: true }) productWindow!: ElementRef<HTMLDialogElement>;
   @ViewChild(StoreMapComponent) worldMap?: StoreMapComponent;
   hasEnteredWorld = false;
   worldReady = false;
@@ -120,10 +119,18 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     else this.onUseCurrentLocation();
   }
 
+  get selectedStoreQuantity(): number | undefined {
+    const quantity = this.mapSelectedStore && this.mapInventory[this.mapSelectedStore.id];
+    return typeof quantity === 'number' ? quantity : undefined;
+  }
+
   openProductWindow(): void {
     this.closeSearchWindow();
-    if (!this.productWindow.nativeElement.open) this.productWindow.nativeElement.showModal();
+    this.sidebar?.openStoreDetails();
   }
+  backToSidebar(): void { this.sidebar?.showMenu(); }
+  closeProductWindow(): void { void this.sidebar?.closeSidebar(); }
+
   ngOnDestroy(): void { clearTimeout(this.searchTimer); this.componentDestroyed = true; this.tour?.destroy(); clearTimeout(this.tourTimer); this.mapStockSubscription?.unsubscribe(); this.mapArea$.complete(); this.mapInventorySubscription?.unsubscribe(); this.verificationSubscription?.unsubscribe(); document.body.classList.remove('cat-world-entered'); }
 
   user: any = null;
@@ -688,7 +695,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
   onSearchStoreSelect(store: any): void {
     this.closeSearchWindow();
-    this.worldMap?.showStoreAt(Number(store.latitude), Number(store.longitude), store.label);
+    this.worldMap?.focusCoordinates(Number(store.longitude), Number(store.latitude));
   }
 
   onOptionSelect(event: MatAutocompleteSelectedEvent | null, lat?: number, lng?: number): void {
@@ -824,7 +831,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     const hasNearbyStore =
       this.nearby711Stores.length > 0 || this.nearbyFamilyMartStores.length > 0;
 
-    if (this.totalStoresShowList.length === 0 && showEmptyMessage && !this.productWindow?.nativeElement.open) {
+    if (this.totalStoresShowList.length === 0 && showEmptyMessage && !this.sidebar?.detailMode) {
       this.dialog.open(MessageDialogComponent, {
         width: '360px',
         data: {
@@ -1015,60 +1022,35 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.favoriteStores = favoriteStores; // 更新用戶狀態
   }
 
-  onFavoriteStoreSearch(store: any) {
-    this.mapInventorySubscription?.unsubscribe();
-    this.mapSelectedStore = undefined;
-    this.openProductWindow();
-    this.loadingService.show("幫你找看看唷");
-    // 從本地 JSON 資料找出店家的經緯度
-    var lat = 0;
-    var lng = 0;
-    if (store.label === "全家") {
-      lat = store.storeFLatitude;
-      lng = store.storeFLongitude;
-      this.onOptionSelect(null, lat, lng);
-      this.searchTerm = '';
+  onFavoriteStoreSearch(favorite: any): void {
+    // Resolve the saved favorite to the full directory entry before opening details.
+    // Passing only coordinates loses the shop's name, brand and inventory store code.
+    const brand = favorite.label === '全家' ? '全家'
+      : favorite.label === '7-11' || favorite.store711Name
+        || /^(?:7-ELEVEN|7-11|711)/i.test(favorite.storeName || '') ? '7-11' : '全家';
+    const normalizeName = (name: string) => (name || '')
+      .replace(/^(?:全家(?:便利商店)?|FamilyMart|7-ELEVEN|7-11|711)\s*/i, '')
+      .replace(/門市$/, '').replace(/\s+/g, '').normalize('NFKC');
+    const name = normalizeName(favorite.store711Name || favorite.storeName);
+    const latitude = Number(favorite.storeFLatitude ?? favorite.latitude);
+    const longitude = Number(favorite.storeFLongitude ?? favorite.longitude);
+    const candidates = (this.worldMap?.stores || []).filter(store => store.brand === brand);
+    const store = candidates.find(store => favorite.storeCode && store.storeCode === String(favorite.storeCode))
+      || candidates.find(store => Number.isFinite(latitude) && Number.isFinite(longitude)
+        && Math.abs(store.latitude - latitude) < .00001 && Math.abs(store.longitude - longitude) < .00001)
+      || candidates.find(store => normalizeName(store.name) === name);
+    if (!store) {
+      this.mapInventorySubscription?.unsubscribe();
+      this.mapSelectedStore = undefined;
+      this.totalStoresShowList = [];
+      this.mapQueryPending = false;
+      this.inventoryStatus = '無法找到「' + (favorite.storeName || '收藏門市') + '」的資料，請重新搜尋店名。';
+      this.openProductWindow();
+      return;
     }
-    else {
-      // 從本地 7-11 商店資料中尋找
-      const foundStore = this.all711Stores.find(s => 
-        s.name === store.store711Name || 
-        (store.store711Name && s.name.includes(store.store711Name.replace('711', '').trim()))
-      );
-      
-      if (foundStore) {
-        lat = parseFloat(foundStore.lat);
-        lng = parseFloat(foundStore.lng);
-        this.onOptionSelect(null, lat, lng);
-        this.searchTerm = '';
-      } else {
-        // 如果找不到，嘗試取得位置後再搜尋
-        from(this.geolocationService.getCurrentPosition())
-          .pipe(
-            switchMap((position) => {
-              this.latitude = position.coords.latitude;
-              this.longitude = position.coords.longitude;
-              return of(null);
-            })
-          ).subscribe(() => {
-            // 使用拼音比對再次搜尋
-            const searchTerm = store.store711Name?.replace('711', '').trim() || '';
-            const matchedStore = this.all711Stores.find(s => 
-              this.matchesSearchTerm(s.name, s.name_pinyin || '', searchTerm)
-            );
-            
-            if (matchedStore) {
-              lat = parseFloat(matchedStore.lat);
-              lng = parseFloat(matchedStore.lng);
-              this.onOptionSelect(null, lat, lng);
-              this.searchTerm = '';
-            } else {
-              console.error('找不到 7-11 商店:', store.store711Name);
-              this.loadingService.hide();
-            }
-          });
-      }
-    }
+    this.searchTerm = '';
+    this.worldMap?.focusCoordinates(store.longitude, store.latitude);
+    this.onMapStoreQuery(store);
   }
 
   // 處理食物搜尋結果

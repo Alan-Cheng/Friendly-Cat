@@ -11,7 +11,7 @@
 h2 { font-size: 18px; letter-spacing: -.03em; margin: 0; font-weight: 600; }
 .close-btn { width: 44px; min-height: 44px; border: 0; border-radius: 50%; background: transparent; color: #425a3c; font-size: 26px; cursor: pointer; }
 .close-btn:hover { background: #ccd9c1; }
-#sidebar-title:focus { outline: none; }
+#sidebar-title:focus-visible { outline: 2px solid var(--cat-primary); outline-offset: 4px; border-radius: 2px; }
 .navigation-icon { width: 18px; height: 18px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 @media (hover: none) {
   .close-btn:hover, .close-btn:focus { background: transparent; outline: none; }
@@ -32,7 +32,7 @@ label { display: block; margin-bottom: 9px; font-size: 11px; color: #69736c; }
 ul { padding: 0; margin: 0; list-style: none; }
 .result-item, .store-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 0; width: 100%; min-height: 48px; border: 0; border-bottom: 1px solid #e7eae8; background: transparent; color: #38513a; text-align: left; cursor: pointer; }
 .result-item strong, .store-name { display: block; font-size: 13px; font-weight: 500; }.result-item small { display: block; margin-top: 5px; font-size: 11px; color: #69736c; }.result-count { color: #69736c; font-size: 11px; }
-.store-item { flex-wrap: wrap; }.store-brand { color: #69736c; font-size: 9px; }.store-name { flex: 1; }
+.store-item { flex-wrap: nowrap; gap: 12px; }.favorite-brand-logo { display: block; width: 24px; height: 24px; flex: 0 0 24px; object-fit: contain; }.store-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .login-section { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 6px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); border-top: 1px solid #e7eae8; flex-shrink: 0; }
 .version-link, .tour-link, .login-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: auto; min-height: 36px; margin: 0; padding: 4px; border: 0; border-radius: 4px; background: transparent; color: #526d47; font: inherit; font-size: 12px; text-decoration: none; white-space: nowrap; cursor: pointer; }
 .login-section .navigation-icon { width: 14px; height: 14px; }
@@ -59,3 +59,14 @@ button:focus-visible { outline: 3px solid var(--cat-primary); outline-offset: 2p
 
 .toolbar:not(.world-toolbar) { top: 0; left: 0; width: 100%; height: 64px; padding: 0 16px; border-radius: 0; background: #faf9f0; border-bottom: 1px solid #d0d9c9; }
 .toolbar:not(.world-toolbar) .text-with-shadow { display: block; margin-left: 12px; font-size: 18px; }
+
+/* The menu and projected store details share one native dialog. */
+.sidebar { inset: max(12px, env(safe-area-inset-top)) auto max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); width: min(480px, calc(100% - 24px)); height: calc(100dvh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom))); border: 1px solid #dadce0; border-radius: 20px; box-shadow: 0 4px 24px #20212426; }
+.sidebar::backdrop { background: #2021241a; backdrop-filter: none; }
+.sidebar-menu, .sidebar-details { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.sidebar-menu[hidden], .sidebar-details[hidden] { display: none; }
+.sidebar-header { padding: 16px 20px; background: #fff; border-color: #e8eaed; }
+@media (max-width: 600px) {
+  .sidebar { inset: auto 0 0; width: 100%; height: 88dvh; max-height: calc(100dvh - env(safe-area-inset-top) - 12px); border: 0; border-radius: 24px 24px 0 0; }
+  @media (prefers-reduced-motion: no-preference) { .sidebar[open] { animation-name: drawer-enter-mobile; } @keyframes drawer-enter-mobile { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } } }
+}

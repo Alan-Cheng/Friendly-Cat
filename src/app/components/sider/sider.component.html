@@ -2,10 +2,11 @@
   <button mat-icon-button (click)="toggleSidebar()" aria-label="開啟會員與收藏選單" [attr.aria-expanded]="sidebarOpen" aria-controls="world-sidebar"><mat-icon>menu</mat-icon></button>
   <span class="text-with-shadow">友善黑貓 Friendly Cat</span>
 </mat-toolbar>
-<dialog #sidebarWindow id="world-sidebar" class="sidebar" [class.is-closing]="sidebarClosing" [class.tour-sidebar]="tourMode" (cancel)="onSidebarCancel($event)" aria-labelledby="sidebar-title" closedby="any" (close)="sidebarOpen = false">
+<dialog #sidebarWindow id="world-sidebar" class="sidebar" [class.is-closing]="sidebarClosing" [class.tour-sidebar]="tourMode" (cancel)="onSidebarCancel($event)" [attr.aria-labelledby]="detailMode ? 'product-window-title' : 'sidebar-title'" closedby="any" (close)="onPanelClosed()">
+  <div class="sidebar-menu" [hidden]="detailMode">
   <header class="sidebar-header"><div><h2 id="sidebar-title" tabindex="-1" autofocus>FRIENDLY CAT</h2></div><button type="button" (click)="closeSidebar()" class="close-btn" aria-label="關閉會員與收藏選單">×</button></header>
   <div class="sidebar-body">
-    <p class="sidebar-intro">{{ user ? user.displayName + '，今天想去哪一間？' : '登入後，把喜歡的街角收藏起來。' }}</p>
+    <p class="sidebar-intro">{{ user ? user.displayName + '，今天想找什麼？' : '登入後，把喜歡的商店收藏起來。' }}</p>
     <section class="search-section" aria-labelledby="sidebar-search-title">
       <h3 id="sidebar-search-title">搜尋食物</h3>
       <label for="sidebar-food-input">在目前範圍的門市商品中尋找</label>
@@ -18,9 +19,9 @@
       <p class="field-hint" *ngIf="hasSearched && !foodSearchResults.length && !isSearching">找不到相關商品</p>
       <p class="field-hint" *ngIf="isSearching" role="status">正在搜尋食物…</p>
     </section>
-    <section class="favorites-section" aria-labelledby="sidebar-favorites-title"><h3 id="sidebar-favorites-title">收藏店家 <span>{{ user ? favoriteStores.length : 0 }}</span></h3>
+    <section class="favorites-section" aria-labelledby="sidebar-favorites-title"><h3 id="sidebar-favorites-title">收藏店家</h3>
       <p class="empty-favorites" *ngIf="!user || !favoriteStores.length">{{ user ? '還沒有收藏的店家。' : '登入後，就能保存常去的門市。' }}</p>
-      <ul *ngIf="user"><li *ngFor="let store of favoriteStores"><button type="button" class="store-item" (click)="openFavoriteStore(store)"><span class="store-brand">{{ store.storeName.includes('7-11') ? '7-ELEVEN' : 'FamilyMart' }}</span><span class="store-name">{{ store.storeName }}</span><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button></li></ul>
+      <ul *ngIf="user"><li *ngFor="let store of favoriteStores"><button type="button" class="store-item" (click)="openFavoriteStore(store)"><img class="favorite-brand-logo" [src]="isSevenElevenFavorite(store) ? sevenElevenIconUrl : familyMartIconUrl" [alt]="isSevenElevenFavorite(store) ? '7-ELEVEN' : '全家'" width="24" height="24" decoding="async"><span class="store-name">{{ favoriteStoreName(store) }}</span><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button></li></ul>
     </section>
 
   </div>
@@ -29,4 +30,6 @@
     <button *ngIf="worldMode" type="button" class="tour-link" (click)="openTutorial()">網站導覽<svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button>
     <button type="button" class="login-btn" (click)="openAccount()">{{ user ? '登出帳號' : '登入／建立帳號' }}</button>
   </footer>
+  </div>
+  <div class="sidebar-details" [hidden]="!detailMode"><ng-content select="[storeDetail]"></ng-content></div>
 </dialog>

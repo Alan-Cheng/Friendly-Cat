@@ -68,6 +68,37 @@ describe('live store search', () => {
     input('台北'); component.ngOnDestroy(); tick(200);
     expect(search).not.toHaveBeenCalled();
   }));
+  it('moves the map to a search result without selecting a shop or requesting its inventory', () => {
+    const focusCoordinates = jasmine.createSpy('focusCoordinates');
+    const showStoreAt = jasmine.createSpy('showStoreAt');
+    component.worldMap = { focusCoordinates, showStoreAt } as any;
+    const query = spyOn(component, 'onMapStoreQuery');
+    component.searchExpanded = true;
+    component.onSearchStoreSelect({ latitude: '25.033', longitude: '121.5654', label: '全家' });
+    expect(focusCoordinates).toHaveBeenCalledOnceWith(121.5654, 25.033);
+    expect(showStoreAt).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
+    expect(component.searchExpanded).toBeFalse();
+  });
+  it('resolves a FamilyMart favorite by coordinates and keeps the complete store identity', () => {
+    const store = { id: 'fm-01', storeCode: '01', name: '全家台北店', brand: '全家', address: '信義路', phone: '', latitude: 25.033, longitude: 121.5654 };
+    const focusCoordinates = jasmine.createSpy('focusCoordinates');
+    component.worldMap = { stores: [store], focusCoordinates } as any;
+    const query = spyOn(component, 'onMapStoreQuery');
+    component.onFavoriteStoreSearch({ label: '全家', storeName: '全家舊店名', storeFLatitude: '25.033', storeFLongitude: '121.5654' });
+    expect(query).toHaveBeenCalledOnceWith(store as any);
+    expect(focusCoordinates).toHaveBeenCalledOnceWith(store.longitude, store.latitude);
+  });
+  it('clears previous store results when a saved favorite no longer exists', () => {
+    component.worldMap = { stores: [] } as any;
+    component.totalStoresShowList = [{ storeName: '上次的門市' }];
+    const open = spyOn(component, 'openProductWindow');
+    component.onFavoriteStoreSearch({ label: '7-11', storeName: '7-11舊門市', store711Name: '舊' });
+    expect(component.mapSelectedStore).toBeUndefined();
+    expect(component.totalStoresShowList).toEqual([]);
+    expect(component.inventoryStatus).toContain('7-11舊門市');
+    expect(open).toHaveBeenCalledTimes(1);
+  });
   it('ranks name matches before addresses, preserves distinct brands, and caps broad results', () => {
     component.all711Stores = Array.from({ length: 100 }, (_, i) => ({ name: '門市' + i, addr: '台北市', lat: 25, lng: 121 }));
     component.handleSearch('台北');
