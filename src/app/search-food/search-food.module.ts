@@ -1,3 +1,4 @@
+import { FoodSearchComponent } from '../components/food-search/food-search.component';
 import { StoreMapComponent } from './store-map/store-map.component';
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -35,6 +36,7 @@ import { SiderComponent } from '../components/sider/sider.component';
   ],
   exports: [SiderComponent, RoundPipe, EmptyInfoPipe],
   imports: [
+    FoodSearchComponent,
     StoreMapComponent,
     CommonModule,
     FormsModule, // 支援 [(ngModel)]

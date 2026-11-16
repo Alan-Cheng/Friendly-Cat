@@ -1,0 +1,13 @@
+    <section class="search-section" aria-labelledby="food-search-title">
+      <h3 id="food-search-title">想找什麼食物？</h3>
+      <label for="food-search-input">在目前範圍的門市商品中尋找</label>
+      <div class="search-input-wrapper"><input id="food-search-input" type="search" enterkeyhint="search" aria-describedby="food-search-hint" [(ngModel)]="foodSearchTerm" (keydown)="onSearchKeyDown($event)" (compositionstart)="onCompositionStart()" (compositionend)="onCompositionEnd($event)" (input)="onSearchInputChange($event)" [placeholder]="getSearchPlaceholder()" [disabled]="!hasStoreData || inventoryState === 'loading'" class="search-input"><button type="button" class="search-button" (click)="onSearchClick()" [disabled]="!hasStoreData || inventoryState === 'loading'" aria-label="搜尋食物"><mat-icon>search</mat-icon></button></div>
+      <p class="field-hint" *ngIf="inventoryState === 'loading'" role="status">正在載入目前範圍的門市商品…</p>
+      <p class="field-hint" *ngIf="inventoryState === 'ready' && !hasStoreData">目前範圍沒有可搜尋的即期商品。</p>
+      <p class="field-hint" *ngIf="inventoryState === 'error'">商品服務暫時無法回應，移動地圖後會重新查詢。</p>
+      <p class="field-hint" *ngIf="inventoryState === 'idle'">正在準備附近門市資料。</p>
+      <div class="search-results" *ngIf="foodSearchResults.length"><p class="result-count">找到 {{ foodSearchResults.length }} 個結果</p><ul><li *ngFor="let result of foodSearchResults"><button type="button" class="result-item" (click)="openFoodResult(result)"><img class="result-product-image" [src]="result.imageFailed ? missingProductImage : getFoodImage(result)" [alt]="result.foodName" width="64" height="64" loading="lazy" decoding="async" (error)="result.imageFailed = true">
+        <span class="result-copy"><strong>{{ result.foodName }}</strong><span class="result-store"><img class="result-brand-logo" [src]="result.storeType === '7-11' ? sevenElevenIconUrl : familyMartIconUrl" [alt]="result.storeType === '7-11' ? '7-ELEVEN' : '全家'" width="20" height="20" decoding="async"><small>{{ result.storeName }}</small></span></span><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button></li></ul></div>
+      <p class="field-hint" *ngIf="hasSearched && !foodSearchResults.length && !isSearching" role="status">找不到相關商品</p>
+      <p class="field-hint" *ngIf="isSearching" role="status">正在搜尋食物…</p>
+    </section>

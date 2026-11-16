@@ -1,0 +1,24 @@
+:host { display: block; color: #303632; }
+.search-section { padding: 20px; }
+h3 { margin: 0 0 8px; font-size: 18px; font-weight: 600; line-height: 1.5; }
+label { display: block; margin-bottom: 16px; color: #5f6368; font-size: 13px; line-height: 1.6; }
+.search-input-wrapper { display: flex; min-height: 48px; border: 1px solid #dadce0; border-radius: 12px; overflow: hidden; background: #f5f7f5; }
+.search-input { flex: 1; min-width: 0; padding: 10px 12px; border: 0; background: transparent; color: #304b37; font: inherit; font-size: max(16px, 1rem, 1em); }
+.search-input:focus { outline: none; }
+.search-button { display: grid; place-items: center; width: 48px; flex-shrink: 0; border: 0; background: var(--cat-primary); color: white; cursor: pointer; }
+.search-button:disabled { background: #e6eae7; color: #69736c; cursor: default; }
+.field-hint { font-size: 13px; line-height: 1.8; color: #69736c; margin: 16px 0 0; }
+.result-count { color: #69736c; font-size: 12px; margin: 20px 0 4px; }
+ul { padding: 0; margin: 0; list-style: none; }
+.result-item { display: flex; align-items: center; gap: 12px; padding: 16px 0; width: 100%; min-height: 48px; border: 0; border-bottom: 1px solid #e7eae8; background: transparent; color: #303632; text-align: left; font: inherit; cursor: pointer; }
+.result-item strong { display: block; font-size: 14px; font-weight: 500; line-height: 1.6; }
+.result-product-image { flex: 0 0 64px; width: 64px; height: 64px; padding: 4px; box-sizing: border-box; border: 1px solid #edf0f2; border-radius: 8px; background: #fff; object-fit: contain; }
+.result-copy { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.result-store { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.result-brand-logo { flex: 0 0 20px; width: 20px; height: 20px; object-fit: contain; }
+.result-store small { color: #5f6368; font-size: 12px; line-height: 1.5; }
+.navigation-icon { flex-shrink: 0; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+button:focus-visible { outline: 2px solid var(--cat-primary); outline-offset: 2px; }
+@media (hover: hover) { .result-item:hover { background: var(--cat-hover); }.result-item:hover .result-product-image { transform: scale(1.03); }.search-button:hover:not(:disabled) { filter: brightness(1.1); } }
+.result-item:active { background: var(--cat-pressed); }
+@media (prefers-reduced-motion: no-preference) { .result-product-image { transition: transform .15s ease; } }

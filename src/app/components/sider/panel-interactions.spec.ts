@@ -33,29 +33,6 @@ describe('independent menu and store panels', () => {
     expect(fixture.nativeElement.querySelector('#sidebar-title').hasAttribute('autofocus')).toBeFalse();
   });
 
-  it('matches product images within each brand and falls back when missing or broken', () => {
-    fixture.componentRef.setInput('foodDetails711', [{ name: '飯糰', image: 'seven-rice.jpg' }]);
-    fixture.componentRef.setInput('foodDetailsFamilyMart', [{ title: '飯糰', picture_url: 'family-rice.jpg' }]);
-    component.foodSearchResults = [
-      { foodName: '飯糰', storeType: '7-11', storeName: '信義門市' },
-      { foodName: '飯糰', storeType: '全家', storeName: '台北店' },
-      { foodName: '完全沒有對應資料', storeType: '全家', storeName: '台北店' }
-    ];
-    fixture.detectChanges();
-    const rows = fixture.nativeElement.querySelectorAll('.result-item') as NodeListOf<HTMLButtonElement>;
-    expect(rows[0].querySelector<HTMLImageElement>('.result-product-image')!.getAttribute('src')).toBe('seven-rice.jpg');
-    expect(rows[1].querySelector<HTMLImageElement>('.result-product-image')!.getAttribute('src')).toBe('family-rice.jpg');
-    expect(rows[2].querySelector<HTMLImageElement>('.result-product-image')!.getAttribute('src')).toBe(component.missingProductImage);
-    expect(rows[0].querySelector<HTMLImageElement>('.result-brand-logo')!.alt).toBe('7-ELEVEN');
-    expect(rows[1].querySelector<HTMLImageElement>('.result-brand-logo')!.alt).toBe('全家');
-    rows[0].querySelector('img')!.dispatchEvent(new Event('error'));
-    fixture.detectChanges();
-    expect(rows[0].querySelector('img')!.getAttribute('src')).toBe(component.missingProductImage);
-    fixture.componentRef.setInput('foodDetailsFamilyMart', [{ title: '飯糰', picture_url: 'updated-rice.jpg' }]);
-    fixture.detectChanges();
-    expect(rows[1].querySelector('img')!.getAttribute('src')).toBe('updated-rice.jpg');
-  });
-
   it('switches separate modal panels and ignores delayed close events from the previous panel', () => {
     component.showMenu();
     component.openStoreDetails();

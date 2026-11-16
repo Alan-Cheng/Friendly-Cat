@@ -31,6 +31,16 @@ describe('StoreMapComponent data and location', () => {
     } finally { panel.remove(); }
   });
 
+  it('closes the directory before emitting a food result and preserves its selected tab', async () => {
+    component.directoryTab = 'food';
+    const close = spyOn(component, 'closeDirectory').and.resolveTo();
+    const result = { foodName: '飯糰', storeType: '全家' };
+    const emit = spyOn(component.foodSelected, 'emit').and.callFake(() => expect(close).toHaveBeenCalled());
+    await component.selectDirectoryFood(result);
+    expect(emit).toHaveBeenCalledWith(result);
+    expect(component.directoryTab).toBe('food');
+  });
+
   it('dismisses a mobile directory swipe only at the top of its list', () => {
     spyOn(window, 'matchMedia').and.returnValue({ matches: true } as MediaQueryList);
     const close = spyOn(component, 'closeDirectory').and.resolveTo();

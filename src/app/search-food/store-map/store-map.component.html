@@ -46,26 +46,37 @@
     </article>
   </div>
   <div class="map-status"><span class="status-dot" aria-hidden="true"></span><p role="status">{{ overviewMode ? '放大地圖，即可查看附近店家與庫存。' : status }} {{ headingStatus }}</p><span class="store-count">{{ overviewMode ? '區域總覽' : visibleStores.length + ' 間店家' }}{{ visibleStores.length === 60 ? '（顯示最近 60 間）' : '' }}</span></div>
-  <button type="button" class="store-directory directory-trigger" (click)="openDirectory()" aria-haspopup="dialog" aria-controls="store-directory-panel" [attr.aria-expanded]="directoryOpen">店家清單 <small>{{ overviewMode ? '放大查看' : visibleStores.length + ' 間門市' }}</small><span aria-hidden="true">⌃</span></button>
+  <button type="button" class="store-directory directory-trigger" (click)="openDirectory()" aria-haspopup="dialog" aria-controls="store-directory-panel" [attr.aria-expanded]="directoryOpen">店家與食物 <small>{{ overviewMode ? '放大查看' : visibleStores.length + ' 間門市' }}</small><span aria-hidden="true">⌃</span></button>
   <dialog #directoryWindow id="store-directory-panel" class="store-directory directory-panel" aria-labelledby="directory-title" closedby="any" (cancel)="onDirectoryCancel($event)" (click)="onDirectoryClick($event)" (close)="directoryOpen = false" (touchstart)="onDirectoryTouchStart($event)" (touchend)="onDirectoryTouchEnd($event)" (touchcancel)="directoryTouch = undefined">
     <div class="directory-handle" aria-hidden="true"></div>
-    <header class="directory-header"><h2 id="directory-title">店家清單 <small>{{ visibleStores.length }} 間門市</small></h2><button type="button" (click)="closeDirectory()" aria-label="關閉店家清單" autofocus>×</button></header>
-    <p *ngIf="dataError">{{ dataError }}</p>
-    <p *ngIf="!visibleStores.length">{{ overviewMode ? '目前為區域總覽，請放大地圖查看店家。' : '這個範圍尚無符合的店家，請移動或縮小地圖。' }}</p>
-    <ul>
-      <li *ngFor="let store of visibleStores">
-        <button type="button" (mouseenter)="highlightStore(store.id)" (mouseleave)="highlightStore()" (focus)="highlightStore(store.id)" (blur)="highlightStore()" [class.is-highlighted]="highlightedId === store.id" (click)="selectDirectoryStore(store)">
-          <span class="directory-name-row">
-            <img class="directory-brand-logo" [src]="store.brand === '全家' ? familyMartIconUrl : sevenElevenIconUrl" alt="" width="24" height="24" decoding="async">
-            <span class="directory-store-name">{{ store.name }}</span>
-            <span class="directory-metrics">
-              <span class="directory-quantity" [class.is-unknown]="store.quantity === undefined" [class.is-empty]="store.quantity === 0" [attr.aria-label]="store.quantity === undefined ? '尚未取得庫存' : '剩餘 ' + store.quantity + ' 件'" [title]="store.quantity === undefined ? '尚未取得庫存' : '剩餘 ' + store.quantity + ' 件'">{{ store.quantity === undefined ? '—' : store.quantity }}</span>
-              <span class="directory-distance" [class.is-unavailable]="!hasLocation()" [title]="hasLocation() ? '與目前位置的直線距離' : '開啟定位後顯示距離'">{{ distance(store) }}</span>
-            </span>
-          </span>
-          <small class="directory-address">{{ store.address || '暫無地址資訊' }}</small>
-        </button>
-      </li>
-    </ul>
+    <header class="directory-header"><h2 id="directory-title">店家與食物</h2><button type="button" (click)="closeDirectory()" aria-label="關閉店家與食物清單" autofocus>×</button></header>
+    <div class="directory-tabs" focusgroup="tablist nomemory" role="tablist" aria-label="清單類型">
+      <button type="button" id="directory-stores-tab" role="tab" [attr.aria-selected]="directoryTab === 'stores'" [attr.focusgroupstart]="directoryTab === 'stores' ? '' : null" (focus)="setDirectoryTab('stores')" (click)="setDirectoryTab('stores')">附近店家 <span>{{ visibleStores.length }}</span></button>
+      <button type="button" id="directory-food-tab" role="tab" [attr.aria-selected]="directoryTab === 'food'" [attr.focusgroupstart]="directoryTab === 'food' ? '' : null" (focus)="setDirectoryTab('food')" (click)="setDirectoryTab('food')">搜尋食物</button>
+    </div>
+    <div class="directory-content">
+      <div role="tabpanel" aria-labelledby="directory-stores-tab" [attr.hidden]="directoryTab === 'stores' ? null : 'until-found'" [attr.tabindex]="directoryTab === 'stores' && !visibleStores.length ? 0 : null" (beforematch)="setDirectoryTab('stores')">
+        <p *ngIf="dataError">{{ dataError }}</p>
+        <p *ngIf="!visibleStores.length">{{ overviewMode ? '目前為區域總覽，請放大地圖查看店家。' : '這個範圍尚無符合的店家，請移動或縮小地圖。' }}</p>
+        <ul class="directory-stores">
+          <li *ngFor="let store of visibleStores">
+            <button type="button" (mouseenter)="highlightStore(store.id)" (mouseleave)="highlightStore()" (focus)="highlightStore(store.id)" (blur)="highlightStore()" [class.is-highlighted]="highlightedId === store.id" (click)="selectDirectoryStore(store)">
+              <span class="directory-name-row">
+                <img class="directory-brand-logo" [src]="store.brand === '全家' ? familyMartIconUrl : sevenElevenIconUrl" alt="" width="24" height="24" decoding="async">
+                <span class="directory-store-name">{{ store.name }}</span>
+                <span class="directory-metrics">
+                  <span class="directory-quantity" [class.is-unknown]="store.quantity === undefined" [class.is-empty]="store.quantity === 0" [attr.aria-label]="store.quantity === undefined ? '尚未取得庫存' : '剩餘 ' + store.quantity + ' 件'" [title]="store.quantity === undefined ? '尚未取得庫存' : '剩餘 ' + store.quantity + ' 件'">{{ store.quantity === undefined ? '—' : store.quantity }}</span>
+                  <span class="directory-distance" [class.is-unavailable]="!hasLocation()" [title]="hasLocation() ? '與目前位置的直線距離' : '開啟定位後顯示距離'">{{ distance(store) }}</span>
+                </span>
+              </span>
+              <small class="directory-address">{{ store.address || '暫無地址資訊' }}</small>
+            </button>
+          </li>
+        </ul>
+      </div>
+      <div role="tabpanel" aria-labelledby="directory-food-tab" [attr.hidden]="directoryTab === 'food' ? null : 'until-found'" (beforematch)="setDirectoryTab('food')">
+        <app-food-search [foodDetails711]="foodDetails711" [foodDetailsFamilyMart]="foodDetailsFamilyMart" (foodSelected)="selectDirectoryFood($event)"></app-food-search>
+      </div>
+    </div>
   </dialog>
 </section>

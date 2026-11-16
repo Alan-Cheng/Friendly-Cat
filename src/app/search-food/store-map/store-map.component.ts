@@ -1,3 +1,4 @@
+import { FoodSearchComponent } from '../../components/food-search/food-search.component';
 import { createFamilyStockMatcher, familyStockQuantity, sevenStockQuantity } from './store-inventory';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgZone, OnChanges, SimpleChanges, OnDestroy, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -6,6 +7,13 @@ import type { Map, Marker, GeoJSONSource } from 'maplibre-gl';
 import { Subscription } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { STORE_DETAIL_MIN_ZOOM } from './map-detail';
+
+let focusGroupFallback: Promise<typeof import('@microsoft/focusgroup-polyfill')> | undefined;
+function ensureFocusGroup(root: HTMLElement): void {
+  if (typeof HTMLElement === 'undefined' || 'focusGroup' in HTMLElement.prototype) return;
+  focusGroupFallback ??= import('@microsoft/focusgroup-polyfill');
+  void focusGroupFallback.then(({ polyfill }) => polyfill(root));
+}
 
 export interface MapStore {
   id: string;
@@ -22,7 +30,7 @@ export interface MapStore {
 @Component({
   selector: 'app-store-map',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FoodSearchComponent],
   templateUrl: './store-map.component.html',
   styleUrls: ['./store-map.component.scss']
 })
@@ -32,10 +40,26 @@ export class StoreMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('cardTitle') cardTitle?: ElementRef<HTMLElement>;
   @ViewChild('directoryWindow', { static: true }) directoryWindow!: ElementRef<HTMLDialogElement>;
   directoryOpen = false;
+  directoryTab: 'stores' | 'food' = 'stores';
+  @Input() foodDetails711: any[] = [];
+  @Input() foodDetailsFamilyMart: any[] = [];
+  @Output() foodSelected = new EventEmitter<any>();
+
+  setDirectoryTab(tab: 'stores' | 'food'): void {
+    this.directoryTab = tab;
+    this.highlightStore();
+  }
+
+  async selectDirectoryFood(result: any): Promise<void> {
+    await this.closeDirectory();
+    this.foodSelected.emit(result);
+  }
+
   directoryTouch?: { x: number; y: number };
   private directoryClosing = false;
 
   openDirectory(): void {
+    ensureFocusGroup(this.directoryWindow.nativeElement);
     this.directoryWindow.nativeElement.showModal();
     this.directoryOpen = true;
   }

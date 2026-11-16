@@ -68,9 +68,9 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       steps: [
         { popover: { title: '歡迎來到友善黑貓地圖版', description: '拖曳探索街道、滾動滑鼠縮放。授權定位後，黑貓會站在你目前的位置。' } },
         { element: () => document.querySelector('.cat-shop-marker') || document.querySelector('.map-canvas')!, popover: { title: '點一家小店，看看商品', description: '點擊小店，直接開啟該門市的商品視窗。全家標記上的件數是即期庫存，— 表示尚未取得。' } },
-        { element: '.store-directory', popover: { title: '從清單找到商店', description: '展開店家清單，滑過店名，對應的小店會亮起並放大。用鍵盤聚焦也有相同效果。', side: 'top' } },
+        { element: '.store-directory', popover: { title: '找店家，也找食物', description: '展開清單，在「附近店家」與「搜尋食物」頁籤之間切換。輸入食物名稱，即可找到目前範圍的商品。', side: 'top' } },
         { element: '.search-world', popover: { title: '找店家，從搜尋開始', description: '輸入店名或地址，選取結果即可移動到該門市，再點選地圖上的店家查看商品。', side: 'bottom' } },
-        { element: () => this.tourSidebarElement('app-sider .sidebar-body'), popover: { title: '會員、收藏與食物搜尋', description: '點選左上角選單，就能登入、查看收藏與搜尋食物。選單底部的「網站導覽」可隨時重新開啟這段介紹。', side: 'right' } },
+        { element: () => this.tourSidebarElement('app-sider .sidebar-body'), popover: { title: '會員與收藏', description: '點選左上角選單，就能登入與查看收藏。選單底部的「網站導覽」可隨時重新開啟這段介紹。', side: 'right' } },
         { element: () => this.tourSidebarElement('app-sider .version-link'), popover: { title: '切換回舊版頁面', description: '這裡就是「舊版頁面」入口。導覽結束後，點選左上角選單，再點這個連結即可切換。想回地圖版時，在相同選單中點選「地圖頁面」。', side: 'right' } }
       ]
     });
@@ -1079,9 +1079,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     // 直接設定商店資料
     this.totalStoresShowList = [storeData];
     
-    // 更新 StoreDataService
-    this.storeDataService.setStores(this.totalStoresShowList);
-    this.storeDataService.setIsUserLocationSearch(false);
+    // Keep the map-area snapshot available when the user returns to food search.
     
     this.loadingService.hide();
   }

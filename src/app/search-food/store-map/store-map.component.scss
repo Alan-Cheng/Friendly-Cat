@@ -215,3 +215,25 @@ li span, li small { display: block; } li small { color: #687568; margin-top: 4px
   .directory-handle { display: block; flex: 0 0 5px; width: 36px; margin: 10px auto 4px; border-radius: 3px; background: #dadce0; }
   @media (prefers-reduced-motion: no-preference) { .directory-panel[open] { animation-name: directory-enter-mobile; } @keyframes directory-enter-mobile { from { transform: translateY(100%); } to { transform: translateY(0); } } }
 }
+
+/* One shared scroller keeps the tabs visible while either list grows. */
+.directory-panel, .directory-panel[open] { height: min(640px, calc(100dvh - 100px)); overflow: hidden; }
+.directory-tabs { display: flex; flex-shrink: 0; padding-inline: 20px; gap: 24px; border-bottom: 1px solid #e8eaed; }
+.directory-tabs button { position: relative; flex: 0 0 auto; min-height: 48px; padding: 0 4px; background: transparent; color: #5f6368; font-size: 14px; font-weight: 500; }
+.directory-tabs button span { margin-inline-start: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.directory-tabs button[aria-selected=true] { color: var(--cat-primary); }
+.directory-tabs button[aria-selected=true]::after { content: ''; position: absolute; inset: auto 0 0; border-bottom: 3px solid currentColor; border-radius: 3px 3px 0 0; }
+.directory-tabs button:focus-visible { outline-offset: -3px; border-radius: 4px; }
+.directory-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: env(safe-area-inset-bottom); }
+.directory-panel .directory-stores { max-height: none; overflow: visible; border-radius: 0; padding-bottom: 0; }
+.directory-content [role=tabpanel] > p { padding: 20px; color: #5f6368; font-size: 13px; }
+.directory-header button { display: block; border-radius: 50%; }
+@media (hover: hover) { .directory-tabs button:hover, .directory-header button:hover { background: var(--cat-hover); } }
+.directory-tabs button:active { background: var(--cat-pressed); }
+@media (max-width: 600px) { .directory-panel, .directory-panel[open] { height: 88dvh; max-height: calc(100dvh - env(safe-area-inset-top) - 12px); } }
+
+.directory-trigger small { color: #5f6368; }
+
+@media (min-width: 601px) {
+  .directory-panel, .directory-panel[open] { width: min(560px, calc(100dvw - 24px)); }
+}

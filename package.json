@@ -21,6 +21,7 @@
     "@angular/platform-browser": "^18.2.13",
     "@angular/platform-browser-dynamic": "^18.2.13",
     "@angular/router": "^18.2.13",
+    "@microsoft/focusgroup-polyfill": "^1.6.0",
     "driver.js": "^1.12.1",
     "firebase": "^11.1.0",
     "fuse.js": "^7.0.0",
