@@ -1,5 +1,5 @@
 <div class="world-surface" [attr.inert]="!hasEnteredWorld ? '' : null">
-<app-sider (tutorialRequested)="startTour(true)" [worldMode]="true" [user]="user" [favoriteStores]="favoriteStores" (userUpdated)="onUserUpdated($event)"
+<app-sider [foodDetails711]="foodDetails711" [foodDetailsFamilyMart]="foodDetailsFamilyMart" (tutorialRequested)="startTour(true)" [worldMode]="true" [user]="user" [favoriteStores]="favoriteStores" (userUpdated)="onUserUpdated($event)"
   (favoriteStoresUpdated)="onFavoriteStoresUpdated($event)" (searchStore)="onFavoriteStoreSearch($event)"
   (foodSearchResult)="onFoodSearchResult($event)">
 <section storeDetail class="product-window" aria-labelledby="product-window-title">

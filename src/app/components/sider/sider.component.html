@@ -4,7 +4,7 @@
 </mat-toolbar>
 <dialog #sidebarWindow id="world-sidebar" class="sidebar" [class.is-closing]="sidebarClosing" [class.tour-sidebar]="tourMode" (cancel)="onSidebarCancel($event)" aria-labelledby="sidebar-title" closedby="any" (close)="onPanelClosed(sidebarWindow)" (pointerdown)="onPanelPointerDown($event)" (click)="onPanelClick($event)" (touchstart)="onPanelTouchStart($event, false)" (touchend)="onPanelTouchEnd($event, false)" (touchcancel)="cancelPanelTouch()">
   <div class="sidebar-menu">
-  <header class="sidebar-header"><div><h2 id="sidebar-title" tabindex="-1" autofocus>FRIENDLY CAT</h2></div><button type="button" (click)="closeSidebar()" class="close-btn" aria-label="關閉會員與收藏選單">×</button></header>
+  <header class="sidebar-header"><div><h2 id="sidebar-title">FRIENDLY CAT</h2></div><button type="button" (click)="closeSidebar()" class="close-btn" aria-label="關閉會員與收藏選單">×</button></header>
   <div class="sidebar-body">
     <p class="sidebar-intro">{{ user ? user.displayName + '，今天想找什麼？' : '登入後，把喜歡的商店收藏起來。' }}</p>
     <section class="search-section" aria-labelledby="sidebar-search-title">
@@ -15,7 +15,8 @@
       <p class="field-hint" *ngIf="inventoryState === 'ready' && !hasStoreData">目前範圍沒有可搜尋的即期商品。</p>
       <p class="field-hint" *ngIf="inventoryState === 'error'">商品服務暫時無法回應，移動地圖後會重新查詢。</p>
       <p class="field-hint" *ngIf="inventoryState === 'idle'">正在準備附近門市資料。</p>
-      <div class="search-results" *ngIf="foodSearchResults.length"><p class="result-count">找到 {{ foodSearchResults.length }} 個結果</p><ul><li *ngFor="let result of foodSearchResults"><button type="button" class="result-item" (click)="openFoodResult(result)"><span><strong>{{ result.foodName }}</strong><small>{{ result.storeName }}</small></span><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button></li></ul></div>
+      <div class="search-results" *ngIf="foodSearchResults.length"><p class="result-count">找到 {{ foodSearchResults.length }} 個結果</p><ul><li *ngFor="let result of foodSearchResults"><button type="button" class="result-item" (click)="openFoodResult(result)"><img class="result-product-image" [src]="result.imageFailed ? missingProductImage : getFoodImage(result)" [alt]="result.foodName" width="64" height="64" loading="lazy" decoding="async" (error)="result.imageFailed = true">
+        <span class="result-copy"><strong>{{ result.foodName }}</strong><span class="result-store"><img class="result-brand-logo" [src]="result.storeType === '7-11' ? sevenElevenIconUrl : familyMartIconUrl" [alt]="result.storeType === '7-11' ? '7-ELEVEN' : '全家'" width="20" height="20" decoding="async"><small>{{ result.storeName }}</small></span></span><svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 18 6M6 6h12v12"/></svg></button></li></ul></div>
       <p class="field-hint" *ngIf="hasSearched && !foodSearchResults.length && !isSearching">找不到相關商品</p>
       <p class="field-hint" *ngIf="isSearching" role="status">正在搜尋食物…</p>
     </section>

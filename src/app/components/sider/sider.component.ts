@@ -1,4 +1,5 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import Fuse from 'fuse.js';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MessageDialogComponent } from '../message-dialog/message-dialog.component';
 import { AuthService } from 'src/app/services/auth.service';
@@ -16,7 +17,7 @@ import { getDistance } from 'geolib';
   templateUrl: './sider.component.html',
   styleUrls: ['./sider.component.scss'],
 })
-export class SiderComponent {
+export class SiderComponent implements OnChanges {
   @ViewChild('sidebarWindow', { static: true }) sidebarWindow!: ElementRef<HTMLDialogElement>;
   @ViewChild('detailsWindow', { static: true }) detailsWindow!: ElementRef<HTMLDialogElement>;
   @Output() tutorialRequested = new EventEmitter<void>();
@@ -28,6 +29,31 @@ export class SiderComponent {
   @Output() favoriteStoresUpdated = new EventEmitter<any>();
   @Output() searchStore = new EventEmitter<string>();
   @Output() foodSearchResult = new EventEmitter<any>();
+
+  @Input() foodDetails711: any[] = [];
+  @Input() foodDetailsFamilyMart: any[] = [];
+  readonly missingProductImage = 'assets/此商品暫無圖片.png';
+  private sevenFoodIndex = new Fuse<any>([], { keys: ['name'], threshold: 0.3 });
+  private familyFoodIndex = new Fuse<any>([], { keys: ['title'], threshold: 0.3 });
+  private productImages = new Map<string, string>();
+
+  ngOnChanges(): void {
+    this.sevenFoodIndex.setCollection(this.foodDetails711 || []);
+    this.familyFoodIndex.setCollection(this.foodDetailsFamilyMart || []);
+    this.productImages.clear();
+  }
+
+  getFoodImage(result: { storeType: string; foodName: string }): string {
+    const key = `${result.storeType}:${result.foodName}`;
+    const cached = this.productImages.get(key);
+    if (cached) return cached;
+    const isSeven = result.storeType === '7-11';
+    const index = isSeven ? this.sevenFoodIndex : this.familyFoodIndex;
+    const detail = index.search(result.foodName, { limit: 1 })[0]?.item;
+    const image = (isSeven ? detail?.image : detail?.picture_url) || this.missingProductImage;
+    this.productImages.set(key, image);
+    return image;
+  }
 
   sevenElevenIconUrl = environment.sevenElevenUrl.icon;
   familyMartIconUrl = environment.familyMartUrl.icon;
@@ -99,9 +125,6 @@ export class SiderComponent {
     this.sidebarOpen = true;
     const drawer = this.sidebarWindow.nativeElement;
     if (!drawer.open) drawer.showModal();
-    requestAnimationFrame(() => {
-      if (drawer.open && !this.detailMode) drawer.querySelector<HTMLElement>('#sidebar-title')?.focus();
-    });
   }
 
   onPanelClosed(panel: HTMLDialogElement): void {
