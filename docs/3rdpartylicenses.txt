@@ -269,6 +269,9 @@ Apache-2.0
 @firebase/webchannel-wrapper
 Apache-2.0
 
+@microsoft/focusgroup-polyfill
+MIT
+
 driver.js
 MIT
 The MIT License
