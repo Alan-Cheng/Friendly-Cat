@@ -20,7 +20,7 @@
 
 ## DEMO
 
-#### 連結：[友善黑貓](https://friendlycat.alan-cheng.com/)
+#### 連結：[友善黑貓](https://friendlycat.app/)
 
 ### 1. 地圖與附近店家
 
@@ -128,4 +128,4 @@
 > ## 部署
 >
 > - **GitHub Pages**: 自動部署到 `https://alan-cheng.github.io/Friendly-Cat/`
-> - **Cloudflare Pages**: 自動部署到 `https://friendlycat.alan-cheng.com/`
+> - **Cloudflare Pages**: 自動部署到 `https://friendlycat.app/`

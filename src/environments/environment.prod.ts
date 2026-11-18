@@ -2,7 +2,7 @@ export const environment = {
   production: true,
   turnstileSiteKey: '0x4AAAAAAEEefTsxRSmYSGna',
   familyMartUrl: {
-    priceSearch: 'https://proxy.friendlycat.alan-cheng.com/family/search',
+    priceSearch: 'https://proxy.friendlycat.app/family/search',
     icon: 'assets/family-mart.svg',
     base: 'https://stamp.family.com.tw/api/maps',
     storeQuery: 'https://family.map.com.tw/famiport/api/dropdownlist/Select_StoreName',
@@ -13,7 +13,7 @@ export const environment = {
   },
   sevenElevenUrl: {
     icon: 'assets/seven-eleven.svg',
-    base: 'https://proxy.friendlycat.alan-cheng.com/LoveFood/api/',
+    base: 'https://proxy.friendlycat.app/LoveFood/api/',
     endpoint: {
       getList: 'Master/FrontendItemCategory/GetList',
       getStoreByAddress: 'Master/FrontendStore/GetStoreByAddress',

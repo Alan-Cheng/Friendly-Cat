@@ -117,7 +117,7 @@ export class SeoService {
     this.setOpenGraphTags({
       title: '友善時光查詢 - 友善黑貓 Friendly Cat',
       description: '查詢附近超商的友善時光商品，包括全家、7-11等便利商店的剩食優惠資訊。省錢又環保，讓您輕鬆找到優惠商品。',
-      url: 'https://alan-cheng.github.io/Friendly-Cat/search',
+      url: 'https://friendlycat.app/search',
       type: 'website'
     });
 
@@ -126,10 +126,10 @@ export class SeoService {
       "@type": "WebPage",
       "name": "友善時光查詢",
       "description": "查詢附近超商的友善時光商品，包括全家、7-11等便利商店的剩食優惠資訊",
-      "url": "https://alan-cheng.github.io/Friendly-Cat/search",
+      "url": "https://friendlycat.app/search",
       "mainEntity": {
         "@type": "SearchAction",
-        "target": "https://alan-cheng.github.io/Friendly-Cat/search?q={search_term_string}",
+        "target": "https://friendlycat.app/search?q={search_term_string}",
         "query-input": "required name=search_term_string"
       }
     });
@@ -151,7 +151,7 @@ export class SeoService {
     this.setOpenGraphTags({
       title,
       description,
-      url: 'https://alan-cheng.github.io/Friendly-Cat/store',
+      url: 'https://friendlycat.app/store',
       type: 'website'
     });
   }
@@ -167,7 +167,7 @@ export class SeoService {
     this.setOpenGraphTags({
       title: 'AI 助手 - 友善黑貓 Friendly Cat',
       description: '友善黑貓AI助手，為您提供友善時光查詢、商品推薦等智能服務。讓您的購物體驗更加便捷。',
-      url: 'https://alan-cheng.github.io/Friendly-Cat/chatbot',
+      url: 'https://friendlycat.app/chatbot',
       type: 'website'
     });
   }
