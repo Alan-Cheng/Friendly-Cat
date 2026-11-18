@@ -5,28 +5,28 @@
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   
   <url>
-    <loc>https://alan-cheng.github.io/Friendly-Cat/</loc>
+    <loc>https://friendlycat.app/</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   
   <url>
-    <loc>https://alan-cheng.github.io/Friendly-Cat/search</loc>
+    <loc>https://friendlycat.app/search</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   
   <url>
-    <loc>https://alan-cheng.github.io/Friendly-Cat/store</loc>
+    <loc>https://friendlycat.app/store</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>https://alan-cheng.github.io/Friendly-Cat/chatbot</loc>
+    <loc>https://friendlycat.app/chatbot</loc>
     <lastmod>2024-01-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
