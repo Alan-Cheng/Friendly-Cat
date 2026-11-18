@@ -6,7 +6,9 @@ import { StoreMapComponent } from '../store-map/store-map.component';
 import { Subscription, timeout } from 'rxjs';
 import { MapStore } from '../store-map/store-map.component';
 import { MapAreaCache, withinMapArea, MapCenter } from '../store-map/map-area-cache';
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener, Optional } from '@angular/core';
+import { ActivatedRoute, ParamMap } from '@angular/router';
+import { parseStoreLink, resolveLinkedStore, StoreLink } from './store-link';
 import { HttpClient } from '@angular/common/http';
 import { FormGroup, FormControl } from '@angular/forms';
 
@@ -93,6 +95,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   verificationState: BrowserVerificationState = 'checking';
   verificationRetrying = false;
   private verificationSubscription?: Subscription;
+  private storeLinkSubscription?: Subscription;
+  private verificationLoadingSubscription?: Subscription;
+  private hasStoreLink = false;
+  private pendingStoreLink?: StoreLink;
+  private storeDirectoryState: 'loading' | 'ready' | 'error' = 'loading';
+  private familyDirectoryState: 'loading' | 'ready' | 'error' = 'loading';
 
   get bootProgress(): number {
     return 15 + (this.worldReady ? 40 : 0) + (this.verificationState === 'verified' ? 45 : 0);
@@ -103,8 +111,51 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (this.hasEnteredWorld || !this.worldReady || this.verificationState !== 'verified') return;
     this.hasEnteredWorld = true;
     document.body.classList.add('cat-world-entered');
-    this.tourTimer = setTimeout(() => this.startTour(), 1100);
-    setTimeout(() => { this.worldMap?.reportViewport(); this.worldMap?.locate(); }, 300);
+    if (!this.hasStoreLink) {
+      this.tourTimer = setTimeout(() => this.startTour(), 1100);
+      setTimeout(() => {
+        if (!this.componentDestroyed && !this.hasStoreLink) { this.worldMap?.reportViewport(); this.worldMap?.locate(); }
+      }, 300);
+    }
+    this.tryOpenLinkedStore();
+  }
+
+  private readStoreLink(params: ParamMap): void {
+    this.hasStoreLink = params.has('store');
+    if (!this.hasStoreLink) { this.pendingStoreLink = undefined; return; }
+    clearTimeout(this.tourTimer);
+    this.pendingStoreLink = parseStoreLink(params);
+    this.tryOpenLinkedStore();
+  }
+
+  private tryOpenLinkedStore(): void {
+    if (this.componentDestroyed || !this.hasEnteredWorld || this.verificationState !== 'verified'
+      || this.loadingService.isVerifying || !this.pendingStoreLink) return;
+    const link = this.pendingStoreLink;
+    const state = link.brand === 'family' ? this.familyDirectoryState : this.storeDirectoryState;
+    if (link.brand && state === 'loading') return;
+    this.pendingStoreLink = undefined;
+    const store = resolveLinkedStore(link, link.brand === 'family' ? this.dropDownFamilyMartList : this.all711Stores);
+    const latitude = store?.latitude;
+    const longitude = store?.longitude;
+    let error: string | undefined;
+    if (link.brand && state === 'error') error = '門市目錄暫時無法載入，請重新整理頁面或搜尋門市。';
+    if (!error && !store) error = '找不到指定門市，請確認連結或搜尋門市。';
+    if (!error && (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+      || Math.abs(latitude!) > 90 || Math.abs(longitude!) > 180 || latitude === 0 || longitude === 0)) {
+      error = '這間門市的地圖資料暫時無法使用，請稍後再試。';
+    }
+    if (error || !store) {
+      this.mapInventorySubscription?.unsubscribe();
+      this.mapSelectedStore = undefined;
+      this.totalStoresShowList = [];
+      this.mapQueryPending = false;
+      this.inventoryStatus = error || '找不到指定門市，請確認連結或搜尋門市。';
+      this.openProductWindow();
+      return;
+    }
+    this.worldMap?.focusCoordinates(store.longitude, store.latitude);
+    this.onMapStoreQuery(store);
   }
   retryVerification(): void {
     if (this.verificationRetrying) return;
@@ -131,7 +182,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   backToSidebar(): void { this.sidebar?.showMenu(); }
   closeProductWindow(): void { void this.sidebar?.closeSidebar(); }
 
-  ngOnDestroy(): void { clearTimeout(this.searchTimer); this.componentDestroyed = true; this.tour?.destroy(); clearTimeout(this.tourTimer); this.mapStockSubscription?.unsubscribe(); this.mapArea$.complete(); this.mapInventorySubscription?.unsubscribe(); this.verificationSubscription?.unsubscribe(); document.body.classList.remove('cat-world-entered'); }
+  ngOnDestroy(): void { clearTimeout(this.searchTimer); this.componentDestroyed = true; this.tour?.destroy(); clearTimeout(this.tourTimer); this.mapStockSubscription?.unsubscribe(); this.mapArea$.complete(); this.mapInventorySubscription?.unsubscribe(); this.verificationSubscription?.unsubscribe(); this.storeLinkSubscription?.unsubscribe(); this.verificationLoadingSubscription?.unsubscribe(); document.body.classList.remove('cat-world-entered'); }
 
   user: any = null;
   mapSelectedStore?: MapStore;
@@ -261,7 +312,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     public loadingService: LoadingService,
     public dialog: MatDialog,
     private firestore: AngularFirestore,
-    private storeDataService: StoreDataService
+    private storeDataService: StoreDataService,
+    @Optional() private route?: ActivatedRoute
   ) {
     this.searchForm = new FormGroup({
       selectedStoreName: new FormControl(''), // 控制選中的商店
@@ -269,6 +321,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.storeLinkSubscription = this.route?.queryParamMap.subscribe(params => this.readStoreLink(params));
     this.mapStockSubscription = this.mapArea$.pipe(
       debounceTime(450),
       filter(center => !this.pendingMapArea || !withinMapArea(this.pendingMapArea.center, center)
@@ -318,6 +371,10 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.verificationSubscription = this.proxyTokenService.verificationState$.subscribe(state => {
       this.verificationState = state;
       this.tryEnterWorld();
+      this.tryOpenLinkedStore();
+    });
+    this.verificationLoadingSubscription = this.loadingService.verificationLoading$?.subscribe(loading => {
+      if (!loading) this.tryOpenLinkedStore();
     });
     this.init();
   }
@@ -490,19 +547,30 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   getFamilyMartAllStore() {
-    this.familyMartService.getStores().subscribe((data) => {
-      if(data.length > 0) {
-        this.dropDownFamilyMartList = data;
-      }
-    })
+    this.familyDirectoryState = 'loading';
+    this.familyMartService.getStores().pipe(timeout(20000)).subscribe({
+      next: data => {
+        this.dropDownFamilyMartList = Array.isArray(data) ? data : [];
+        this.familyDirectoryState = Array.isArray(data) ? 'ready' : 'error';
+        this.tryOpenLinkedStore();
+      },
+      error: () => { this.familyDirectoryState = 'error'; this.tryOpenLinkedStore(); }
+    });
   }
 
   getSevenElevenAllStore() {
-    this.sevenElevenService.getStores().subscribe((data) => {
-      if(data && data.length > 0) {
-        this.all711Stores = data;
+    this.storeDirectoryState = 'loading';
+    this.sevenElevenService.getStores().pipe(timeout(20000)).subscribe({
+      next: data => {
+        this.all711Stores = Array.isArray(data) ? data : [];
+        this.storeDirectoryState = Array.isArray(data) ? 'ready' : 'error';
+        this.tryOpenLinkedStore();
+      },
+      error: () => {
+        this.storeDirectoryState = 'error';
+        this.tryOpenLinkedStore();
       }
-    })
+    });
   }
 
   getFoodSubCategoryImage(nodeID: number): string | null {

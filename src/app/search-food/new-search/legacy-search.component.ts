@@ -1,5 +1,9 @@
 import { Component, OnInit, OnDestroy, DestroyRef, inject, ViewChild, ElementRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
+import { ProxyTokenService } from '../../services/proxy-token.service';
+import { parseStoreLink, resolveLinkedStore } from './store-link';
+import { sevenStockQuantity, familyStockQuantity, matchFamilyStock } from '../store-map/store-inventory';
 import { HttpClient } from '@angular/common/http';
 import { FormGroup, FormControl } from '@angular/forms';
 
@@ -16,7 +20,7 @@ import { StoreDataService } from 'src/app/services/stores-data.service';
 
 import { environment } from 'src/environments/environment';
 
-import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, distinctUntilChanged, defer, map, shareReplay, timeout, EMPTY } from 'rxjs';
 
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
@@ -33,6 +37,25 @@ import { pinyin } from 'pinyin-pro';
 })
 export class LegacySearchComponent implements OnInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly proxyToken = inject(ProxyTokenService);
+  linkedStoreStatus = '';
+  private readonly familyDirectory$ = defer(() => this.familyMartService.getStores()).pipe(
+    timeout(20000),
+    map(data => {
+      if (!Array.isArray(data)) throw new Error('Invalid store directory');
+      return data;
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+  private readonly sevenDirectory$ = defer(() => this.sevenElevenService.getStores()).pipe(
+    timeout(20000),
+    map(data => {
+      if (!Array.isArray(data)) throw new Error('Invalid store directory');
+      return data;
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
   ngOnDestroy(): void { this.searchInput$.complete(); }
   user: any = null;
 
@@ -106,6 +129,81 @@ export class LegacySearchComponent implements OnInit, OnDestroy {
     // 移除自動搜尋，改為手動觸發（Enter 或按鈕）
     // this.searchInput$ 不再自動訂閱
     this.init();
+    this.watchStoreLink();
+  }
+
+  private watchStoreLink(): void {
+    this.route?.queryParamMap.pipe(
+      switchMap(params => {
+        const link = parseStoreLink(params);
+        this.linkedStoreStatus = '';
+        if (!link) return EMPTY;
+        this.isLocationSearchMode = false;
+        this.totalStoresShowList = [];
+        this.unifiedDropDownList = [];
+        this.storeDataService.setStores([]);
+        this.storeDataService.setIsUserLocationSearch(false);
+        if (!link.brand || !link.code) {
+          this.linkedStoreStatus = '找不到指定門市，請確認連結或搜尋門市。';
+          return EMPTY;
+        }
+        this.linkedStoreStatus = '正在查詢店號 ' + link.code + ' 的即期商品…';
+        // ensure() resolves after verification cleanup, avoiding the verified-event race.
+        return defer(() => this.proxyToken.ensure()).pipe(
+          switchMap(() => link.brand === 'family' ? this.familyDirectory$ : this.sevenDirectory$),
+          switchMap(directory => {
+            const store = resolveLinkedStore(link, directory);
+            if (!store) {
+              this.linkedStoreStatus = '找不到指定門市，請確認連結或搜尋門市。';
+              return EMPTY;
+            }
+            if (!Number.isFinite(store.latitude) || !Number.isFinite(store.longitude) || store.latitude === 0 || store.longitude === 0
+              || Math.abs(store.latitude) > 90 || Math.abs(store.longitude) > 180) throw new Error('Invalid store coordinates');
+            const location = { Latitude: store.latitude, Longitude: store.longitude };
+            const stock$ = store.brand === '全家'
+              ? this.familyMartService.getNearByStoreList(location)
+              : forkJoin({
+                  detail: this.sevenElevenService.getItemsByStoreNo(link.code, location),
+                  categories: this.sevenElevenService.getFoodCategory()
+                }).pipe(map(({ detail, categories }) => {
+                  if (!Array.isArray(categories?.element)) throw new Error('Invalid store categories');
+                  this.foodCategories = categories.element;
+                  return detail;
+                }));
+            return stock$.pipe(timeout(25000), map(response => ({ store, response })));
+          }),
+          tap(({ store, response }) => {
+            let quantity: number;
+            if (store.brand === '全家') {
+              if (response?.code !== 1 || !Array.isArray(response.data)) throw new Error('Invalid FamilyMart stock');
+              const stock = matchFamilyStock(store, response.data);
+              quantity = stock ? familyStockQuantity(stock) : 0;
+              this.totalStoresShowList = quantity > 0 ? [{ ...stock, name: stock.name || store.name,
+                label: '全家', storeName: store.name, distance: 0 }] : [];
+            } else {
+              const stock = response?.element?.StoreStockItem;
+              const remaining = sevenStockQuantity(stock);
+              if (!response?.isSuccess || !stock || String(stock.StoreNo) !== link.code || remaining === undefined) {
+                throw new Error('Invalid store stock');
+              }
+              quantity = remaining;
+              this.totalStoresShowList = quantity > 0 ? [{
+                ...stock, StoreName: stock.StoreName || store.name.replace(/^7-ELEVEN /, '').replace(/門市$/, ''), label: '7-11',
+                storeName: store.name, distance: 0, remainingQty: quantity,
+                CategoryStockItems: stock.CategoryStockItems || []
+              }] : [];
+            }
+            this.storeDataService.setStores(this.totalStoresShowList);
+            this.linkedStoreStatus = quantity > 0 ? '' : `${store.name}目前沒有可顯示的即期商品。`;
+          }),
+          catchError(() => {
+            this.linkedStoreStatus = '指定門市的商品暫時無法載入，請確認瀏覽器驗證已完成，或重新整理頁面再試。';
+            return EMPTY;
+          })
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe();
   }
 
   getCityName(): Observable<any[]> {
@@ -207,19 +305,17 @@ export class LegacySearchComponent implements OnInit, OnDestroy {
   }
 
   getFamilyMartAllStore() {
-    this.familyMartService.getStores().subscribe((data) => {
-      if(data.length > 0) {
-        this.dropDownFamilyMartList = data;
-      }
-    })
+    this.familyDirectory$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: data => { this.dropDownFamilyMartList = data; },
+      error: error => { console.error('Unable to load FamilyMart store directory', error); }
+    });
   }
 
   getSevenElevenAllStore() {
-    this.sevenElevenService.getStores().subscribe((data) => {
-      if(data && data.length > 0) {
-        this.all711Stores = data;
-      }
-    })
+    this.sevenDirectory$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: data => { this.all711Stores = data; },
+      error: error => { console.error('Unable to load 7-ELEVEN store directory', error); }
+    });
   }
 
   getFoodSubCategoryImage(nodeID: number): string | null {

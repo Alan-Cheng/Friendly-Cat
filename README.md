@@ -62,6 +62,14 @@
 
 <img src="demo/current-map-mobile.png" alt="目前版本的手機版地圖" width="390">
 
+## 指定門市連結
+
+- URL 參數支援
+    - ?brand=seven&store=<店號>&map=true：開啟 7-ELEVEN 地圖版。
+    - ?brand=family&store=<店號>&map=false：開啟全家舊版。
+    - map 預設為 true(地圖版)
+    - 只要帶有 store，就必須明確指定單一 brand=seven 或 brand=family。
+
 ## 技術工具
 
 套件版本範圍依 `package.json`，執行環境依 GitHub Actions 設定。

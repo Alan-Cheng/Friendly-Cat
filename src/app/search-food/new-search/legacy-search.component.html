@@ -9,6 +9,10 @@
       <img src="assets/S__222224406.png" alt="Friendly Superhero" class="w-24 h-24 sm:w-16 sm:h-16 md:w-24 md:h-24">
       <h5
         class="text-primary-default sm:text-xl font-bold ml-4 py-1 px-3 border-2 border-primary-default rounded-full bg-primary-light inline-block">
+        <div *ngIf="linkedStoreStatus && !loadingService.isVerifying; else normalCatMessage" role="status" class="text-primary-default lg:text-md sm:text-xl">
+          {{ linkedStoreStatus }}
+        </div>
+        <ng-template #normalCatMessage>
         <!-- 當 loading$ 為 true 時顯示進度條和訊息 -->
         <div *ngIf="loadingService.loading$ | async" class="loading-container">
           <span class="flex items-center text-primary-default lg:text-md sm:text-xl">
@@ -22,6 +26,7 @@
         <div class="text-primary-default lg:text-md sm:text-xl" *ngIf="!(loadingService.loading$ | async)">
           看看附近有啥好吃的吧！
         </div>
+        </ng-template>
       </h5>
     </div>
     <!-- 提示訊息區域 -->
