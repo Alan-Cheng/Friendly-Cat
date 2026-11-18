@@ -21,11 +21,12 @@
           <!-- 7-11顯示的子分類商品內容區塊 -->
           <ul class="space-y-6 sm:space-y-4">
             <li *ngFor="let item of itemsBySubCategory[subCategory.Name]">
+              <ng-container *ngIf="getFoodDetail711(item) as detail">
               <div class="border border-gray-300 flex flex-col sm:flex-row items-start p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                <img [src]="getFoodDetail711(item).image"
-                  [alt]="getFoodDetail711(item).name"
+                <img [src]="detail.image"
+                  [alt]="detail.name"
                   class="object-contain rounded-lg mb-4 sm:mb-0 sm:mr-6 shadow-md w-24 h-24 sm:w-32 sm:h-32 cursor-pointer"
-                  (click)="openImageDialog(getFoodDetail711(item).image)">
+                  (click)="openImageDialog(detail.image)">
 
                 <div class="flex-1">
                   <!-- 商品名稱與標籤 -->
@@ -40,37 +41,39 @@
 
                   <!-- 商品標籤 -->
                   <div class="flex space-x-2 mb-2">
-                    <div *ngIf="getFoodDetail711(item).new === 'True'"
+                    <div *ngIf="detail.new === 'True'"
                          class="inline-block bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full">
                       新品
                     </div>
-                    <div *ngIf="getFoodDetail711(item).special_sale === 'True'"
+                    <div *ngIf="detail.special_sale === 'True'"
                          class="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
                       特價中
                     </div>
                   </div>
 
                   <!-- 商品描述 -->
-                  <div *ngIf="getFoodDetail711(item).image !== 'assets/此商品暫無圖片.png'">
+                  <div *ngIf="detail.image !== 'assets/此商品暫無圖片.png'">
                     <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
                       <span class="text-gray-800">價格(NT$): </span>
-                      <span class="line-through text-gray-500">{{ getFoodDetail711(item).originalPrice }}</span>
+                      <span class="line-through text-gray-500">{{ detail.originalPrice }}</span>
                       <span class="text-red-600 mx-2">→</span>
                       <span class="text-red-600">
-                        {{ getFoodDetail711(item).discountedPrice | round:-1 }}
+                        {{ detail.discountedPrice | round:-1 }}
                       </span>
+                      <span class="text-red-600">（{{ getSevenDiscountLabel() }}）</span>
                     </div>
-                    <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ getFoodDetail711(item).content | emptyInfo}}</p>
-                    <p class="text-xs sm:text-sm text-gray-500 mb-1" *ngIf="hasCalories(getFoodDetail711(item).kcal)">卡路里(kcal): {{ getFoodDetail711(item).kcal }}</p>
+                    <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ detail.content | emptyInfo}}</p>
+                    <p class="text-xs sm:text-sm text-gray-500 mb-1" *ngIf="hasCalories(detail.kcal)">卡路里(kcal): {{ detail.kcal }}</p>
                   </div>
                   <!-- 商品沒資訊的話 -->
-                  <div *ngIf="getFoodDetail711(item).image === 'assets/此商品暫無圖片.png'">
+                  <div *ngIf="detail.image === 'assets/此商品暫無圖片.png'">
                     <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
                       <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: 暫無此商品資訊</p>
                     </div>
                   </div>
                 </div>
               </div>
+              </ng-container>
             </li>
           </ul>
         </div>
@@ -79,7 +82,11 @@
   </ng-container>
 
   <!-- 全家顯示區塊 -->
-  <ng-container *ngIf="category.name">
+  <div *ngIf="category.name && isFamilyPriceLoading" class="flex flex-col items-center justify-center p-12" role="progressbar" aria-label="載入商品資訊">
+    <mat-progress-spinner mode="indeterminate" diameter="40" aria-hidden="true"></mat-progress-spinner>
+    <p class="mt-4 text-primary-default">載入商品資訊中...</p>
+  </div>
+  <ng-container *ngIf="category.name && !isFamilyPriceLoading">
     <h2 class="text-2xl font-bold mb-4 text-primary-default">{{ category.name }}</h2>
     <ng-container *ngFor="let subCategory of subCategories">
       <div *ngIf="itemsBySubCategory[subCategory.name] && itemsBySubCategory[subCategory.name].length > 0"
@@ -93,11 +100,12 @@
         <!-- 全家顯示的子分類商品內容區塊 -->
         <ul class="space-y-6 sm:space-y-4">
           <li *ngFor="let item of itemsBySubCategory[subCategory.name]">
+            <ng-container *ngIf="getFoodDetailFamilyMart(item) as detail">
             <div class="border border-gray-300 food-item flex flex-col sm:flex-row items-start p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-              <img [src]="getFoodDetailFamilyMart(item).picture_url"
-                [alt]="getFoodDetailFamilyMart(item).title"
+              <img [src]="detail.picture_url"
+                [alt]="detail.title"
                 class="object-contain rounded-lg mb-4 sm:mb-0 sm:mr-6 shadow-md w-24 h-24 sm:w-32 sm:h-32 cursor-pointer"
-                (click)="openImageDialog(getFoodDetailFamilyMart(item).picture_url)">
+                (click)="openImageDialog(detail.picture_url)">
 
 
 
@@ -111,13 +119,20 @@
                     剩餘數量: {{ item.RemainingQty }}
                   </div>
                 </div>
+                <p *ngIf="familyPrices[item.ItemName] as price" class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
+                  <span class="text-gray-800">價格(NT$): </span>
+                  <span class="line-through text-gray-500">{{ price.original }}</span>
+                  <span class="text-red-600 mx-2">→</span>
+                  <span class="text-red-600">{{ price.discounted }} 元</span>
+                  <span class="text-red-600">（7 折）</span>
+                </p>
                 <!-- 商品描述 -->
-                <div *ngIf="getFoodDetailFamilyMart(item).picture_url !== 'assets/此商品暫無圖片.png'">
-                  <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ getFoodDetailFamilyMart(item).Description | emptyInfo}}</p>
-                  <!-- <p class="text-xs sm:text-sm text-gray-500 mb-1">卡路里(kcal): {{ getFoodDetailFamilyMart(item).Calories | emptyInfo}}</p> -->
+                <div *ngIf="detail.picture_url !== 'assets/此商品暫無圖片.png'">
+                  <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ detail.Description | emptyInfo}}</p>
+                  <!-- <p class="text-xs sm:text-sm text-gray-500 mb-1">卡路里(kcal): {{ detail.Calories | emptyInfo}}</p> -->
                 </div>
                 <!-- 商品沒資訊的話 -->
-                <div *ngIf="getFoodDetailFamilyMart(item).picture_url === 'assets/此商品暫無圖片.png'">
+                <div *ngIf="detail.picture_url === 'assets/此商品暫無圖片.png'">
                   <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
                     <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: 暫無此商品資訊</p>
                   </div>
@@ -125,6 +140,7 @@
               </div>
 
             </div>
+            </ng-container>
           </li>
         </ul>
       </div>

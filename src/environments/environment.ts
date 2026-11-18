@@ -6,6 +6,7 @@ export const environment = {
   production: false,
   turnstileSiteKey: '0x4AAAAAAEEefTsxRSmYSGna',
   familyMartUrl: {
+    priceSearch: 'https://proxy.friendlycat.alan-cheng.com/family/search',
     icon: 'assets/family-mart.svg',
     base: 'https://stamp.family.com.tw/api/maps',
     storeQuery: 'https://family.map.com.tw/famiport/api/dropdownlist/Select_StoreName',

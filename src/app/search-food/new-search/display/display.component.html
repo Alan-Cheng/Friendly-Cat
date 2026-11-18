@@ -1,5 +1,5 @@
 <div class="product-details" *ngIf="subCategories.length">
-  <div class="product-loading" *ngIf="isLoading" role="status"><mat-progress-spinner mode="indeterminate" diameter="20" aria-label="載入商品資訊"></mat-progress-spinner><span>正在載入商品資訊…</span></div>
+  <div class="product-loading" *ngIf="isLoading || isFamilyPriceLoading" role="progressbar" aria-label="載入商品資訊"><mat-progress-spinner mode="indeterminate" diameter="20" aria-hidden="true"></mat-progress-spinner><span>正在載入商品資訊…</span></div>
   <ng-container *ngIf="!isLoading && category.Name">
     <ng-container *ngFor="let subCategory of subCategories">
       <section class="product-group" *ngIf="itemsBySubCategory[subCategory.Name]?.length">
@@ -11,7 +11,7 @@
                 <button type="button" class="product-image" (click)="openImageDialog(detail.image)" [attr.aria-label]="'放大' + item.ItemName + '圖片'"><img [src]="detail.image" [alt]="item.ItemName" loading="lazy"></button>
                 <div class="product-copy"><h5>{{ item.ItemName }}</h5><div class="product-tags"><span *ngIf="detail.new === 'True'">新品</span><span *ngIf="detail.special_sale === 'True'">特價中</span></div>
                   <ng-container *ngIf="detail.image !== 'assets/此商品暫無圖片.png'; else unavailableSeven">
-                    <p class="product-price"><span>價格 NT$</span> <del>{{ detail.originalPrice }}</del><span aria-hidden="true">→</span><strong>{{ detail.discountedPrice | round:-1 }}</strong></p>
+                    <p class="product-price"><span>價格 NT$</span> <del>{{ detail.originalPrice }}</del><span aria-hidden="true">→</span><strong>{{ detail.discountedPrice | round:-1 }}</strong><span>（{{ getSevenDiscountLabel() }}）</span></p>
                     <p class="product-description">{{ detail.content | emptyInfo }}</p><p class="product-calories" *ngIf="hasCalories(detail.kcal)">{{ detail.kcal }} kcal</p>
                   </ng-container>
                   <ng-template #unavailableSeven><p class="product-description">暫無此商品資訊</p></ng-template>
@@ -24,7 +24,7 @@
       </section>
     </ng-container>
   </ng-container>
-  <ng-container *ngIf="!isLoading && category.name">
+  <ng-container *ngIf="!isLoading && !isFamilyPriceLoading && category.name">
     <ng-container *ngFor="let subCategory of subCategories">
       <section class="product-group" *ngIf="itemsBySubCategory[subCategory.name]?.length">
         <h4>{{ subCategory.name }}</h4>
@@ -33,7 +33,9 @@
             <li class="product-row" *ngIf="item.RemainingQty > 0">
               <ng-container *ngIf="getFoodDetailFamilyMart(item) as detail">
                 <button type="button" class="product-image" (click)="openImageDialog(detail.picture_url)" [attr.aria-label]="'放大' + item.ItemName + '圖片'"><img [src]="detail.picture_url" [alt]="item.ItemName" loading="lazy"></button>
-                <div class="product-copy"><h5>{{ item.ItemName }}</h5><p class="product-description">{{ detail.picture_url === 'assets/此商品暫無圖片.png' ? '暫無此商品資訊' : (detail.Description | emptyInfo) }}</p></div>
+                <div class="product-copy"><h5>{{ item.ItemName }}</h5>
+                  <p class="product-price" *ngIf="familyPrices[item.ItemName] as price"><span>價格 NT$</span> <del>{{ price.original }}</del><span aria-hidden="true">→</span><strong>{{ price.discounted }} 元</strong><span>（7 折）</span></p>
+                  <p class="product-description">{{ detail.picture_url === 'assets/此商品暫無圖片.png' ? '暫無此商品資訊' : (detail.Description | emptyInfo) }}</p></div>
                 <span class="product-stock"><small>剩餘</small>{{ item.RemainingQty }}<small>件</small></span>
               </ng-container>
             </li>

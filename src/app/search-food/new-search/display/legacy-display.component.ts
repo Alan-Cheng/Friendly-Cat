@@ -1,4 +1,6 @@
-import { Component, Input, OnChanges, SimpleChanges, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { FamilyPrice, FamilyPriceService } from '../services/family-price.service';
+import { Component, Input, OnChanges, SimpleChanges, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
 import { Item, CategoryStockItem, FoodDetail711  } from '../../model/seven-eleven.model';  // 根據你的實際路徑導入模型
@@ -8,17 +10,21 @@ import { ImageDialogComponent } from '../image-dialog/image-dialog.component';
 
 import { SevenElevenRequestService } from '../services/seven-eleven-request.service';
 
-import Fuse from 'fuse.js';
+import { ProductLookupService } from '../services/product-lookup.service';
 
 @Component({
   selector: 'app-legacy-display',
   templateUrl: './legacy-display.component.html',
   styleUrls: ['./legacy-display.component.scss']
 })
-export class LegacyDisplayComponent implements OnChanges, OnInit {
+export class LegacyDisplayComponent implements OnChanges, OnInit, OnDestroy {
   @Input() store!: any;  // 接收父組件傳遞的 store
   @Input() category!: any;  // 接收父組件傳遞的 category
   @Input() foodDetails!: any[];
+
+  familyPrices: Record<string, FamilyPrice> = {};
+  isFamilyPriceLoading = false;
+  private priceSubscription?: Subscription;
 
   subCategories: any[] = [];
   subCategoriesName: string = '';
@@ -27,10 +33,14 @@ export class LegacyDisplayComponent implements OnChanges, OnInit {
 
   constructor(
     private sevenElevenRequestService: SevenElevenRequestService,
+    private familyPriceService: FamilyPriceService,
+    private productLookup: ProductLookupService,
     private dialog: MatDialog,
   ) {}
 
   ngOnInit() {}
+
+  ngOnDestroy(): void { this.priceSubscription?.unsubscribe(); }
 
   hasCalories(value: string | null | undefined): boolean {
     return value != null && value.trim() !== '' && Number.isFinite(Number(value));
@@ -44,6 +54,10 @@ export class LegacyDisplayComponent implements OnChanges, OnInit {
   }
 
   loadSubCategories() {
+    this.priceSubscription?.unsubscribe();
+    this.isFamilyPriceLoading = false;
+    this.familyPrices = {};
+    this.itemsBySubCategory = {};
     if (this.store && this.category) {
       if (this.store.StoreName) {
         this.subCategories = this.category.Children;  // 更新子分類列表
@@ -63,6 +77,16 @@ export class LegacyDisplayComponent implements OnChanges, OnInit {
           );
           this.itemsBySubCategory[cat.name] = items || [];
           items = [];
+        });
+        const names = Object.values(this.itemsBySubCategory).flat()
+          .filter(item => item.RemainingQty > 0).map(item => item.ItemName);
+        this.isFamilyPriceLoading = true;
+        this.priceSubscription = this.familyPriceService.pricesFor(names).subscribe({
+          next: prices => {
+            this.familyPrices = prices;
+            this.isFamilyPriceLoading = false;
+          },
+          error: () => { this.isFamilyPriceLoading = false; }
         });
       }
     }
@@ -165,22 +189,16 @@ export class LegacyDisplayComponent implements OnChanges, OnInit {
     return discountedPrice.toString();
   }
 
+  getSevenDiscountLabel(): string {
+    // Use the same calculation as the price so the time-based label stays consistent.
+    return `${Number(this.getDiscountedPrice('100')) / 10} 折`;
+  }
+
   getFoodDetail711(item: Item): FoodDetail711 {
-    // 設置 Fuse.js 配置選項
-    const options = {
-      includeScore: true, // 需要包含匹配度分數
-      threshold: 0.3, // 設置模糊搜尋的閾值，0.3 表示較為寬鬆的匹配
-      keys: ['name'] // 搜尋的欄位是 'name'
-    };
-
-    // 初始化 Fuse 進行模糊搜尋
-    const fuse = new Fuse(this.foodDetails, options);
-
-    // 查找最匹配的項目
-    const result = fuse.search(item.ItemName);
+    const match = this.productLookup.find(this.foodDetails ?? [], 'name', item.ItemName);
 
     // 如果找到匹配項，則返回最相似的那個
-    const foodDetail = result.length > 0 ? result[0].item : {
+    const foodDetail = match ? { ...match } : {
       category: '',
       content: '',
       image: 'assets/此商品暫無圖片.png', // 默認圖片
@@ -202,21 +220,10 @@ export class LegacyDisplayComponent implements OnChanges, OnInit {
   }
 
   getFoodDetailFamilyMart(item: Item): FoodDetailFamilyMart {
-    // 設置 Fuse.js 配置選項
-    const options = {
-      includeScore: true,
-      threshold: 0.3,
-      keys: ['title']
-    };
-
-    // 初始化 Fuse 進行模糊搜尋
-    const fuse = new Fuse(this.foodDetails, options);
-
-    // 查找最匹配的項目
-    const result = fuse.search(item.ItemName);
+    const match = this.productLookup.find(this.foodDetails ?? [], 'title', item.ItemName);
 
     // 如果找到匹配項，則返回最相似的那個
-    const foodDetail = result.length > 0 ? result[0].item :
+    const foodDetail = match ??
     {
       "category": "",
       "title": "",
