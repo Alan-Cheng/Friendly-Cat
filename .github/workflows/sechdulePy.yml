@@ -32,6 +32,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Python script to generate JSON
+        env:
+          FAMILY_FOOD_URL: ${{ secrets.FAMILY_FOOD_URL }}
+          FAMILY_SEARCH_URL: ${{ secrets.FAMILY_SEARCH_URL }}
         run: |
           python crawer.py  # 執行 Python 腳本，生成 JSON 檔案
 

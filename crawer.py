@@ -1,3 +1,7 @@
+from family_products import validate_config
+
+validate_config()  # 在其他網路請求之前確認 Actions Secrets 已設定
+
 import requests
 from xml.etree import ElementTree
 import json
@@ -113,55 +117,10 @@ else:
 
 
 
-# 全家商品資料抓取 - 使用新的 API
-family_mart_url = "https://foodsafety.family.com.tw/Web_FFD_2022/ws/QueryFsProductListByFilter"
+# 全家商品：每批 50 個 CMNO 查價，缺價以商品名稱分組 fallback。
+from family_products import crawl_family_products
 
-# POST 請求的 body
-family_mart_data = {
-    "MEMBER": "N",
-    "KEYWORD": "",
-    "INCLUDE_CLB": "N"
-}
-
-# 發送 POST 請求
-family_mart_response = requests.post(family_mart_url, json=family_mart_data, headers=headers)
-
-# 檢查是否請求成功
-if family_mart_response.status_code == 200:
-    family_mart_json = family_mart_response.json()
-    
-    # 初始化結果列表
-    family_mart_results = []
-    
-    # 檢查 API 回應是否成功
-    if family_mart_json.get("RESULT_CODE") == "00":
-        # 遍歷所有分類
-        for category_data in family_mart_json.get("LIST", []):
-            category_name = category_data.get("CATEGORY_NAME", "")
-            
-            # 遍歷該分類下的所有商品
-            for item in category_data.get("ITEM", []):
-                family_mart_results.append({
-                    "category": category_name,
-                    "title": item.get("PRODNAME", ""),
-                    "picture_url": f"https://foodsafety.family.com.tw/product_img/{item.get('PROD_PIC', '')}",
-                    "Protein": "",
-                    "Carb": "",
-                    "Calories": "",
-                    "Fat": "",
-                    "Description": item.get("NOTE", ""),
-                })
-        
-        # 儲存全家商品資料
-        family_mart_output_file = os.path.join(os.getcwd(), 'docs', 'assets', "family_mart_products.json")
-        with open(family_mart_output_file, "w", encoding="utf-8") as json_file:
-            json.dump(family_mart_results, json_file, ensure_ascii=False, indent=4)
-        
-        print(f"全家商品資料已成功儲存至：{family_mart_output_file}")
-    else:
-        print(f"全家 API 請求失敗：{family_mart_json.get('RESULT_DESC', '未知錯誤')}")
-else:
-    print(f"全家 API 請求失敗，狀態碼: {family_mart_response.status_code}")
+crawl_family_products(os.path.join(os.getcwd(), 'docs', 'assets', 'family_mart_products.json'))
 
 
 import requests
