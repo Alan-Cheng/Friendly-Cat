@@ -1,7 +1,6 @@
-import { Subscription } from 'rxjs';
 import { FamilyPrice, FamilyPriceService } from '../services/family-price.service';
 import { of } from 'rxjs';
-import { Component, Input, OnChanges, SimpleChanges, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, OnInit, ElementRef, ViewChild } from '@angular/core';
 
 import { Item, CategoryStockItem, FoodDetail711  } from '../../model/seven-eleven.model';  // 根據你的實際路徑導入模型
 import { ProductModel, FoodDetailFamilyMart } from '../../model/family-mart.model'
@@ -16,7 +15,7 @@ import { ProductLookupService } from '../services/product-lookup.service';
   templateUrl: './display.component.html',
   styleUrls: ['./display.component.scss']
 })
-export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
+export class DisplayComponent implements OnChanges, OnInit {
   @ViewChild('imageWindow', { static: true }) imageWindow!: ElementRef<HTMLDialogElement>;
   previewImage = '';
   @Input() store!: any;  // 接收父組件傳遞的 store
@@ -24,8 +23,6 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
   @Input() foodDetails!: any[];
 
   familyPrices: Record<string, FamilyPrice> = {};
-  isFamilyPriceLoading = false;
-  private priceSubscription?: Subscription;
 
   subCategories: any[] = [];
   subCategoriesName: string = '';
@@ -40,8 +37,6 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
 
   ngOnInit() {}
 
-  ngOnDestroy(): void { this.priceSubscription?.unsubscribe(); }
-
   hasCalories(value: string | null | undefined): boolean {
     return value != null && value.trim() !== '' && Number.isFinite(Number(value));
   }
@@ -50,12 +45,12 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
     // 若組件輸入有變化時，重新載入子商品列表
     if (changes['category'] || changes['store']) {
       this.loadSubCategories();  // 重新加載子分類資料
+    } else if (changes['foodDetails']) {
+      this.updateFamilyPrices();
     }
   }
 
   loadSubCategories() {
-    this.priceSubscription?.unsubscribe();
-    this.isFamilyPriceLoading = false;
     this.familyPrices = {};
     this.itemsBySubCategory = {};
     if (this.store && this.category) {
@@ -71,6 +66,7 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
         this.subCategories.forEach((cat) => {
           items.push(
             ...cat.products.map((product: ProductModel) => ({
+              familyProductId: product.code,
               ItemName: product.name,       // 映射到 ItemName
               RemainingQty: product.qty,    // 映射到 RemainingQty
             }))
@@ -78,18 +74,18 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
           this.itemsBySubCategory[cat.name] = items || [];
           items = [];
         });
-        const names = Object.values(this.itemsBySubCategory).flat()
-          .filter(item => item.RemainingQty > 0).map(item => item.ItemName);
-        this.isFamilyPriceLoading = true;
-        this.priceSubscription = this.familyPriceService.pricesFor(names).subscribe({
-          next: prices => {
-            this.familyPrices = prices;
-            this.isFamilyPriceLoading = false;
-          },
-          error: () => { this.isFamilyPriceLoading = false; }
-        });
+        this.updateFamilyPrices();
       }
     }
+  }
+
+  private updateFamilyPrices(): void {
+    this.familyPrices = this.store?.name
+      ? this.familyPriceService.pricesFor(
+          Object.values(this.itemsBySubCategory).flat().filter(item => item.RemainingQty > 0),
+          this.foodDetails ?? [],
+        )
+      : {};
   }
 
   loadItemsBySubCategory() {

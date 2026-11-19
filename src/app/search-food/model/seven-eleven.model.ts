@@ -9,6 +9,7 @@ export interface LocationData {
 }
 
 export interface Item {
+  familyProductId?: string; // 全家庫存商品代碼，用於比對商品 JSON
   ItemName: string;        // 商品名稱
   RemainingQty: number;    // 剩餘數量
 }

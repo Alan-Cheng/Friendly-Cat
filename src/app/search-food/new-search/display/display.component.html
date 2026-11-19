@@ -1,5 +1,5 @@
 <div class="product-details" *ngIf="subCategories.length">
-  <div class="product-loading" *ngIf="isLoading || isFamilyPriceLoading" role="progressbar" aria-label="載入商品資訊"><mat-progress-spinner mode="indeterminate" diameter="20" aria-hidden="true"></mat-progress-spinner><span>正在載入商品資訊…</span></div>
+  <div class="product-loading" *ngIf="isLoading" role="progressbar" aria-label="載入商品資訊"><mat-progress-spinner mode="indeterminate" diameter="20" aria-hidden="true"></mat-progress-spinner><span>正在載入商品資訊…</span></div>
   <ng-container *ngIf="!isLoading && category.Name">
     <ng-container *ngFor="let subCategory of subCategories">
       <section class="product-group" *ngIf="itemsBySubCategory[subCategory.Name]?.length">
@@ -24,7 +24,7 @@
       </section>
     </ng-container>
   </ng-container>
-  <ng-container *ngIf="!isLoading && !isFamilyPriceLoading && category.name">
+  <ng-container *ngIf="!isLoading && category.name">
     <ng-container *ngFor="let subCategory of subCategories">
       <section class="product-group" *ngIf="itemsBySubCategory[subCategory.name]?.length">
         <h4>{{ subCategory.name }}</h4>

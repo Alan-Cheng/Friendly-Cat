@@ -56,6 +56,11 @@ export interface fStore {
 }
 
 export interface FoodDetailFamilyMart {
+  id?: string;
+  price?: number | string | null;
+  price_source?: 'id' | 'name' | null;
+  price_product_id?: string | null;
+  price_product_name?: string | null;
   category: string; // 類別
   title: string; // 商品名稱
   picture_url: string; // 商品圖片連結

@@ -82,11 +82,7 @@
   </ng-container>
 
   <!-- 全家顯示區塊 -->
-  <div *ngIf="category.name && isFamilyPriceLoading" class="flex flex-col items-center justify-center p-12" role="progressbar" aria-label="載入商品資訊">
-    <mat-progress-spinner mode="indeterminate" diameter="40" aria-hidden="true"></mat-progress-spinner>
-    <p class="mt-4 text-primary-default">載入商品資訊中...</p>
-  </div>
-  <ng-container *ngIf="category.name && !isFamilyPriceLoading">
+  <ng-container *ngIf="category.name">
     <h2 class="text-2xl font-bold mb-4 text-primary-default">{{ category.name }}</h2>
     <ng-container *ngFor="let subCategory of subCategories">
       <div *ngIf="itemsBySubCategory[subCategory.name] && itemsBySubCategory[subCategory.name].length > 0"
