@@ -170,6 +170,17 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     else this.onUseCurrentLocation();
   }
 
+  get selectedStoreFavorite(): any {
+    const store = this.mapSelectedStore;
+    if (!store) return undefined;
+    return {
+      storeName: store.name,
+      ...(store.brand === '7-11'
+        ? { StoreName: store.name.replace(/^(?:7-ELEVEN\s*|7-11)/, '').replace(/門市$/, '') }
+        : { latitude: store.latitude, longitude: store.longitude })
+    };
+  }
+
   get selectedStoreQuantity(): number | undefined {
     const quantity = this.mapSelectedStore && this.mapInventory[this.mapSelectedStore.id];
     return typeof quantity === 'number' ? quantity : undefined;
@@ -1027,51 +1038,36 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleFavorite(store: any) {
-    if (this.user.emailVerified) {
-      const userRef = this.firestore.collection('users').doc(this.user.uid);
-      const favoriteRef = userRef.collection('favorites').doc(store.storeName);
+  async toggleFavorite(store: any): Promise<void> {
+    if (!this.user?.emailVerified) return;
 
-      // 如果商店已經在喜愛清單內，刪除它
-      if (this.isFavorite(store)) {
-        const dialogRef = this.dialog.open(MessageDialogComponent, {
-          data: {
-            title: "取消收藏",
-            message: `已將『${store.storeName}』從收藏中移除`,
-            imgPath: "assets/S__222224406.png"
-          }
-        });
-        dialogRef.afterClosed().subscribe(result => {
-          favoriteRef.delete();
-        });
+    const removing = this.isFavorite(store);
+    try {
+      const favoriteRef = this.firestore.collection('users').doc(this.user.uid)
+        .collection('favorites').doc(store.storeName);
+      if (removing) {
+        await favoriteRef.delete();
       } else {
-        const dialogRef = this.dialog.open(MessageDialogComponent, {
-          data: {
-            title: "新增收藏",
-            message: `『${store.storeName}』已加入您的收藏店家`,
-            imgPath: "assets/S__222224406.png"
-          }
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-          const favoriteData: any = {
-            storeName: store.storeName
-          };
-          // 依照商店設定選擇性的資料
-          if (store.StoreName) {
-            favoriteData.store711Name = store.StoreName;
-            favoriteData.label = '7-11';
-          }
-          if (store.longitude && store.latitude) {
-            favoriteData.storeFLongitude = store.longitude;
-            favoriteData.storeFLatitude = store.latitude;
-            favoriteData.label = '全家';
-          }
-
-          favoriteRef.set(favoriteData);
-        });
+        const favoriteData: any = { storeName: store.storeName };
+        if (store.StoreName) {
+          favoriteData.store711Name = store.StoreName;
+          favoriteData.label = '7-11';
+        }
+        if (store.longitude && store.latitude) {
+          favoriteData.storeFLongitude = store.longitude;
+          favoriteData.storeFLatitude = store.latitude;
+          favoriteData.label = '全家';
+        }
+        await favoriteRef.set(favoriteData);
       }
-    } else {
+    } catch {
+      this.dialog.open(MessageDialogComponent, {
+        data: {
+          title: removing ? '移除收藏失敗' : '新增收藏失敗',
+          message: '無法更新收藏，請稍後再試。',
+          imgPath: 'assets/S__222224406.png'
+        }
+      });
     }
   }
 

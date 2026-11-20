@@ -70,6 +70,27 @@ describe('store detail panel', () => {
     expect(close).toHaveBeenCalledTimes(1);
   });
 
+  it('allows favoriting either brand without inventory results', () => {
+    const { fixture, component, panel } = createPanel();
+    component.user = { emailVerified: true };
+    const toggle = spyOn(component, 'toggleFavorite');
+    for (const brand of ['全家', '7-11'] as const) {
+      component.mapSelectedStore = { ...component.mapSelectedStore!, brand, name: brand === '全家' ? '全家台北店' : '7-ELEVEN 信義門市' };
+      component.totalStoresShowList = [];
+      fixture.detectChanges();
+      const button = Array.from(panel.querySelectorAll<HTMLButtonElement>('.place-action')).find(button => button.textContent?.includes('收藏門市'))!;
+      expect(button).toBeDefined();
+      button.click();
+      expect(toggle).toHaveBeenCalledWith(brand === '全家'
+        ? { storeName: '全家台北店', latitude: 25.033, longitude: 121.5654 }
+        : { storeName: '7-ELEVEN 信義門市', StoreName: '信義' });
+      component.favoriteStores = [component.selectedStoreFavorite];
+      fixture.detectChanges();
+      expect(button.textContent).toContain('已收藏');
+      expect(button.getAttribute('aria-pressed')).toBe('true');
+    }
+  });
+
   it('keeps the category filter and loaded products inside the selected store panel', () => {
     const { fixture, component, panel } = createPanel();
     const category = { name: '飯糰', qty: 3, iconURL: 'assets/family-mart.svg', categories: [{ name: '飯糰', products: [{ name: '鮭魚飯糰', qty: 3 }] }] };

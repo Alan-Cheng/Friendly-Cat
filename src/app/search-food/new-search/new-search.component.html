@@ -15,7 +15,7 @@
     <section class="place-overview" *ngIf="mapSelectedStore as place" aria-label="門市資訊">
       <div class="place-actions">
         <a class="place-action primary-action" [href]="'https://www.google.com/maps/dir/?api=1&destination=' + place.latitude + ',' + place.longitude" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 9-9 9-9-9Z"/><path d="M8 15v-4h7m-3-3 3 3-3 3"/></svg><span>前往導航</span></a>
-        <ng-container *ngIf="totalStoresShowList[0] as stock"><button *ngIf="user" type="button" class="place-action" (click)="toggleFavorite(stock)" [attr.aria-pressed]="isFavorite(stock)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v17l-6-4-6 4Z"/></svg><span>{{ isFavorite(stock) ? '已收藏' : '收藏門市' }}</span></button></ng-container>
+        <ng-container *ngIf="selectedStoreFavorite as store"><button *ngIf="user" type="button" class="place-action" (click)="toggleFavorite(store)" [attr.aria-pressed]="isFavorite(store)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v17l-6-4-6 4Z"/></svg><span>{{ isFavorite(store) ? '已收藏' : '收藏門市' }}</span></button></ng-container>
         <button type="button" class="place-action" (click)="refreshProducts()" [disabled]="mapQueryPending"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2 6M20 4v7h-7"/></svg><span>更新庫存</span></button>
       </div>
       <div class="place-facts">
