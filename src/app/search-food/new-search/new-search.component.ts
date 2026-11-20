@@ -1,3 +1,4 @@
+import { favoriteBrand, favoriteStoreCode, matchesFavorite } from './favorite-store';
 import type { Driver } from 'driver.js';
 import { SiderComponent } from '../../components/sider/sider.component';
 import { matchFamilyStock, familyStockQuantity, sevenStockQuantity } from '../store-map/store-inventory';
@@ -175,6 +176,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (!store) return undefined;
     return {
       storeName: store.name,
+      storeCode: store.storeCode,
+      label: store.brand,
       ...(store.brand === '7-11'
         ? { StoreName: store.name.replace(/^(?:7-ELEVEN\s*|7-11)/, '').replace(/門市$/, '') }
         : { latitude: store.latitude, longitude: store.longitude })
@@ -1041,14 +1044,19 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   async toggleFavorite(store: any): Promise<void> {
     if (!this.user?.emailVerified) return;
 
-    const removing = this.isFavorite(store);
+    const savedFavorite = this.favoriteStores.find(favorite => matchesFavorite(favorite, store));
+    const removing = !!savedFavorite;
     try {
       const favoriteRef = this.firestore.collection('users').doc(this.user.uid)
-        .collection('favorites').doc(store.storeName);
+        .collection('favorites').doc(savedFavorite?.storeName || store.storeName);
       if (removing) {
         await favoriteRef.delete();
       } else {
         const favoriteData: any = { storeName: store.storeName };
+        const brand = favoriteBrand(store);
+        const code = favoriteStoreCode(store);
+        if (brand) favoriteData.label = brand;
+        if (code) favoriteData.storeCode = code;
         if (store.StoreName) {
           favoriteData.store711Name = store.StoreName;
           favoriteData.label = '7-11';
@@ -1072,7 +1080,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   isFavorite(store: any): boolean {
-    return this.favoriteStores.some(favStore => favStore.storeName === store.storeName);
+    return this.favoriteStores.some(favStore => matchesFavorite(favStore, store));
   }
 
   onUserUpdated(user: any) {

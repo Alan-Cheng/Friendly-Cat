@@ -1,3 +1,4 @@
+import { favoriteBrand, favoriteStoreCode, matchesFavorite } from './favorite-store';
 import { Component, OnInit, OnDestroy, DestroyRef, inject, ViewChild, ElementRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
@@ -922,14 +923,19 @@ export class LegacySearchComponent implements OnInit, OnDestroy {
   async toggleFavorite(store: any): Promise<void> {
     if (!this.user?.emailVerified) return;
 
-    const removing = this.isFavorite(store);
+    const savedFavorite = this.favoriteStores.find(favorite => matchesFavorite(favorite, store));
+    const removing = !!savedFavorite;
     try {
       const favoriteRef = this.firestore.collection('users').doc(this.user.uid)
-        .collection('favorites').doc(store.storeName);
+        .collection('favorites').doc(savedFavorite?.storeName || store.storeName);
       if (removing) {
         await favoriteRef.delete();
       } else {
         const favoriteData: any = { storeName: store.storeName };
+        const brand = favoriteBrand(store);
+        const code = favoriteStoreCode(store);
+        if (brand) favoriteData.label = brand;
+        if (code) favoriteData.storeCode = code;
         if (store.StoreName) {
           favoriteData.store711Name = store.StoreName;
           favoriteData.label = '7-11';
@@ -953,7 +959,7 @@ export class LegacySearchComponent implements OnInit, OnDestroy {
   }
 
   isFavorite(store: any): boolean {
-    return this.favoriteStores.some(favStore => favStore.storeName === store.storeName);
+    return this.favoriteStores.some(favStore => matchesFavorite(favStore, store));
   }
 
   onUserUpdated(user: any) {
